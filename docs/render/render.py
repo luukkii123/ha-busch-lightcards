@@ -624,7 +624,11 @@ def main():
                     hasTempBar: !!sr.querySelector('.tempbar'),
                     tabs: Array.from(sr.querySelectorAll('.picker-tabs button'))
                                .map(b => b.dataset.tab),
-                    deadNote: (sr.querySelector('.deadlist') || {}).textContent || '',
+                    // Since v0.3.0 there are two of these: the already-shown
+                    // groups and the unreachable members. Take them all, so
+                    // adding a third note cannot silently break the check.
+                    deadNote: Array.from(sr.querySelectorAll('.deadlist'))
+                        .map(n => n.textContent).join(' | '),
                     // a lit tile on a light background must not print white on white
                     litTilePct: (function () {
                         const t = tiles.find(t => (t.querySelector('.tpct').textContent || '').trim()
@@ -750,6 +754,162 @@ def main():
             report["screenshots"].append(shot.name)
 
         # ------------------------------------------------------------------
+        # 7b. Groups stay visible as groups
+        # ------------------------------------------------------------------
+        sections = page.evaluate(
+            f"""(states) => {{
+                const I = {internals};
+                I.clearMemberCache();
+                const r = I.resolveSections(window.makeHass(states),
+                    [{json.dumps(fixture['root'])}], {{}});
+                return {{
+                    sections: r.sections.map(s => ({{
+                        entityId: s.entityId, name: s.name, depth: s.depth, lights: s.lights
+                    }})),
+                    emptyGroups: r.emptyGroups,
+                    leaves: r.leaves
+                }};
+            }}""",
+            base_states,
+        )
+        report["sections"] = sections
+
+        check("resolution keeps the group structure, not just the leaves",
+              [s["name"] for s in sections["sections"]] == ["LD Kinderzimmer Alle Lichter", "Spots"]
+              and [s["depth"] for s in sections["sections"]] == [0, 1],
+              json.dumps([(s["name"], s["depth"]) for s in sections["sections"]], ensure_ascii=False))
+        check("each light sits in exactly one section, under the group it was first met in",
+              sections["sections"][0]["lights"] == [
+                  "light.kinderzimmer_spot_1", "light.hubschrauberlampe",
+                  "light.vorhang", "light.ledstreifen_kinderzimm"]
+              and sections["sections"][1]["lights"] == [
+                  "light.kinderzimmer_spot_2", "light.kinderzimmer_spot_3"]
+              and sorted(sum([s["lights"] for s in sections["sections"]], [])) == sorted(sections["leaves"]),
+              json.dumps([s["lights"] for s in sections["sections"]]))
+        check("groups that add nothing new are named, not rendered as empty headings",
+              sorted(sections["emptyGroups"]) == [
+                  "light.leds_kinderzimmer", "light.lichtgruppe_kinderzimmer"],
+              json.dumps(sections["emptyGroups"]))
+
+        grouped = page.evaluate(
+            """() => {
+                const sr = document.querySelector('busch-light-dialog').shadowRoot;
+                const blocks = Array.from(sr.querySelectorAll('.group'));
+                return {
+                    blockCount: blocks.length,
+                    names: blocks.map(b => b.querySelector('.gname').textContent),
+                    counts: blocks.map(b => b.querySelector('.gcount').textContent),
+                    depths: blocks.map(b => b.dataset.depth),
+                    nested: blocks.map(b => b.classList.contains('nested')),
+                    tilesPerBlock: blocks.map(b => b.querySelectorAll('.tile').length),
+                    totalTiles: sr.querySelectorAll('.tile').length,
+                    gridCount: sr.querySelectorAll('.tiles').length,
+                    // tiles that sit outside any group block — the root's own
+                    bareTiles: Array.from(sr.querySelectorAll('.tile'))
+                        .filter(t => !t.closest('.group')).length,
+                    alreadyNote: Array.from(sr.querySelectorAll('.deadlist'))
+                        .map(n => n.textContent).find(t => t.startsWith('Oben bereits')) || ''
+                };
+            }"""
+        )
+        report["dialogGroups"] = grouped
+        check("dialog gives the nested group its own block instead of one flat pile",
+              grouped["blockCount"] == 1
+              and grouped["names"] == ["Spots"]
+              and grouped["tilesPerBlock"] == [2]
+              and grouped["totalTiles"] == 6
+              and grouped["gridCount"] == 2,
+              json.dumps(grouped, ensure_ascii=False))
+        check("the root's own lights stand bare, not under a heading repeating the title",
+              "LD Kinderzimmer Alle Lichter" not in grouped["names"]
+              and grouped["bareTiles"] == 4,
+              json.dumps({"names": grouped["names"],
+                          "bare": grouped["bareTiles"]}, ensure_ascii=False))
+        check("a nested group is indented and marked as nested",
+              grouped["depths"] == ["1"] and grouped["nested"] == [True],
+              json.dumps({"depths": grouped["depths"], "nested": grouped["nested"]}))
+        check("the group header counts only its own reachable lights",
+              grouped["counts"] == ["2/2"],
+              json.dumps(grouped["counts"]))
+        check("groups that added nothing are named under the tiles",
+              "Lichtgruppe Kinderzimmer" in grouped["alreadyNote"]
+              and "LEDs Kinderzimmer" in grouped["alreadyNote"],
+              grouped["alreadyNote"])
+
+        # the header toggle must switch that group alone, skipping its dead
+        group_toggle = page.evaluate(
+            f"""(states) => {{
+                const I = {internals};
+                window.__serviceCalls = [];
+                const sr = document.querySelector('busch-light-dialog').shadowRoot;
+                const blocks = Array.from(sr.querySelectorAll('.group'));
+                blocks[0].querySelector('.gtoggle').click();   // "Spots", both on
+                const spots = window.__serviceCalls.slice();
+
+                // A section holding an unreachable member is only reachable
+                // through the model here, since the root block is headless.
+                I.clearMemberCache();
+                window.__serviceCalls = [];
+                const m = new I.GroupModel(window.makeHass(states),
+                    I.normalizeConfig({{ entity: {json.dumps(fixture['root'])} }}));
+                const mixed = m.sections[0];
+                m.toggleLights(mixed.lights);
+                return {{
+                    spots: spots,
+                    mixedSection: mixed.lights.map(l => l.entityId),
+                    mixedCalls: window.__serviceCalls.slice()
+                }};
+            }}""",
+            lit_states,
+        )
+        report["groupToggle"] = group_toggle
+        check("group header switches that group alone",
+              len(group_toggle["spots"]) == 1
+              and group_toggle["spots"][0]["service"] == "turn_off"
+              and sorted(group_toggle["spots"][0]["data"]["entity_id"]) == [
+                  "light.kinderzimmer_spot_2", "light.kinderzimmer_spot_3"],
+              json.dumps(group_toggle["spots"]))
+        check("switching a section skips its unreachable member",
+              "light.hubschrauberlampe" in group_toggle["mixedSection"]
+              and group_toggle["mixedCalls"]
+              and all("light.hubschrauberlampe" not in call["data"]["entity_id"]
+                      for call in group_toggle["mixedCalls"]),
+              json.dumps(group_toggle["mixedCalls"]))
+
+        page.wait_for_timeout(300)
+        shot = out_dir / "dialog-groups.png"
+        page.screenshot(path=str(shot))
+        report["screenshots"].append(shot.name)
+
+        # group_display: flat must go back to one pile
+        flat_dialog = page.evaluate(
+            """(payload) => {
+                const old = document.querySelector('busch-light-dialog');
+                if (old) old.remove();
+                const card = document.querySelector('busch-light-card');
+                card.setConfig({ type: 'custom:busch-light-card', entity: payload.root,
+                                 group_display: 'flat' });
+                card.hass = window.makeHass(payload.states);
+                card.shadowRoot.querySelector('.tap').dispatchEvent(
+                    new MouseEvent('click', { bubbles: true }));
+                const sr = document.querySelector('busch-light-dialog').shadowRoot;
+                return {
+                    blocks: sr.querySelectorAll('.group').length,
+                    grids: sr.querySelectorAll('.tiles').length,
+                    tiles: sr.querySelectorAll('.tile').length,
+                    alreadyNote: Array.from(sr.querySelectorAll('.deadlist'))
+                        .some(n => n.textContent.startsWith('Oben bereits'))
+                };
+            }""",
+            {"root": fixture["root"], "states": lit_states},
+        )
+        report["flatDialog"] = flat_dialog
+        check("group_display: flat returns to a single pile of tiles",
+              flat_dialog["blocks"] == 0 and flat_dialog["grids"] == 1
+              and flat_dialog["tiles"] == 6 and flat_dialog["alreadyNote"] is False,
+              json.dumps(flat_dialog))
+
+        # ------------------------------------------------------------------
         # 8. The visual editor
         # ------------------------------------------------------------------
         editor = page.evaluate(
@@ -863,7 +1023,7 @@ def main():
               json.dumps(editor["stub"]))
         expected_fields = sorted([
             "entity", "entities", "title", "icon", "description",
-            "resolve_groups", "max_depth", "show_unavailable",
+            "resolve_groups", "max_depth", "show_unavailable", "group_display",
             "off_color", "default_color", "hue_borders", "show_switch",
             "slider", "allow_zero", "off_shadow", "tap_action", "hold_action"])
         check("editor exposes every documented option",

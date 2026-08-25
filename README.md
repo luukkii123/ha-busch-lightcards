@@ -47,6 +47,28 @@ resolves to 6 distinct lights, not 7 mixed entities
 
 Set `resolve_groups: false` to get the upstream behaviour back.
 
+### …but they stay groups in the dialog
+
+Resolving a group and *showing* a flat pile of lights are two different things.
+With thirty lamps behind one card, the structure is the only thing that keeps
+the dialog readable — so every resolved group keeps its own block, with its
+name, how many of its lights are on, and a toggle that switches just that
+group. Nested groups are indented.
+
+![Groups stay groups in the dialog](docs/images/dialog-groups.png)
+
+- **Each light appears exactly once**, under the first group it was met in.
+  Nothing is listed twice just because it sits in two parent groups.
+- **The card's own root gets no heading.** Its name is already the dialog
+  title; repeating it would put the same label on two different sets — every
+  light above, only the direct ones below. Its tiles simply stand first.
+- **A group that adds nothing new is named, not drawn.** `Lichtgruppe
+  Kinderzimmer` and `LEDs Kinderzimmer` above hold only lights already shown,
+  so they would render as empty headings. They get one line under the tiles
+  instead — dropping them silently would hide that they exist at all.
+
+`group_display: flat` gives one plain pile back.
+
 ## 2. An unavailable entity does not take the card down
 
 Three separate problems, three fixes.
@@ -150,6 +172,7 @@ scenes:
 | `description` | auto | Replaces the `4 von 5 an` line with fixed text. |
 | `resolve_groups` | `true` | **Set `false` for upstream behaviour**: the group stays one entity. |
 | `max_depth` | `10` | How deep to follow nested groups. |
+| `group_display` | `sections` | `sections` keeps each resolved group as its own block in the dialog; `flat` shows one plain pile of tiles. |
 | `show_unavailable` | `true` | Show the badge counting unreachable members. |
 | `scenes` | `[]` | Scene entity ids, or `{entity, title, icon, color}` objects. |
 | `off_color` | theme | Card background while everything is off. |
@@ -187,11 +210,12 @@ docker run --rm \
       python3 /repo/docs/render/render.py /repo/dist/busch-lightcards.js /repo/docs/render/ergebnis'
 ```
 
-48 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
+59 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
 self-reference, deleted members, foreign domains, the depth limit, the
 unavailable-group memory (cold and warm), aggregation, service-call routing,
 the rendered card text, the dialog and how it stacks against a Leaflet-grade
-z-index, and the visual editor (option coverage,
+z-index, the group blocks (structure, per-group counts and toggles, the
+already-shown note, `flat` mode), and the visual editor (option coverage,
 labels, live preview, minimal output, camelCase folding, scene add/reorder/
 delete, colour round-trip).
 

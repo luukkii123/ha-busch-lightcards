@@ -1,9 +1,9 @@
 {
   "cardFile": "/repo/dist/busch-lightcards.js",
-  "servedFrom": "http://127.0.0.1:52567/dist/busch-lightcards.js",
+  "servedFrom": "http://127.0.0.1:49577/dist/busch-lightcards.js",
   "requests": [
-    "http://127.0.0.1:52567/docs/render/ergebnis/harness.html",
-    "http://127.0.0.1:52567/dist/busch-lightcards.js"
+    "http://127.0.0.1:49577/docs/render/ergebnis/harness.html",
+    "http://127.0.0.1:49577/dist/busch-lightcards.js"
   ],
   "badResponses": [],
   "requestFailures": [],
@@ -148,7 +148,7 @@
     {
       "name": "unreachable light is shown and marked, not dropped",
       "pass": true,
-      "detail": "{\"dead\": [\"Hubschrauber Lampe\"], \"note\": \"1 nicht erreichbar: Hubschrauber Lampe\"}"
+      "detail": "{\"dead\": [\"Hubschrauber Lampe\"], \"note\": \"Oben bereits enthalten: Lichtgruppe Kinderzimmer, LEDs Kinderzimmer | 1 nicht erreichbar: Hubschrauber Lampe\"}"
     },
     {
       "name": "scene row renders, missing scene disabled rather than broken",
@@ -179,6 +179,61 @@
       "name": "white tab swaps in a temperature bar spanning that range",
       "pass": true,
       "detail": "expected rgb(255, 187, 73) .. rgb(190, 228, 243) in linear-gradient(90deg, rgb(255, 187, 73) 0%, rgb(255, 199, 106) 8%, rgb(255, 211, 138) 17%, rgb(255, 223, 171) 25%, rgb(255, 236, 203) 33%, rgb(255, 248, 236) 4"
+    },
+    {
+      "name": "resolution keeps the group structure, not just the leaves",
+      "pass": true,
+      "detail": "[[\"LD Kinderzimmer Alle Lichter\", 0], [\"Spots\", 1]]"
+    },
+    {
+      "name": "each light sits in exactly one section, under the group it was first met in",
+      "pass": true,
+      "detail": "[[\"light.kinderzimmer_spot_1\", \"light.hubschrauberlampe\", \"light.vorhang\", \"light.ledstreifen_kinderzimm\"], [\"light.kinderzimmer_spot_2\", \"light.kinderzimmer_spot_3\"]]"
+    },
+    {
+      "name": "groups that add nothing new are named, not rendered as empty headings",
+      "pass": true,
+      "detail": "[\"light.lichtgruppe_kinderzimmer\", \"light.leds_kinderzimmer\"]"
+    },
+    {
+      "name": "dialog gives the nested group its own block instead of one flat pile",
+      "pass": true,
+      "detail": "{\"blockCount\": 1, \"names\": [\"Spots\"], \"counts\": [\"2/2\"], \"depths\": [\"1\"], \"nested\": [true], \"tilesPerBlock\": [2], \"totalTiles\": 6, \"gridCount\": 2, \"bareTiles\": 4, \"alreadyNote\": \"Oben bereits enthalten: Lichtgruppe Kinderzimmer, LEDs Kinderzimmer\"}"
+    },
+    {
+      "name": "the root's own lights stand bare, not under a heading repeating the title",
+      "pass": true,
+      "detail": "{\"names\": [\"Spots\"], \"bare\": 4}"
+    },
+    {
+      "name": "a nested group is indented and marked as nested",
+      "pass": true,
+      "detail": "{\"depths\": [\"1\"], \"nested\": [true]}"
+    },
+    {
+      "name": "the group header counts only its own reachable lights",
+      "pass": true,
+      "detail": "[\"2/2\"]"
+    },
+    {
+      "name": "groups that added nothing are named under the tiles",
+      "pass": true,
+      "detail": "Oben bereits enthalten: Lichtgruppe Kinderzimmer, LEDs Kinderzimmer"
+    },
+    {
+      "name": "group header switches that group alone",
+      "pass": true,
+      "detail": "[{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": [\"light.kinderzimmer_spot_2\", \"light.kinderzimmer_spot_3\"]}}]"
+    },
+    {
+      "name": "switching a section skips its unreachable member",
+      "pass": true,
+      "detail": "[{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": [\"light.kinderzimmer_spot_1\", \"light.vorhang\", \"light.ledstreifen_kinderzimm\"]}}]"
+    },
+    {
+      "name": "group_display: flat returns to a single pile of tiles",
+      "pass": true,
+      "detail": "{\"blocks\": 0, \"grids\": 1, \"tiles\": 6, \"alreadyNote\": false}"
     },
     {
       "name": "card offers a visual editor",
@@ -255,9 +310,10 @@
     "card-off.png",
     "card-on.png",
     "dialog.png",
-    "dialog-white.png"
+    "dialog-white.png",
+    "dialog-groups.png"
   ],
-  "harnessUrl": "http://127.0.0.1:52567/docs/render/ergebnis/harness.html",
+  "harnessUrl": "http://127.0.0.1:49577/docs/render/ergebnis/harness.html",
   "resolution": {
     "leaves": [
       "light.kinderzimmer_spot_1",
@@ -521,7 +577,7 @@
       "colour",
       "white"
     ],
-    "deadNote": "1 nicht erreichbar: Hubschrauber Lampe",
+    "deadNote": "Oben bereits enthalten: Lichtgruppe Kinderzimmer, LEDs Kinderzimmer | 1 nicht erreichbar: Hubschrauber Lampe",
     "litTilePct": {
       "name": "Kinderzimmer Spot 2",
       "tileColor": "rgb(17, 17, 17)",
@@ -552,6 +608,103 @@
       243
     ]
   },
+  "sections": {
+    "sections": [
+      {
+        "entityId": "light.magic_areas_light_groups_ld_kinderzimmer_all_lights",
+        "name": "LD Kinderzimmer Alle Lichter",
+        "depth": 0,
+        "lights": [
+          "light.kinderzimmer_spot_1",
+          "light.hubschrauberlampe",
+          "light.vorhang",
+          "light.ledstreifen_kinderzimm"
+        ]
+      },
+      {
+        "entityId": "light.kinderzimmerspots",
+        "name": "Spots",
+        "depth": 1,
+        "lights": [
+          "light.kinderzimmer_spot_2",
+          "light.kinderzimmer_spot_3"
+        ]
+      }
+    ],
+    "emptyGroups": [
+      "light.lichtgruppe_kinderzimmer",
+      "light.leds_kinderzimmer"
+    ],
+    "leaves": [
+      "light.kinderzimmer_spot_1",
+      "light.hubschrauberlampe",
+      "light.vorhang",
+      "light.ledstreifen_kinderzimm",
+      "light.kinderzimmer_spot_2",
+      "light.kinderzimmer_spot_3"
+    ]
+  },
+  "dialogGroups": {
+    "blockCount": 1,
+    "names": [
+      "Spots"
+    ],
+    "counts": [
+      "2/2"
+    ],
+    "depths": [
+      "1"
+    ],
+    "nested": [
+      true
+    ],
+    "tilesPerBlock": [
+      2
+    ],
+    "totalTiles": 6,
+    "gridCount": 2,
+    "bareTiles": 4,
+    "alreadyNote": "Oben bereits enthalten: Lichtgruppe Kinderzimmer, LEDs Kinderzimmer"
+  },
+  "groupToggle": {
+    "spots": [
+      {
+        "domain": "light",
+        "service": "turn_off",
+        "data": {
+          "entity_id": [
+            "light.kinderzimmer_spot_2",
+            "light.kinderzimmer_spot_3"
+          ]
+        }
+      }
+    ],
+    "mixedSection": [
+      "light.kinderzimmer_spot_1",
+      "light.hubschrauberlampe",
+      "light.vorhang",
+      "light.ledstreifen_kinderzimm"
+    ],
+    "mixedCalls": [
+      {
+        "domain": "light",
+        "service": "turn_off",
+        "data": {
+          "entity_id": [
+            "light.kinderzimmer_spot_1",
+            "light.vorhang",
+            "light.ledstreifen_kinderzimm"
+          ]
+        }
+      }
+    ]
+  },
+  "flatDialog": {
+    "blocks": 0,
+    "grids": 1,
+    "tiles": 6,
+    "alreadyNote": false
+  },
   "editor": {
     "hasGetConfigElement": true,
     "editorTag": "busch-light-card-editor",
@@ -569,6 +722,7 @@
       "resolve_groups",
       "max_depth",
       "show_unavailable",
+      "group_display",
       "off_color",
       "default_color",
       "hue_borders",
@@ -588,6 +742,7 @@
       "Verschachtelte Gruppen auflösen",
       "Größte Tiefe",
       "Abzeichen mit der Zahl nicht erreichbarer Mitglieder",
+      "Lampen im Dialog",
       "Farbe im Aus-Zustand (leer = Thema)",
       "Farbe für eine leuchtende Lampe ohne eigene Farbe",
       "Hue-Ecken und -Schatten",
@@ -691,6 +846,25 @@
     "mdi:alert-circle-outline",
     "mdi:teddy-bear",
     "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
     "mdi:lightbulb",
     "mdi:lightbulb",
     "mdi:arrow-up",
@@ -713,7 +887,7 @@
     "mdi:delete"
   ],
   "vendorRequests": [],
-  "passed": 48,
+  "passed": 59,
   "failed": 0,
   "clean": true
 }

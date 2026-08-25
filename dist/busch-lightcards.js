@@ -18,7 +18,7 @@
  * README for why.
  */
 
-const CARD_VERSION = '0.2.1';
+const CARD_VERSION = '0.3.0';
 
 const CARD_TAG = 'busch-light-card';
 const DIALOG_TAG = 'busch-light-dialog';
@@ -91,6 +91,11 @@ const STRINGS = {
         close: 'Close',
         unreachable: 'unreachable',
         groupOf: 'Group of {n}',
+        alreadyIncluded: 'Already shown above: {list}',
+
+        edGroupDisplay: 'Lights in the dialog',
+        edGroupSections: 'Grouped by their group',
+        edGroupFlat: 'One flat list',
 
         edEntity: 'Light, switch or group',
         edEntities: 'Additional entities',
@@ -152,6 +157,11 @@ const STRINGS = {
         close: 'Schließen',
         unreachable: 'nicht erreichbar',
         groupOf: 'Gruppe aus {n}',
+        alreadyIncluded: 'Oben bereits enthalten: {list}',
+
+        edGroupDisplay: 'Lampen im Dialog',
+        edGroupSections: 'Nach Gruppe geordnet',
+        edGroupFlat: 'Eine flache Liste',
 
         edEntity: 'Lampe, Schalter oder Gruppe',
         edEntities: 'Weitere Entitäten',
@@ -481,6 +491,34 @@ function groupMembers(hass, entityId) {
  * single time.
  */
 function resolveEntities(hass, roots, options) {
+    const full = resolveSections(hass, roots, options);
+    return {
+        leaves: full.leaves,
+        groups: full.groups,
+        recovered: full.recovered,
+        dropped: full.dropped,
+        truncated: full.truncated,
+        maxDepth: full.maxDepth
+    };
+}
+
+/**
+ * The same walk, but it keeps the shape it found instead of throwing it away.
+ *
+ * Resolving a group down to its lights and *showing* a flat pile of lights are
+ * two different things: with thirty lamps behind one card, the structure is
+ * the only thing that makes the dialog readable. So every expanded group also
+ * becomes a section, carrying the lights that were first seen underneath it.
+ *
+ * Adds to the flat result:
+ *   sections    — [{ entityId, name, icon, depth, lights }] in walk order,
+ *                 each light listed exactly once, under the first group it
+ *                 was met in
+ *   emptyGroups — groups whose members had all already appeared elsewhere;
+ *                 they would render as empty headings, so they are named
+ *                 instead of shown
+ */
+function resolveSections(hass, roots, options) {
     const opts = options || {};
     const limit = opts.maxDepth === undefined ? DEFAULT_MAX_DEPTH : opts.maxDepth;
     const follow = opts.resolveGroups !== false;
@@ -492,9 +530,37 @@ function resolveEntities(hass, roots, options) {
     const recovered = [];
     const dropped = [];
     const truncated = [];
+    const allSections = [];
     let deepest = 0;
 
-    const addLeaf = (entityId) => {
+    const nameOf = (entityId) => {
+        const state = hass && hass.states ? hass.states[entityId] : null;
+        return state && state.attributes && state.attributes.friendly_name
+            ? state.attributes.friendly_name
+            : entityId;
+    };
+
+    const iconOf = (entityId) => {
+        const state = hass && hass.states ? hass.states[entityId] : null;
+        return state && state.attributes && state.attributes.icon ? state.attributes.icon : null;
+    };
+
+    const makeSection = (entityId, depth) => {
+        const section = {
+            entityId: entityId,
+            name: entityId ? nameOf(entityId) : null,
+            icon: entityId ? iconOf(entityId) : null,
+            depth: depth,
+            lights: []
+        };
+        allSections.push(section);
+        return section;
+    };
+
+    // Holds roots that are plain lights, or leaves met before any group.
+    const loose = makeSection(null, 0);
+
+    const addLeaf = (entityId, section) => {
         if (!LEAF_DOMAINS.has(domainOf(entityId))) {
             if (dropped.indexOf(entityId) === -1) dropped.push(entityId);
             return;
@@ -502,20 +568,21 @@ function resolveEntities(hass, roots, options) {
         if (leafSeen.has(entityId)) return;
         leafSeen.add(entityId);
         leaves.push(entityId);
+        section.lights.push(entityId);
     };
 
-    const walk = (entityId, depth) => {
+    const walk = (entityId, depth, section) => {
         if (depth > deepest) deepest = depth;
         const members = follow ? groupMembers(hass, entityId) : null;
 
         if (!members) {
-            addLeaf(entityId);
+            addLeaf(entityId, section);
             return;
         }
         if (depth >= limit) {
             // Too deep to keep going: keep the group itself so it stays usable.
             if (truncated.indexOf(entityId) === -1) truncated.push(entityId);
-            addLeaf(entityId);
+            addLeaf(entityId, section);
             return;
         }
         if (expanded.has(entityId)) return; // already covered by another branch
@@ -526,12 +593,27 @@ function resolveEntities(hass, roots, options) {
         const publishes = state && state.attributes && Array.isArray(state.attributes.entity_id);
         if (!publishes) recovered.push(entityId);
 
-        members.forEach((member) => walk(member, depth + 1));
+        const own = makeSection(entityId, depth);
+        members.forEach((member) => walk(member, depth + 1, own));
     };
 
-    (roots || []).forEach((root) => walk(root, 0));
+    (roots || []).forEach((root) => walk(root, 0, loose));
 
-    return { leaves, groups, recovered, dropped, truncated, maxDepth: deepest };
+    const sections = allSections.filter((s) => s.lights.length > 0);
+    const emptyGroups = allSections
+        .filter((s) => s.entityId && !s.lights.length)
+        .map((s) => s.entityId);
+
+    return {
+        leaves,
+        groups,
+        recovered,
+        dropped,
+        truncated,
+        maxDepth: deepest,
+        sections,
+        emptyGroups
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -648,7 +730,7 @@ class GroupModel {
         this.config = config;
 
         const roots = config.entityIds;
-        const resolution = resolveEntities(hass, roots, {
+        const resolution = resolveSections(hass, roots, {
             maxDepth: config.maxDepth,
             resolveGroups: config.resolveGroups
         });
@@ -657,6 +739,18 @@ class GroupModel {
         this.lights = resolution.leaves.map((id) => new LightModel(hass, id));
         this.alive = this.lights.filter((l) => l.isAvailable);
         this.dead = this.lights.filter((l) => !l.isAvailable);
+
+        // The same lights again, but keeping the group they came from, so the
+        // dialog can show structure instead of one long pile of tiles.
+        const byId = {};
+        this.lights.forEach((light) => (byId[light.entityId] = light));
+        this.sections = resolution.sections.map((section) => ({
+            entityId: section.entityId,
+            name: section.name,
+            icon: section.icon,
+            depth: section.depth,
+            lights: section.lights.map((id) => byId[id])
+        }));
     }
 
     get total() {
@@ -798,6 +892,25 @@ class GroupModel {
         else this.turnOn();
     }
 
+    /** Counts for one section's lights — the reachable ones only, as ever. */
+    static tally(lights) {
+        const alive = (lights || []).filter((l) => l.isAvailable);
+        return {
+            total: alive.length,
+            on: alive.filter((l) => l.isOn).length,
+            dead: (lights || []).length - alive.length,
+            isOn: alive.some((l) => l.isOn)
+        };
+    }
+
+    /** Switches one section as a unit, skipping its unreachable members. */
+    toggleLights(lights) {
+        const alive = (lights || []).filter((l) => l.isAvailable);
+        if (!alive.length) return;
+        const anyOn = alive.some((l) => l.isOn);
+        this._callByDomain(anyOn ? 'turn_off' : 'turn_on', alive);
+    }
+
     /**
      * Mirrors the Hue app: while something is lit, the slider moves only the
      * lit members; from all-off it sets every reachable member.
@@ -879,6 +992,7 @@ function normalizeConfig(raw) {
     config.resolveGroups = pick(raw, 'resolveGroups', true) !== false;
     config.maxDepth = Number(pick(raw, 'maxDepth', DEFAULT_MAX_DEPTH)) || DEFAULT_MAX_DEPTH;
     config.showUnavailable = pick(raw, 'showUnavailable', true) !== false;
+    config.groupDisplay = pick(raw, 'groupDisplay', 'sections') === 'flat' ? 'flat' : 'sections';
 
     config.offColor = pick(raw, 'offColor', null);
     config.defaultColor = pick(raw, 'defaultColor', WARM_COLOR);
@@ -913,13 +1027,15 @@ const CONFIG_DEFAULTS = {
     off_shadow: true,
     tap_action: 'dialog',
     hold_action: 'more-info',
-    default_color: WARM_COLOR
+    default_color: WARM_COLOR,
+    group_display: 'sections'
 };
 
 /** Options the card also accepts in camelCase, for upstream compatibility. */
 const CAMEL_ALIASES = [
-    'resolveGroups', 'maxDepth', 'showUnavailable', 'offColor', 'defaultColor',
-    'hueBorders', 'showSwitch', 'allowZero', 'offShadow', 'tapAction', 'holdAction'
+    'resolveGroups', 'maxDepth', 'showUnavailable', 'groupDisplay', 'offColor',
+    'defaultColor', 'hueBorders', 'showSwitch', 'allowZero', 'offShadow',
+    'tapAction', 'holdAction'
 ];
 
 /**
@@ -1490,6 +1606,7 @@ class BuschLightCard extends HTMLElement {
 // instead of guessing at it from rendered pixels.
 BuschLightCard.__internals = {
     resolveEntities,
+    resolveSections,
     groupMembers,
     clearMemberCache,
     GroupModel,
@@ -1723,6 +1840,29 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 }
 .empty { color: #888; font-size: 13px; padding: 8px 0; }
 .deadlist { font-size: 12px; color: #888; margin-top: 10px; line-height: 1.5; }
+
+/* One block per resolved group, so thirty lamps behind one card stay readable. */
+.group + .group { margin-top: 14px; }
+.group.nested { border-left: 2px solid #333; padding-left: 12px; }
+.group-head { display: flex; align-items: center; gap: 8px; padding: 4px 0 8px; }
+.group-head ha-icon { --mdc-icon-size: 18px; color: #aaa; flex-shrink: 0; }
+.group-head .gname {
+    flex: 1; min-width: 0; font-size: 13px; font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.group-head .gcount { font-size: 12px; color: #aaa; flex-shrink: 0; }
+.gtoggle {
+    flex-shrink: 0; width: 34px; height: 20px; border-radius: 10px; border: none;
+    padding: 0; position: relative; cursor: pointer;
+    background: rgba(255, 255, 255, 0.22); transition: background 0.2s ease-out;
+}
+.gtoggle .gknob {
+    position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+    border-radius: 50%; background: #fff; transition: transform 0.2s ease-out;
+}
+.gtoggle.on { background: var(--primary-color, #03a9f4); }
+.gtoggle.on .gknob { transform: translateX(14px); }
+.gtoggle[disabled] { opacity: 0.4; cursor: default; }
 `;
 
 // ---------------------------------------------------------------------------
@@ -1876,18 +2016,48 @@ class BuschLightDialog extends HTMLElement {
             });
         }
 
-        // ---- the resolved lights, one tile each
+        // ---- the resolved lights
         sheet.appendChild(this._heading(translate(hass, 'lights') + ' (' + model.lights.length + ')'));
         if (!model.lights.length) {
             const empty = document.createElement('div');
             empty.className = 'empty';
             empty.textContent = translate(hass, 'noEntities');
             sheet.appendChild(empty);
+        } else if (this._config.groupDisplay === 'flat' || model.sections.length < 2) {
+            // One group, or the user asked for a plain pile: headings would be
+            // noise rather than orientation.
+            sheet.appendChild(this._makeTileGrid(model.lights));
         } else {
-            const tiles = document.createElement('div');
-            tiles.className = 'tiles';
-            model.lights.forEach((light) => tiles.appendChild(this._makeLightTile(light)));
-            sheet.appendChild(tiles);
+            const single = this._config.entityIds.length === 1 ? this._config.entityIds[0] : null;
+            model.sections.forEach((section, index) => {
+                // The first block belongs to the card's own root, whose name is
+                // already the dialog's title. Repeating it there would put the
+                // same label on two different sets — all six lights above, only
+                // the four direct ones below. So its tiles stand bare.
+                const headless =
+                    index === 0 && section.depth === 0
+                    && (section.entityId === null || section.entityId === single);
+                sheet.appendChild(
+                    headless ? this._makeTileGrid(section.lights) : this._makeGroupBlock(model, section)
+                );
+            });
+        }
+
+        const emptyGroups = model.resolution.emptyGroups || [];
+        if (emptyGroups.length && this._config.groupDisplay !== 'flat') {
+            // Named rather than shown: an empty heading looks like a fault,
+            // and silently dropping the group hides that it exists at all.
+            const note = document.createElement('div');
+            note.className = 'deadlist';
+            note.textContent = translate(hass, 'alreadyIncluded', {
+                list: emptyGroups.map((id) => {
+                    const state = hass.states[id];
+                    return state && state.attributes && state.attributes.friendly_name
+                        ? state.attributes.friendly_name
+                        : id;
+                }).join(', ')
+            });
+            sheet.appendChild(note);
         }
 
         if (model.deadCount) {
@@ -1992,6 +2162,61 @@ class BuschLightDialog extends HTMLElement {
             button.addEventListener('click', () => this._model.activateScene(scene.entity));
         }
         return button;
+    }
+
+    _makeTileGrid(lights) {
+        const tiles = document.createElement('div');
+        tiles.className = 'tiles';
+        lights.forEach((light) => tiles.appendChild(this._makeLightTile(light)));
+        return tiles;
+    }
+
+    /**
+     * One resolved group: a header naming it, saying how many of its lights
+     * are on, and switching the whole group — then its own lights as tiles.
+     */
+    _makeGroupBlock(model, section) {
+        const hass = this._hass;
+        const block = document.createElement('div');
+        block.className = 'group' + (section.depth > 0 ? ' nested' : '');
+        block.dataset.depth = String(section.depth);
+        if (section.entityId) block.dataset.entity = section.entityId;
+
+        const tally = GroupModel.tally(section.lights);
+
+        const head = document.createElement('div');
+        head.className = 'group-head';
+
+        const icon = document.createElement('ha-icon');
+        icon.setAttribute('icon', section.icon || (section.entityId ? 'mdi:lightbulb-group' : 'mdi:lightbulb'));
+        head.appendChild(icon);
+
+        const name = document.createElement('span');
+        name.className = 'gname';
+        // A nameless section holds roots that are plain lights, not a group.
+        name.textContent = section.name || translate(hass, 'lights');
+        head.appendChild(name);
+
+        const count = document.createElement('span');
+        count.className = 'gcount';
+        count.textContent = tally.total
+            ? tally.on + '/' + tally.total
+            : translate(hass, 'unreachable');
+        head.appendChild(count);
+
+        const toggle = document.createElement('button');
+        toggle.className = 'gtoggle' + (tally.isOn ? ' on' : '');
+        toggle.setAttribute('aria-label', section.name || '');
+        const knob = document.createElement('span');
+        knob.className = 'gknob';
+        toggle.appendChild(knob);
+        if (!tally.total) toggle.setAttribute('disabled', '');
+        else toggle.addEventListener('click', () => model.toggleLights(section.lights));
+        head.appendChild(toggle);
+
+        block.appendChild(head);
+        block.appendChild(this._makeTileGrid(section.lights));
+        return block;
     }
 
     _makeLightTile(light) {
@@ -2491,6 +2716,7 @@ class BuschLightCardEditor extends HTMLElement {
             resolve_groups: c.resolve_groups !== false,
             max_depth: c.max_depth === undefined ? DEFAULT_MAX_DEPTH : c.max_depth,
             show_unavailable: c.show_unavailable !== false,
+            group_display: c.group_display === 'flat' ? 'flat' : 'sections',
             off_color: c.off_color || '',
             default_color: c.default_color || '',
             hue_borders: c.hue_borders !== false,
@@ -2597,11 +2823,23 @@ class BuschLightCardEditor extends HTMLElement {
         // --- group resolution
         const resolveBox = document.createElement('div');
         this._forms.resolve = this._makeForm(
-            ['resolve_groups', 'max_depth', 'show_unavailable'],
+            ['resolve_groups', 'max_depth', 'show_unavailable', 'group_display'],
             [
                 { name: 'resolve_groups', selector: { boolean: {} } },
                 { name: 'max_depth', selector: { number: { min: 1, max: 20, mode: 'box' } } },
-                { name: 'show_unavailable', selector: { boolean: {} } }
+                { name: 'show_unavailable', selector: { boolean: {} } },
+                {
+                    name: 'group_display',
+                    selector: {
+                        select: {
+                            mode: 'dropdown',
+                            options: [
+                                { value: 'sections', label: this._label('edGroupSections') },
+                                { value: 'flat', label: this._label('edGroupFlat') }
+                            ]
+                        }
+                    }
+                }
             ]
         );
         resolveBox.appendChild(this._forms.resolve);
