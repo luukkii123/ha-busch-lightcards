@@ -1,0 +1,9 @@
+node_modules/
+__pycache__/
+*.pyc
+.env
+config.json
+graphify-out/
+docs/render/ergebnis*/
+docs/render/out/
+.DS_Store

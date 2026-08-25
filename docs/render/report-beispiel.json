@@ -1,0 +1,494 @@
+{
+  "cardFile": "/repo/dist/busch-lightcards.js",
+  "servedFrom": "http://127.0.0.1:58225/dist/busch-lightcards.js",
+  "requests": [
+    "http://127.0.0.1:58225/docs/render/ergebnis/harness.html",
+    "http://127.0.0.1:58225/dist/busch-lightcards.js"
+  ],
+  "badResponses": [],
+  "requestFailures": [],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "checks": [
+    {
+      "name": "leaves match hand-derived expectation",
+      "pass": true,
+      "detail": "got ['light.kinderzimmer_spot_1', 'light.hubschrauberlampe', 'light.vorhang', 'light.ledstreifen_kinderzimm', 'light.kinderzimmer_spot_2', 'light.kinderzimmer_spot_3']"
+    },
+    {
+      "name": "groups match hand-derived expectation",
+      "pass": true,
+      "detail": "got ['light.magic_areas_light_groups_ld_kinderzimmer_all_lights', 'light.kinderzimmerspots', 'light.lichtgruppe_kinderzimmer', 'light.leds_kinderzimmer']"
+    },
+    {
+      "name": "walked to the expected depth",
+      "pass": true,
+      "detail": "maxDepth=2"
+    },
+    {
+      "name": "duplicates across branches collapsed",
+      "pass": true,
+      "detail": "17 raw member entries -> 6 leaves"
+    },
+    {
+      "name": "resolve_groups:false keeps the group as a single entity",
+      "pass": true,
+      "detail": "got ['light.magic_areas_light_groups_ld_kinderzimmer_all_lights']"
+    },
+    {
+      "name": "cycle terminates and yields both leaves",
+      "pass": true,
+      "detail": "got ['light.leaf2', 'light.leaf']"
+    },
+    {
+      "name": "self-referencing group becomes a leaf",
+      "pass": true,
+      "detail": "got ['light.selfie']"
+    },
+    {
+      "name": "member missing from states is kept as an unavailable leaf",
+      "pass": true,
+      "detail": "{\"lights\": 2, \"alive\": 1, \"dead\": 1, \"isOn\": true, \"description\": \"Alle an (1)\"}"
+    },
+    {
+      "name": "non-switchable domains dropped from a group.*",
+      "pass": true,
+      "detail": "leaves=['light.ok', 'switch.plug'] dropped=['device_tracker.phone', 'person.someone']"
+    },
+    {
+      "name": "deep chain fully resolved by default",
+      "pass": true,
+      "detail": "got ['light.l6'] depth=6"
+    },
+    {
+      "name": "max_depth stops and reports instead of silently truncating",
+      "pass": true,
+      "detail": "{\"leaves\": [\"light.l3\"], \"groups\": [\"light.l0\", \"light.l1\", \"light.l2\"], \"recovered\": [], \"dropped\": [], \"truncated\": [\"light.l3\"], \"maxDepth\": 3}"
+    },
+    {
+      "name": "unavailable group without memory degrades to a single leaf",
+      "pass": true,
+      "detail": "got ['light.kinderzimmer_spot_1', 'light.hubschrauberlampe', 'light.vorhang', 'light.ledstreifen_kinderzimm', 'light.kinderzimmerspots']"
+    },
+    {
+      "name": "remembered membership survives the group going unavailable",
+      "pass": true,
+      "detail": "before=['light.kinderzimmer_spot_1', 'light.hubschrauberlampe', 'light.vorhang', 'light.ledstreifen_kinderzimm', 'light.kinderzimmer_spot_2', 'light.kinderzimmer_spot_3'] after=['light.kinderzimmer_spot_1', 'light.hubschrauberlampe', 'light.vorhang', 'light.ledstreifen_kinderzimm', 'light.kinderzimmer_spot_2', 'light.kinderzimmer_spot_3']"
+    },
+    {
+      "name": "recovered groups are named, not hidden",
+      "pass": true,
+      "detail": "got ['light.kinderzimmerspots']"
+    },
+    {
+      "name": "unavailable leaf counted separately, not as off",
+      "pass": true,
+      "detail": "{\"lights\": 6, \"alive\": 5, \"dead\": 1, \"on\": 4, \"brightness\": 68, \"isOn\": true, \"description\": \"4 von 5 an\", \"deadNames\": [\"light.hubschrauberlampe\"]}"
+    },
+    {
+      "name": "brightness is the average of the lit, reachable members",
+      "pass": true,
+      "detail": "brightness=68, expected mean of 84/66/75/47 = 68"
+    },
+    {
+      "name": "description counts reachable members only",
+      "pass": true,
+      "detail": "got '4 von 5 an'"
+    },
+    {
+      "name": "no service call ever targets the unavailable entity",
+      "pass": true,
+      "detail": "targets=['light.kinderzimmer_spot_1', 'light.kinderzimmer_spot_2', 'light.kinderzimmer_spot_3', 'light.ledstreifen_kinderzimm', 'light.vorhang']"
+    },
+    {
+      "name": "brightness goes to the lit members only, as the Hue app does",
+      "pass": true,
+      "detail": "[{\"domain\": \"light\", \"service\": \"turn_on\", \"data\": {\"entity_id\": [\"light.vorhang\", \"light.ledstreifen_kinderzimm\", \"light.kinderzimmer_spot_2\", \"light.kinderzimmer_spot_3\"], \"brightness_pct\": 40}}]"
+    },
+    {
+      "name": "all members unreachable is a state, not an exception",
+      "pass": true,
+      "detail": "{\"allDead\": true, \"empty\": false, \"desc\": \"Keine Lampe erreichbar\", \"total\": 0, \"lights\": 6}"
+    },
+    {
+      "name": "card names the group and its own icon",
+      "pass": true,
+      "detail": "{\"title\": \"LD Kinderzimmer Alle Lichter\", \"desc\": \"Alle aus\", \"warnVisible\": true, \"warnText\": \"1\", \"warnTitle\": \"1 nicht erreichbar: Hubschrauber Lampe\", \"icon\": \"mdi:lightbulb-group\", \"fill\": \"0%\", \"sliderLabel\": \"\", \"background\": \"#ffffff\", \"toggleOn\": false}"
+    },
+    {
+      "name": "off card says all off over the reachable members",
+      "pass": true,
+      "detail": "got 'Alle aus'"
+    },
+    {
+      "name": "badge names the unreachable member by name",
+      "pass": true,
+      "detail": "{\"text\": \"1\", \"title\": \"1 nicht erreichbar: Hubschrauber Lampe\"}"
+    },
+    {
+      "name": "lit card shows the mixed count and a colour gradient",
+      "pass": true,
+      "detail": "{\"title\": \"LD Kinderzimmer Alle Lichter\", \"desc\": \"4 von 5 an\", \"warnVisible\": true, \"warnText\": \"1\", \"warnTitle\": \"1 nicht erreichbar: Hubschrauber Lampe\", \"icon\": \"mdi:lightbulb-group\", \"fill\": \"68%\", \"sliderLabel\": \"68 %\", \"background\": \"linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 248, 237) 67%, rgb(255, 204, 119) 93%, rgb(255, 204, 119) 100%)\", \"toggleOn\": true}"
+    },
+    {
+      "name": "slider fill matches the reported brightness",
+      "pass": true,
+      "detail": "{\"fill\": \"68%\", \"label\": \"68 %\"}"
+    },
+    {
+      "name": "dialog opens on tap",
+      "pass": true,
+      "detail": "{\"opened\": true, \"title\": \"LD Kinderzimmer Alle Lichter\", \"sub\": \"4 von 5 an\", \"tileCount\": 6, \"tileNames\": [\"Kinderzimmer Spot 1\", \"Hubschrauber Lampe\", \"Kuschelecke\", \"Ledstreifen\", \"Kinderzimmer Spot 2\", \"Kinderzimmer Spot 3\"], \"deadTiles\": [\"Hubschrauber Lampe\"], \"sceneCount\": 5, \"disabledScenes\": [\"Fehlt absichtlich\"], \"headings\": [\"Szenen\", \"Helligkeit\", \"Lampen (6)\"], \"hasWheel\": true, \"has"
+    },
+    {
+      "name": "dialog lists every resolved light, not the seven raw members",
+      "pass": true,
+      "detail": "[\"Kinderzimmer Spot 1\", \"Hubschrauber Lampe\", \"Kuschelecke\", \"Ledstreifen\", \"Kinderzimmer Spot 2\", \"Kinderzimmer Spot 3\"]"
+    },
+    {
+      "name": "unreachable light is shown and marked, not dropped",
+      "pass": true,
+      "detail": "{\"dead\": [\"Hubschrauber Lampe\"], \"note\": \"1 nicht erreichbar: Hubschrauber Lampe\"}"
+    },
+    {
+      "name": "scene row renders, missing scene disabled rather than broken",
+      "pass": true,
+      "detail": "[\"Fehlt absichtlich\"]"
+    },
+    {
+      "name": "brightness label on a light tile follows the tile's text colour",
+      "pass": true,
+      "detail": "{\"name\": \"Kinderzimmer Spot 2\", \"tileColor\": \"rgb(17, 17, 17)\", \"pctColor\": \"rgb(17, 17, 17)\"}"
+    },
+    {
+      "name": "colour tab active by default, both tabs offered",
+      "pass": true,
+      "detail": "{\"tabs\": [\"colour\", \"white\"], \"wheel\": true, \"temp\": false}"
+    },
+    {
+      "name": "group temperature range is the intersection of its members'",
+      "pass": true,
+      "detail": "{\"min\": 2200, \"max\": 6500, \"startRgb\": [255, 187, 73], \"endRgb\": [190, 228, 243]}"
+    },
+    {
+      "name": "white tab swaps in a temperature bar spanning that range",
+      "pass": true,
+      "detail": "expected rgb(255, 187, 73) .. rgb(190, 228, 243) in linear-gradient(90deg, rgb(255, 187, 73) 0%, rgb(255, 199, 106) 8%, rgb(255, 211, 138) 17%, rgb(255, 223, 171) 25%, rgb(255, 236, 203) 33%, rgb(255, 248, 236) 4"
+    }
+  ],
+  "screenshots": [
+    "card-off.png",
+    "card-on.png",
+    "dialog.png",
+    "dialog-white.png"
+  ],
+  "harnessUrl": "http://127.0.0.1:58225/docs/render/ergebnis/harness.html",
+  "resolution": {
+    "leaves": [
+      "light.kinderzimmer_spot_1",
+      "light.hubschrauberlampe",
+      "light.vorhang",
+      "light.ledstreifen_kinderzimm",
+      "light.kinderzimmer_spot_2",
+      "light.kinderzimmer_spot_3"
+    ],
+    "groups": [
+      "light.magic_areas_light_groups_ld_kinderzimmer_all_lights",
+      "light.kinderzimmerspots",
+      "light.lichtgruppe_kinderzimmer",
+      "light.leds_kinderzimmer"
+    ],
+    "recovered": [],
+    "dropped": [],
+    "truncated": [],
+    "maxDepth": 2
+  },
+  "edgeCases": {
+    "cycle": {
+      "leaves": [
+        "light.leaf2",
+        "light.leaf"
+      ],
+      "groups": [
+        "light.a",
+        "light.b"
+      ],
+      "recovered": [],
+      "dropped": [],
+      "truncated": [],
+      "maxDepth": 2
+    },
+    "selfRef": {
+      "leaves": [
+        "light.selfie"
+      ],
+      "groups": [],
+      "recovered": [],
+      "dropped": [],
+      "truncated": [],
+      "maxDepth": 0
+    },
+    "missing": {
+      "leaves": [
+        "light.here",
+        "light.deleted"
+      ],
+      "groups": [
+        "light.grp"
+      ],
+      "recovered": [],
+      "dropped": [],
+      "truncated": [],
+      "maxDepth": 1
+    },
+    "missingModel": {
+      "lights": 2,
+      "alive": 1,
+      "dead": 1,
+      "isOn": true,
+      "description": "Alle an (1)"
+    },
+    "mixed": {
+      "leaves": [
+        "light.ok",
+        "switch.plug"
+      ],
+      "groups": [
+        "group.mixed"
+      ],
+      "recovered": [],
+      "dropped": [
+        "device_tracker.phone",
+        "person.someone"
+      ],
+      "truncated": [],
+      "maxDepth": 1
+    },
+    "deepFull": {
+      "leaves": [
+        "light.l6"
+      ],
+      "groups": [
+        "light.l0",
+        "light.l1",
+        "light.l2",
+        "light.l3",
+        "light.l4",
+        "light.l5"
+      ],
+      "recovered": [],
+      "dropped": [],
+      "truncated": [],
+      "maxDepth": 6
+    },
+    "deepCapped": {
+      "leaves": [
+        "light.l3"
+      ],
+      "groups": [
+        "light.l0",
+        "light.l1",
+        "light.l2"
+      ],
+      "recovered": [],
+      "dropped": [],
+      "truncated": [
+        "light.l3"
+      ],
+      "maxDepth": 3
+    }
+  },
+  "groupDown": {
+    "coldLeaves": [
+      "light.kinderzimmer_spot_1",
+      "light.hubschrauberlampe",
+      "light.vorhang",
+      "light.ledstreifen_kinderzimm",
+      "light.kinderzimmerspots"
+    ],
+    "warmBefore": [
+      "light.kinderzimmer_spot_1",
+      "light.hubschrauberlampe",
+      "light.vorhang",
+      "light.ledstreifen_kinderzimm",
+      "light.kinderzimmer_spot_2",
+      "light.kinderzimmer_spot_3"
+    ],
+    "warmAfter": [
+      "light.kinderzimmer_spot_1",
+      "light.hubschrauberlampe",
+      "light.vorhang",
+      "light.ledstreifen_kinderzimm",
+      "light.kinderzimmer_spot_2",
+      "light.kinderzimmer_spot_3"
+    ],
+    "recovered": [
+      "light.kinderzimmerspots"
+    ],
+    "deadCount": 1,
+    "total": 5
+  },
+  "aggregate": {
+    "before": {
+      "lights": 6,
+      "alive": 5,
+      "dead": 1,
+      "on": 4,
+      "brightness": 68,
+      "isOn": true,
+      "description": "4 von 5 an",
+      "deadNames": [
+        "light.hubschrauberlampe"
+      ]
+    },
+    "calls": [
+      {
+        "domain": "light",
+        "service": "turn_on",
+        "data": {
+          "entity_id": [
+            "light.kinderzimmer_spot_1",
+            "light.vorhang",
+            "light.ledstreifen_kinderzimm",
+            "light.kinderzimmer_spot_2",
+            "light.kinderzimmer_spot_3"
+          ]
+        }
+      },
+      {
+        "domain": "light",
+        "service": "turn_on",
+        "data": {
+          "entity_id": [
+            "light.vorhang",
+            "light.ledstreifen_kinderzimm",
+            "light.kinderzimmer_spot_2",
+            "light.kinderzimmer_spot_3"
+          ],
+          "brightness_pct": 40
+        }
+      },
+      {
+        "domain": "light",
+        "service": "turn_on",
+        "data": {
+          "entity_id": [
+            "light.kinderzimmer_spot_1",
+            "light.vorhang",
+            "light.ledstreifen_kinderzimm",
+            "light.kinderzimmer_spot_2",
+            "light.kinderzimmer_spot_3"
+          ],
+          "color_temp_kelvin": 3000
+        }
+      }
+    ]
+  },
+  "allUnavailable": {
+    "allDead": true,
+    "empty": false,
+    "desc": "Keine Lampe erreichbar",
+    "total": 0,
+    "lights": 6
+  },
+  "cardOff": {
+    "title": "LD Kinderzimmer Alle Lichter",
+    "desc": "Alle aus",
+    "warnVisible": true,
+    "warnText": "1",
+    "warnTitle": "1 nicht erreichbar: Hubschrauber Lampe",
+    "icon": "mdi:lightbulb-group",
+    "fill": "0%",
+    "sliderLabel": "",
+    "background": "#ffffff",
+    "toggleOn": false
+  },
+  "cardLit": {
+    "title": "LD Kinderzimmer Alle Lichter",
+    "desc": "4 von 5 an",
+    "warnVisible": true,
+    "warnText": "1",
+    "warnTitle": "1 nicht erreichbar: Hubschrauber Lampe",
+    "icon": "mdi:lightbulb-group",
+    "fill": "68%",
+    "sliderLabel": "68 %",
+    "background": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 248, 237) 67%, rgb(255, 204, 119) 93%, rgb(255, 204, 119) 100%)",
+    "toggleOn": true
+  },
+  "dialog": {
+    "opened": true,
+    "title": "LD Kinderzimmer Alle Lichter",
+    "sub": "4 von 5 an",
+    "tileCount": 6,
+    "tileNames": [
+      "Kinderzimmer Spot 1",
+      "Hubschrauber Lampe",
+      "Kuschelecke",
+      "Ledstreifen",
+      "Kinderzimmer Spot 2",
+      "Kinderzimmer Spot 3"
+    ],
+    "deadTiles": [
+      "Hubschrauber Lampe"
+    ],
+    "sceneCount": 5,
+    "disabledScenes": [
+      "Fehlt absichtlich"
+    ],
+    "headings": [
+      "Szenen",
+      "Helligkeit",
+      "Lampen (6)"
+    ],
+    "hasWheel": true,
+    "hasTempBar": false,
+    "tabs": [
+      "colour",
+      "white"
+    ],
+    "deadNote": "1 nicht erreichbar: Hubschrauber Lampe",
+    "litTilePct": {
+      "name": "Kinderzimmer Spot 2",
+      "tileColor": "rgb(17, 17, 17)",
+      "pctColor": "rgb(17, 17, 17)"
+    }
+  },
+  "dialogWhiteTab": {
+    "hasWheel": false,
+    "hasTempBar": true,
+    "gradient": "linear-gradient(90deg, rgb(255, 187, 73) 0%, rgb(255, 199, 106) 8%, rgb(255, 211, 138) 17%, rgb(255, 223, 171) 25%, rgb(255, 236, 203) 33%, rgb(255, 248, 236) 42%, rgb(251, 253, 254) 50%, rgb(241, 249, 252) 58%, rgb(231, 245, 250) 67%, rgb(220, 241, 249) 75%, rgb(210, 236, 247) 83%, rgb(200, 232, 245) 92%, rgb(190, 228, 243) 100%)"
+  },
+  "kelvinRange": {
+    "min": 2200,
+    "max": 6500,
+    "startRgb": [
+      255,
+      187,
+      73
+    ],
+    "endRgb": [
+      190,
+      228,
+      243
+    ]
+  },
+  "iconsAsked": [
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "mdi:lightbulb",
+    "mdi:lightbulb"
+  ],
+  "vendorRequests": [],
+  "passed": 33,
+  "failed": 0,
+  "clean": true
+}

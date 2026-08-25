@@ -1,0 +1,224 @@
+{
+  "_source": "Captured from a live Home Assistant 2026.8.3 on 2026-08-25 via the entity state API. Names, colour capabilities, kelvin ranges, icons and group membership are verbatim. Only the `lit` scenario changes some `state`/`brightness`/`rgb_color` values so the screenshots show a lit card; every such change is marked with \"_synthetic\": true.",
+
+  "root": "light.magic_areas_light_groups_ld_kinderzimmer_all_lights",
+
+  "expected": {
+    "comment": "Hand-derived from the captured membership below. The root lists 7 members; 3 of them are groups. Depth-first, first-seen order, duplicates collapsed.",
+    "leaves": [
+      "light.kinderzimmer_spot_1",
+      "light.hubschrauberlampe",
+      "light.vorhang",
+      "light.ledstreifen_kinderzimm",
+      "light.kinderzimmer_spot_2",
+      "light.kinderzimmer_spot_3"
+    ],
+    "groups": [
+      "light.magic_areas_light_groups_ld_kinderzimmer_all_lights",
+      "light.kinderzimmerspots",
+      "light.lichtgruppe_kinderzimmer",
+      "light.leds_kinderzimmer"
+    ],
+    "maxDepth": 2,
+    "deadLeaves": ["light.hubschrauberlampe"]
+  },
+
+  "states": {
+    "light.magic_areas_light_groups_ld_kinderzimmer_all_lights": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "LD Kinderzimmer Alle Lichter",
+        "icon": "mdi:lightbulb-group",
+        "supported_color_modes": ["color_temp", "hs", "rgb", "xy"],
+        "color_mode": null,
+        "brightness": null,
+        "color_temp_kelvin": null,
+        "rgb_color": null,
+        "min_color_temp_kelvin": 2000,
+        "max_color_temp_kelvin": 9009,
+        "entity_id": [
+          "light.kinderzimmer_spot_1",
+          "light.hubschrauberlampe",
+          "light.vorhang",
+          "light.ledstreifen_kinderzimm",
+          "light.kinderzimmerspots",
+          "light.lichtgruppe_kinderzimmer",
+          "light.leds_kinderzimmer"
+        ]
+      }
+    },
+    "light.kinderzimmerspots": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Spots",
+        "icon": "hue:bulb-group-recessed-ceiling",
+        "supported_color_modes": ["color_temp", "hs"],
+        "color_mode": null,
+        "brightness": null,
+        "color_temp_kelvin": null,
+        "min_color_temp_kelvin": 2200,
+        "max_color_temp_kelvin": 6500,
+        "entity_id": [
+          "light.kinderzimmer_spot_1",
+          "light.kinderzimmer_spot_2",
+          "light.kinderzimmer_spot_3"
+        ]
+      }
+    },
+    "light.lichtgruppe_kinderzimmer": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Lichtgruppe Kinderzimmer",
+        "supported_color_modes": ["color_temp", "hs", "rgb", "xy"],
+        "color_mode": null,
+        "brightness": null,
+        "min_color_temp_kelvin": 2000,
+        "max_color_temp_kelvin": 9009,
+        "entity_id": [
+          "light.kinderzimmerspots",
+          "light.hubschrauberlampe",
+          "light.vorhang",
+          "light.ledstreifen_kinderzimm"
+        ]
+      }
+    },
+    "light.leds_kinderzimmer": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "LEDs Kinderzimmer",
+        "icon": "mdi:led-strip-variant",
+        "supported_color_modes": ["color_temp", "hs", "rgb"],
+        "color_mode": null,
+        "brightness": null,
+        "min_color_temp_kelvin": 2000,
+        "max_color_temp_kelvin": 9009,
+        "entity_id": [
+          "light.kinderzimmerspots",
+          "light.vorhang",
+          "light.ledstreifen_kinderzimm"
+        ]
+      }
+    },
+    "light.kinderzimmer_spot_1": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Kinderzimmer Spot 1",
+        "supported_color_modes": ["color_temp", "hs"],
+        "color_mode": null,
+        "brightness": null,
+        "min_color_temp_kelvin": 2200,
+        "max_color_temp_kelvin": 6500
+      }
+    },
+    "light.kinderzimmer_spot_2": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Kinderzimmer Spot 2",
+        "supported_color_modes": ["color_temp", "hs"],
+        "color_mode": null,
+        "brightness": null,
+        "min_color_temp_kelvin": 2200,
+        "max_color_temp_kelvin": 6500
+      }
+    },
+    "light.kinderzimmer_spot_3": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Kinderzimmer Spot 3",
+        "supported_color_modes": ["color_temp", "hs"],
+        "color_mode": null,
+        "brightness": null,
+        "min_color_temp_kelvin": 2200,
+        "max_color_temp_kelvin": 6500
+      }
+    },
+    "light.hubschrauberlampe": {
+      "state": "unavailable",
+      "attributes": {
+        "friendly_name": "Hubschrauber Lampe",
+        "icon": "mdi:helicopter",
+        "supported_color_modes": ["color_temp", "xy"],
+        "min_color_temp_kelvin": 2000,
+        "max_color_temp_kelvin": 6535
+      }
+    },
+    "light.vorhang": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Kuschelecke",
+        "icon": "mdi:teddy-bear",
+        "supported_color_modes": ["color_temp", "rgb"],
+        "color_mode": null,
+        "brightness": null,
+        "min_color_temp_kelvin": 2000,
+        "max_color_temp_kelvin": 9009
+      }
+    },
+    "light.ledstreifen_kinderzimm": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Ledstreifen",
+        "icon": "mdi:led-strip-variant",
+        "supported_color_modes": ["color_temp", "rgb"],
+        "color_mode": null,
+        "brightness": null,
+        "min_color_temp_kelvin": 2000,
+        "max_color_temp_kelvin": 9009
+      }
+    },
+
+    "scene.taglicht": { "state": "2026-08-24T18:20:48.459004+00:00", "attributes": { "friendly_name": "Taglicht" } },
+    "scene.nachtlicht": { "state": "2026-05-31T19:56:10.513876+00:00", "attributes": { "friendly_name": "Nachtlicht" } },
+    "scene.herbst": { "state": "2026-04-16T17:18:02.620203+00:00", "attributes": { "friendly_name": "Herbst" } },
+    "scene.fernschauen_wohnzimmer": { "state": "2026-08-24T17:23:53.657378+00:00", "attributes": { "friendly_name": "Lila" } }
+  },
+
+  "overrides": {
+    "_comment": "Applied on top of `states` per scenario. `lit` is the only one that invents values, so the screenshots are not of an all-off card.",
+
+    "lit": {
+      "light.kinderzimmer_spot_2": {
+        "_synthetic": true,
+        "state": "on",
+        "attributes": { "color_mode": "color_temp", "brightness": 214, "color_temp_kelvin": 2700 }
+      },
+      "light.kinderzimmer_spot_3": {
+        "_synthetic": true,
+        "state": "on",
+        "attributes": { "color_mode": "color_temp", "brightness": 168, "color_temp_kelvin": 4000 }
+      },
+      "light.vorhang": {
+        "_synthetic": true,
+        "state": "on",
+        "attributes": { "color_mode": "rgb", "brightness": 190, "rgb_color": [255, 92, 168] }
+      },
+      "light.ledstreifen_kinderzimm": {
+        "_synthetic": true,
+        "state": "on",
+        "attributes": { "color_mode": "rgb", "brightness": 120, "rgb_color": [88, 120, 255] }
+      }
+    },
+
+    "group_down": {
+      "_comment": "Verbatim shape of an unavailable light group as measured on the live install: state 'unavailable', friendly_name and colour capabilities still present, `entity_id` GONE. Reproduced from light.deckenlampen_1_stock and light.lichtgruppe_schlafzimmer, both unavailable at capture time.",
+      "light.kinderzimmerspots": {
+        "state": "unavailable",
+        "attributes": {
+          "friendly_name": "Spots",
+          "icon": "hue:bulb-group-recessed-ceiling",
+          "supported_color_modes": ["color_temp", "hs"],
+          "min_color_temp_kelvin": 2200,
+          "max_color_temp_kelvin": 6500
+        }
+      }
+    }
+  },
+
+  "scenesConfig": [
+    { "entity": "scene.taglicht", "color": "#ffe0a3" },
+    { "entity": "scene.nachtlicht", "color": "#2b3a67" },
+    { "entity": "scene.herbst", "color": "#c2622a" },
+    { "entity": "scene.fernschauen_wohnzimmer", "title": "Lila", "color": "#7b2ff7" },
+    { "entity": "scene.gibt_es_nicht", "title": "Fehlt absichtlich" }
+  ]
+}
