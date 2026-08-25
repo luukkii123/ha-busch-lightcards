@@ -187,10 +187,11 @@ docker run --rm \
       python3 /repo/docs/render/render.py /repo/dist/busch-lightcards.js /repo/docs/render/ergebnis'
 ```
 
-47 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
+48 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
 self-reference, deleted members, foreign domains, the depth limit, the
 unavailable-group memory (cold and warm), aggregation, service-call routing,
-the rendered card text, the dialog, and the visual editor (option coverage,
+the rendered card text, the dialog and how it stacks against a Leaflet-grade
+z-index, and the visual editor (option coverage,
 labels, live preview, minimal output, camelCase folding, scene add/reorder/
 delete, colour round-trip).
 

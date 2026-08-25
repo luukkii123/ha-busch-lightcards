@@ -656,6 +656,38 @@ def main():
                   dialog["sceneCount"] == 5 and len(dialog["disabledScenes"]) == 1,
                   json.dumps(dialog["disabledScenes"], ensure_ascii=False))
             # Only one picker body exists at a time — colour is the default tab.
+            # A dashboard is full of cards the dialog has to cover. Leaflet is
+            # the worst offender: its panes carry z-index 400 and its controls
+            # 1000, in the page's own stacking context. Asserting the number
+            # would not prove much, so this puts a real interloper on the page
+            # and asks the browser who is on top.
+            stacking = page.evaluate(
+                """() => {
+                    const intruder = document.createElement('div');
+                    intruder.id = 'intruder';
+                    intruder.style.cssText = 'position:absolute;left:0;top:0;' +
+                        'width:100vw;height:100vh;z-index:1000;background:rgba(255,0,0,0.5)';
+                    document.body.appendChild(intruder);
+                    const dlg = document.querySelector('busch-light-dialog');
+                    const box = dlg.shadowRoot.querySelector('.sheet').getBoundingClientRect();
+                    const x = Math.round(box.left + box.width / 2);
+                    const y = Math.round(box.top + box.height / 2);
+                    const top = document.elementFromPoint(x, y);
+                    const result = {
+                        zIndex: getComputedStyle(dlg).zIndex,
+                        intruderZ: getComputedStyle(intruder).zIndex,
+                        topmost: top ? (top.id || top.tagName.toLowerCase()) : null
+                    };
+                    intruder.remove();
+                    return result;
+                }"""
+            )
+            report["stacking"] = stacking
+            check("dialog covers a Leaflet-grade z-index instead of being drawn through",
+                  stacking["topmost"] == "busch-light-dialog"
+                  and int(stacking["zIndex"]) > int(stacking["intruderZ"]),
+                  json.dumps(stacking))
+
             check("brightness label on a light tile follows the tile's text colour",
                   dialog["litTilePct"] is not None
                   and dialog["litTilePct"]["pctColor"] == dialog["litTilePct"]["tileColor"],

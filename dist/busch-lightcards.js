@@ -18,7 +18,7 @@
  * README for why.
  */
 
-const CARD_VERSION = '0.2.0';
+const CARD_VERSION = '0.2.1';
 
 const CARD_TAG = 'busch-light-card';
 const DIALOG_TAG = 'busch-light-dialog';
@@ -1512,7 +1512,14 @@ const DIALOG_STYLES = `
 :host {
     position: fixed;
     inset: 0;
-    z-index: 10;
+    /*
+     * High on purpose. The dialog is appended to document.body, so it shares
+     * the page's stacking context with every card on the dashboard — and
+     * Leaflet hands its own panes z-index 400 and its controls 1000. At the
+     * z-index: 10 this used to carry, a map card rendered straight through
+     * the open dialog.
+     */
+    z-index: 100000;
     display: flex;
     align-items: flex-end;
     justify-content: center;

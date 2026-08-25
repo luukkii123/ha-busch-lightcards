@@ -1,9 +1,9 @@
 {
   "cardFile": "/repo/dist/busch-lightcards.js",
-  "servedFrom": "http://127.0.0.1:42331/dist/busch-lightcards.js",
+  "servedFrom": "http://127.0.0.1:52567/dist/busch-lightcards.js",
   "requests": [
-    "http://127.0.0.1:42331/docs/render/ergebnis/harness.html",
-    "http://127.0.0.1:42331/dist/busch-lightcards.js"
+    "http://127.0.0.1:52567/docs/render/ergebnis/harness.html",
+    "http://127.0.0.1:52567/dist/busch-lightcards.js"
   ],
   "badResponses": [],
   "requestFailures": [],
@@ -156,6 +156,11 @@
       "detail": "[\"Fehlt absichtlich\"]"
     },
     {
+      "name": "dialog covers a Leaflet-grade z-index instead of being drawn through",
+      "pass": true,
+      "detail": "{\"zIndex\": \"100000\", \"intruderZ\": \"1000\", \"topmost\": \"busch-light-dialog\"}"
+    },
+    {
       "name": "brightness label on a light tile follows the tile's text colour",
       "pass": true,
       "detail": "{\"name\": \"Kinderzimmer Spot 2\", \"tileColor\": \"rgb(17, 17, 17)\", \"pctColor\": \"rgb(17, 17, 17)\"}"
@@ -252,7 +257,7 @@
     "dialog.png",
     "dialog-white.png"
   ],
-  "harnessUrl": "http://127.0.0.1:42331/docs/render/ergebnis/harness.html",
+  "harnessUrl": "http://127.0.0.1:52567/docs/render/ergebnis/harness.html",
   "resolution": {
     "leaves": [
       "light.kinderzimmer_spot_1",
@@ -523,6 +528,11 @@
       "pctColor": "rgb(17, 17, 17)"
     }
   },
+  "stacking": {
+    "zIndex": "100000",
+    "intruderZ": "1000",
+    "topmost": "busch-light-dialog"
+  },
   "dialogWhiteTab": {
     "hasWheel": false,
     "hasTempBar": true,
@@ -703,7 +713,7 @@
     "mdi:delete"
   ],
   "vendorRequests": [],
-  "passed": 47,
+  "passed": 48,
   "failed": 0,
   "clean": true
 }
