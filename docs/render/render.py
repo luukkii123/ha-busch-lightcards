@@ -87,6 +87,46 @@ PAGE = """<!doctype html>
   }
   customElements.define('ha-card', HaCardStub);
 
+  // ha-form is loaded lazily by the real frontend. The stub honours the same
+  // contract the editor relies on: hass/schema/data/computeLabel in, a
+  // 'value-changed' event carrying the full data object out. It proves the
+  // editor's wiring, NOT that Home Assistant's own ha-form renders it.
+  class HaFormStub extends HTMLElement {
+    constructor() { super(); this._schema = []; this._data = {}; }
+    set hass(v) { this._hass = v; }
+    get hass() { return this._hass; }
+    set schema(v) { this._schema = v; this._paint(); }
+    get schema() { return this._schema; }
+    set data(v) { this._data = v; this._paint(); }
+    get data() { return this._data; }
+    set computeLabel(fn) { this._computeLabel = fn; this._paint(); }
+    get computeLabel() { return this._computeLabel; }
+    /** Flattens grid wrappers, the way the real element does. */
+    fields() {
+      const out = [];
+      const walk = (items) => (items || []).forEach(item => {
+        if (item.type === 'grid') walk(item.schema);
+        else if (item.name) out.push(item);
+      });
+      walk(this._schema);
+      return out;
+    }
+    _paint() {
+      if (!this._computeLabel) return;
+      this.textContent = this.fields()
+        .map(f => this._computeLabel(f) + ': ' + JSON.stringify(this._data[f.name]))
+        .join('\\n');
+    }
+    /** Simulates the user changing one field. */
+    change(patch) {
+      this.dispatchEvent(new CustomEvent('value-changed', {
+        detail: { value: Object.assign({}, this._data, patch) },
+        bubbles: true, composed: true
+      }));
+    }
+  }
+  customElements.define('ha-form', HaFormStub);
+
   class HaIconStub extends HTMLElement {
     static get observedAttributes() { return ['icon']; }
     constructor() {
@@ -676,6 +716,188 @@ def main():
             shot = out_dir / "dialog-white.png"
             page.screenshot(path=str(shot))
             report["screenshots"].append(shot.name)
+
+        # ------------------------------------------------------------------
+        # 8. The visual editor
+        # ------------------------------------------------------------------
+        editor = page.evaluate(
+            f"""async (payload) => {{
+                const I = {internals};
+                const dlg = document.querySelector('busch-light-dialog');
+                if (dlg) dlg.remove();
+                I.clearMemberCache();
+
+                const settle = () => new Promise(r => setTimeout(r, 0));
+                const CardClass = customElements.get('busch-light-card');
+                const hass = window.makeHass(payload.states);
+                const out = {{}};
+
+                out.hasGetConfigElement = typeof CardClass.getConfigElement === 'function';
+                const ed = CardClass.getConfigElement();
+                out.editorTag = ed.tagName.toLowerCase();
+
+                // the picker's starting card should prefer a real group
+                out.stub = CardClass.getStubConfig(hass, Object.keys(payload.states));
+
+                document.getElementById('stack').innerHTML = '';
+                document.getElementById('stack').appendChild(ed);
+                ed.hass = hass;
+                ed.setConfig({{ type: 'custom:busch-light-card', entity: payload.root }});
+                await settle(); await settle();
+
+                const sr = ed.shadowRoot;
+                const forms = Array.from(sr.querySelectorAll('ha-form'));
+                out.formCount = forms.length;
+                out.fields = forms.flatMap(f => f.fields().map(x => x.name));
+                out.labels = forms.flatMap(f => f.fields().map(x => f.computeLabel(x)));
+                out.selectorless = forms.flatMap(f => f.fields()
+                    .filter(x => !x.selector).map(x => x.name));
+                out.sections = Array.from(sr.querySelectorAll('summary')).map(s => s.textContent);
+
+                // resolution preview
+                const prev = sr.querySelector('.preview');
+                out.previewHead = prev.querySelector('.head').textContent;
+                out.previewChips = Array.from(prev.querySelectorAll('.chip')).map(c => c.textContent);
+                out.previewDeadChips = Array.from(prev.querySelectorAll('.chip.dead')).map(c => c.textContent);
+                out.previewNotes = Array.from(prev.querySelectorAll('.note')).map(n => n.textContent);
+
+                // --- a change must emit a MINIMAL config
+                let emitted = null;
+                ed.addEventListener('config-changed', e => {{ emitted = e.detail.config; }});
+                const byName = (n) => forms.find(f => f.fields().some(x => x.name === n));
+                byName('slider').change({{ slider: false }});
+                await settle();
+                out.afterSliderOff = emitted;
+
+                // setting it back to the default must REMOVE the key again
+                ed.setConfig(emitted); await settle();
+                Array.from(sr.querySelectorAll('ha-form'))
+                    .find(f => f.fields().some(x => x.name === 'slider'))
+                    .change({{ slider: true }});
+                await settle();
+                out.afterSliderBackOn = emitted;
+
+                // --- camelCase config folded into snake_case
+                ed.setConfig({{ type: 'custom:busch-light-card', entity: payload.root,
+                                resolveGroups: false, offColor: '#123456' }});
+                await settle(); await settle();
+                const prev2 = ed.shadowRoot.querySelector('.preview');
+                out.flatPreviewHead = prev2.querySelector('.head').textContent;
+                Array.from(ed.shadowRoot.querySelectorAll('ha-form'))
+                    .find(f => f.fields().some(x => x.name === 'max_depth'))
+                    .change({{ max_depth: 4 }});
+                await settle();
+                out.afterCamel = emitted;
+
+                // --- scenes: add, fill, move, remove
+                ed.setConfig({{ type: 'custom:busch-light-card', entity: payload.root }});
+                await settle(); await settle();
+                const addBtn = ed.shadowRoot.querySelector('.addbtn');
+                addBtn.click(); await settle();
+                addBtn.click(); await settle();
+                out.sceneRowsAfterAdd = ed.shadowRoot.querySelectorAll('.scene-row').length;
+
+                const sceneForms = Array.from(ed.shadowRoot.querySelectorAll('.scene-row ha-form'));
+                sceneForms[0].change({{ entity: 'scene.taglicht', color: [255, 224, 163] }});
+                await settle();
+                sceneForms[1].change({{ entity: 'scene.nachtlicht', title: 'Nacht' }});
+                await settle();
+                out.afterScenes = emitted;
+
+                const rows = () => Array.from(ed.shadowRoot.querySelectorAll('.scene-row'));
+                rows()[0].querySelectorAll('.iconbtn')[1].click(); // move first down
+                await settle();
+                out.afterMove = emitted;
+
+                rows()[0].querySelectorAll('.iconbtn')[2].click(); // delete first
+                await settle();
+                out.afterDelete = emitted;
+                out.sceneRowsAfterDelete = ed.shadowRoot.querySelectorAll('.scene-row').length;
+
+                // --- colour round trip
+                out.colorRoundTrip = I.rgbArrayToHex(I.hexToRgbArray('#ffe0a3'));
+
+                return out;
+            }}""",
+            {"root": fixture["root"], "states": lit_states},
+        )
+        report["editor"] = editor
+
+        check("card offers a visual editor",
+              editor["hasGetConfigElement"] and editor["editorTag"] == "busch-light-card-editor",
+              json.dumps({"tag": editor["editorTag"]}))
+        check("picker's starting card prefers a real group",
+              editor["stub"]["entity"] == fixture["root"],
+              json.dumps(editor["stub"]))
+        expected_fields = sorted([
+            "entity", "entities", "title", "icon", "description",
+            "resolve_groups", "max_depth", "show_unavailable",
+            "off_color", "default_color", "hue_borders", "show_switch",
+            "slider", "allow_zero", "off_shadow", "tap_action", "hold_action"])
+        check("editor exposes every documented option",
+              sorted(editor["fields"]) == expected_fields,
+              f"missing={sorted(set(expected_fields) - set(editor['fields']))} "
+              f"extra={sorted(set(editor['fields']) - set(expected_fields))}")
+        check("every field has a selector and a translated label",
+              not editor["selectorless"]
+              and all(l and not l.startswith("ed") for l in editor["labels"]),
+              json.dumps({"noSelector": editor["selectorless"],
+                          "untranslated": [l for l in editor["labels"]
+                                           if not l or l.startswith("ed")]}, ensure_ascii=False))
+        check("editor is grouped into sections",
+              editor["sections"] == ["Gruppenauflösung", "Darstellung", "Aktionen", "Szenen"],
+              json.dumps(editor["sections"], ensure_ascii=False))
+
+        # The preview is what makes "resolve nested groups" visible before the
+        # card is ever placed on a dashboard.
+        check("editor previews the resolution live",
+              "6 Lampen aus 4 Gruppen, Tiefe 2" in editor["previewHead"]
+              and len(editor["previewChips"]) == 6
+              and editor["previewDeadChips"] == ["Hubschrauber Lampe"],
+              json.dumps({"head": editor["previewHead"],
+                          "chips": editor["previewChips"],
+                          "dead": editor["previewDeadChips"]}, ensure_ascii=False))
+        check("preview names the unreachable member count",
+              any("1 nicht erreichbar" in n for n in editor["previewNotes"]),
+              json.dumps(editor["previewNotes"], ensure_ascii=False))
+        check("preview reflects resolve_groups: false",
+              "1 Entität, Gruppen werden nicht aufgelöst" in editor["flatPreviewHead"],
+              editor["flatPreviewHead"])
+
+        # A visual editor that writes back every default turns a three-line
+        # card into a twenty-line one.
+        check("editor writes only what differs from the default",
+              editor["afterSliderOff"] == {"type": "custom:busch-light-card",
+                                           "entity": fixture["root"], "slider": False},
+              json.dumps(editor["afterSliderOff"]))
+        check("returning an option to its default removes the key again",
+              editor["afterSliderBackOn"] == {"type": "custom:busch-light-card",
+                                              "entity": fixture["root"]},
+              json.dumps(editor["afterSliderBackOn"]))
+        check("camelCase from the upstream card is folded into snake_case",
+              editor["afterCamel"] == {"type": "custom:busch-light-card",
+                                       "entity": fixture["root"],
+                                       "resolve_groups": False,
+                                       "off_color": "#123456",
+                                       "max_depth": 4},
+              json.dumps(editor["afterCamel"]))
+
+        check("scene rows add and write hex colour, not an rgb triple",
+              editor["sceneRowsAfterAdd"] == 2
+              and editor["afterScenes"]["scenes"] == [
+                  {"entity": "scene.taglicht", "color": "#ffe0a3"},
+                  {"entity": "scene.nachtlicht", "title": "Nacht"}],
+              json.dumps(editor["afterScenes"], ensure_ascii=False))
+        check("scene rows reorder and delete",
+              editor["afterMove"]["scenes"][0]["entity"] == "scene.nachtlicht"
+              and editor["afterDelete"]["scenes"] == [
+                  {"entity": "scene.taglicht", "color": "#ffe0a3"}]
+              and editor["sceneRowsAfterDelete"] == 1,
+              json.dumps({"move": editor["afterMove"]["scenes"],
+                          "delete": editor["afterDelete"]["scenes"],
+                          "rows": editor["sceneRowsAfterDelete"]}, ensure_ascii=False))
+        check("colour survives the hex/rgb round trip the picker needs",
+              editor["colorRoundTrip"] == "#ffe0a3", str(editor["colorRoundTrip"]))
 
         report["iconsAsked"] = page.evaluate("() => window.__iconsAsked")
         browser.close()

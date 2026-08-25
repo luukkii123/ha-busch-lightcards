@@ -108,6 +108,28 @@ Manual: drop `dist/busch-lightcards.js` into `/config/www/` and add it under
 
 ## Configure
 
+There is a visual editor — pick the card in the dashboard's card picker and
+every option below has a field. Three things about it are worth knowing:
+
+- **The editor previews the resolution live.** While you are still choosing an
+  entity it already says `Löst auf zu: 6 Lampen aus 4 Gruppen, Tiefe 2` and
+  lists every light it found, with the unreachable ones hatched. Otherwise
+  "resolve nested groups" would be a switch whose effect you cannot see until
+  the card is placed.
+- **It writes only what differs from the default.** Turning the slider off
+  produces three lines, not twenty. Setting an option back to its default
+  removes the key again instead of pinning it.
+- **A config in upstream camelCase is folded into snake_case** the first time
+  you open it (`resolveGroups` → `resolve_groups`). Keeping both spellings of
+  one option would let them drift apart silently.
+
+The colour fields are text, not swatches, on purpose: `off_color` has to be
+*emptiable* so the theme can decide, and the fields also accept `warm`, `cold`
+and `rgb(…)`. Scene tiles use a real colour picker, because there a colour is
+always wanted.
+
+YAML works just as well:
+
 ```yaml
 type: custom:busch-light-card
 entity: light.magic_areas_light_groups_ld_kinderzimmer_all_lights
@@ -165,14 +187,25 @@ docker run --rm \
       python3 /repo/docs/render/render.py /repo/dist/busch-lightcards.js /repo/docs/render/ergebnis'
 ```
 
-33 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
+47 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
 self-reference, deleted members, foreign domains, the depth limit, the
 unavailable-group memory (cold and warm), aggregation, service-call routing,
-the rendered card text, and the dialog.
+the rendered card text, the dialog, and the visual editor (option coverage,
+labels, live preview, minimal output, camelCase folding, scene add/reorder/
+delete, colour round-trip).
 
-**Not yet proven: none of this has run against a live dashboard.** The logic
-and the rendering are tested; the two together in a running Home Assistant are
-not.
+**Two things are explicitly not proven.**
+
+*The editor's checks use a stubbed `ha-form`.* The stub honours the contract
+the editor relies on — `hass`/`schema`/`data`/`computeLabel` in, a
+`value-changed` event carrying the full data object out — so it proves the
+editor's wiring, the schema shape and the config it produces. It does **not**
+prove that Home Assistant's own `ha-form` renders those selectors as intended.
+For the same reason there is no editor screenshot here: it would be a picture
+of the stub.
+
+*None of this has run against a live dashboard.* The logic and the rendering
+are tested; the two together in a running Home Assistant are not.
 
 ## Why there is no build step
 

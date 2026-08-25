@@ -18,10 +18,11 @@
  * README for why.
  */
 
-const CARD_VERSION = '0.1.0';
+const CARD_VERSION = '0.2.0';
 
 const CARD_TAG = 'busch-light-card';
 const DIALOG_TAG = 'busch-light-dialog';
+const EDITOR_TAG = 'busch-light-card-editor';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -89,7 +90,50 @@ const STRINGS = {
         back: 'Back',
         close: 'Close',
         unreachable: 'unreachable',
-        groupOf: 'Group of {n}'
+        groupOf: 'Group of {n}',
+
+        edEntity: 'Light, switch or group',
+        edEntities: 'Additional entities',
+        edTitle: 'Title',
+        edIcon: 'Icon',
+        edDescription: 'Description (overrides the count)',
+        edSectionResolve: 'Group resolution',
+        edResolveGroups: 'Resolve nested groups',
+        edResolveHint: 'Off behaves like the original card: the group stays one entity.',
+        edMaxDepth: 'Maximum depth',
+        edShowUnavailable: 'Badge counting unreachable members',
+        edSectionLook: 'Appearance',
+        edOffColor: 'Colour while off (empty = theme)',
+        edDefaultColor: 'Colour for a lit light that reports none',
+        edColorHint: 'Colours accept #rrggbb, rgb(…) or the names warm and cold. Text fields, not swatches, so they can be emptied — empty means the theme decides.',
+        edHueBorders: 'Hue corners and shadow',
+        edShowSwitch: 'Toggle on the card',
+        edSlider: 'Brightness slider on the card',
+        edAllowZero: 'Slider may reach 0 (turns the group off)',
+        edOffShadow: 'Inset shadow while off',
+        edSectionActions: 'Actions',
+        edTapAction: 'On tap',
+        edHoldAction: 'On hold',
+        edActDialog: 'Open dialog',
+        edActToggle: 'Toggle',
+        edActMoreInfo: 'More info',
+        edActNone: 'Nothing',
+        edSectionScenes: 'Scenes',
+        edAddScene: 'Add scene',
+        edSceneTitle: 'Label (optional)',
+        edSceneColor: 'Tile colour',
+        edUp: 'Move up',
+        edDown: 'Move down',
+        edRemove: 'Remove',
+        edPreview: 'Resolves to',
+        edPreviewCount: '{leaves} lights out of {groups} groups, depth {depth}',
+        edPreviewFlat: '1 entity, groups not resolved',
+        edPreviewNone: 'Pick an entity first',
+        edPreviewDead: '{n} unreachable',
+        edPreviewDropped: '{n} members dropped (not a light or switch)',
+        edPreviewTruncated: 'Depth limit reached at: {list}',
+        edPreviewRecovered: 'Remembered members used for: {list}',
+        edNoForm: 'The Home Assistant form elements did not load. Please configure this card in YAML.'
     },
     de: {
         allOff: 'Alle aus',
@@ -107,7 +151,50 @@ const STRINGS = {
         back: 'Zurück',
         close: 'Schließen',
         unreachable: 'nicht erreichbar',
-        groupOf: 'Gruppe aus {n}'
+        groupOf: 'Gruppe aus {n}',
+
+        edEntity: 'Lampe, Schalter oder Gruppe',
+        edEntities: 'Weitere Entitäten',
+        edTitle: 'Überschrift',
+        edIcon: 'Zeichen',
+        edDescription: 'Beschreibung (ersetzt die Zählung)',
+        edSectionResolve: 'Gruppenauflösung',
+        edResolveGroups: 'Verschachtelte Gruppen auflösen',
+        edResolveHint: 'Aus verhält sich wie die Vorlage: die Gruppe bleibt eine Entität.',
+        edMaxDepth: 'Größte Tiefe',
+        edShowUnavailable: 'Abzeichen mit der Zahl nicht erreichbarer Mitglieder',
+        edSectionLook: 'Darstellung',
+        edOffColor: 'Farbe im Aus-Zustand (leer = Thema)',
+        edDefaultColor: 'Farbe für eine leuchtende Lampe ohne eigene Farbe',
+        edColorHint: 'Farben nehmen #rrggbb, rgb(…) oder die Namen warm und cold. Bewusst Textfelder statt Farbtupfer, damit man sie leeren kann — leer heißt: das Thema entscheidet.',
+        edHueBorders: 'Hue-Ecken und -Schatten',
+        edShowSwitch: 'Schalter auf der Karte',
+        edSlider: 'Helligkeitsregler auf der Karte',
+        edAllowZero: 'Regler darf auf 0 (schaltet die Gruppe aus)',
+        edOffShadow: 'Innenschatten im Aus-Zustand',
+        edSectionActions: 'Aktionen',
+        edTapAction: 'Beim Tippen',
+        edHoldAction: 'Beim Halten',
+        edActDialog: 'Dialog öffnen',
+        edActToggle: 'Umschalten',
+        edActMoreInfo: 'Mehr Informationen',
+        edActNone: 'Nichts',
+        edSectionScenes: 'Szenen',
+        edAddScene: 'Szene hinzufügen',
+        edSceneTitle: 'Beschriftung (freiwillig)',
+        edSceneColor: 'Kachelfarbe',
+        edUp: 'Nach oben',
+        edDown: 'Nach unten',
+        edRemove: 'Entfernen',
+        edPreview: 'Löst auf zu',
+        edPreviewCount: '{leaves} Lampen aus {groups} Gruppen, Tiefe {depth}',
+        edPreviewFlat: '1 Entität, Gruppen werden nicht aufgelöst',
+        edPreviewNone: 'Erst eine Entität wählen',
+        edPreviewDead: '{n} nicht erreichbar',
+        edPreviewDropped: '{n} Mitglieder verworfen (weder Lampe noch Schalter)',
+        edPreviewTruncated: 'Tiefenbegrenzung erreicht bei: {list}',
+        edPreviewRecovered: 'Gemerkte Mitglieder benutzt für: {list}',
+        edNoForm: 'Die Formularelemente von Home Assistant sind nicht geladen. Bitte diese Karte in YAML einrichten.'
     }
 };
 
@@ -810,6 +897,47 @@ function normalizeConfig(raw) {
     return config;
 }
 
+/**
+ * What each option falls back to. The visual editor writes an option only when
+ * it differs from this, so the produced YAML stays as short as a hand-written
+ * one instead of listing every default.
+ */
+const CONFIG_DEFAULTS = {
+    resolve_groups: true,
+    max_depth: DEFAULT_MAX_DEPTH,
+    show_unavailable: true,
+    hue_borders: true,
+    show_switch: true,
+    slider: true,
+    allow_zero: false,
+    off_shadow: true,
+    tap_action: 'dialog',
+    hold_action: 'more-info',
+    default_color: WARM_COLOR
+};
+
+/** Options the card also accepts in camelCase, for upstream compatibility. */
+const CAMEL_ALIASES = [
+    'resolveGroups', 'maxDepth', 'showUnavailable', 'offColor', 'defaultColor',
+    'hueBorders', 'showSwitch', 'allowZero', 'offShadow', 'tapAction', 'holdAction'
+];
+
+/**
+ * The editor speaks snake_case only. A config copied from the upstream card
+ * uses camelCase, and keeping both spellings of the same option would let them
+ * drift apart silently, so one is folded into the other on the way in.
+ */
+function toSnakeConfig(raw) {
+    const out = Object.assign({}, raw);
+    CAMEL_ALIASES.forEach((camel) => {
+        if (out[camel] === undefined) return;
+        const snake = camel.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase());
+        if (out[snake] === undefined) out[snake] = out[camel];
+        delete out[camel];
+    });
+    return out;
+}
+
 // ---------------------------------------------------------------------------
 // Drag helper — one place for every slider and picker in this file
 // ---------------------------------------------------------------------------
@@ -1054,8 +1182,29 @@ class BuschLightCard extends HTMLElement {
         this._held = false;
     }
 
-    static getStubConfig() {
-        return { type: `custom:${CARD_TAG}`, entity: '' };
+    /** Hands Home Assistant the visual editor for this card. */
+    static getConfigElement() {
+        return document.createElement(EDITOR_TAG);
+    }
+
+    /**
+     * The card the picker drops on the dashboard. Prefers a real group, since
+     * that is what this card is for — an ungrouped single light would show
+     * none of it.
+     */
+    static getStubConfig(hass, entities) {
+        const pool = Array.isArray(entities) && entities.length
+            ? entities
+            : hass && hass.states
+                ? Object.keys(hass.states)
+                : [];
+        const lights = pool.filter((id) => domainOf(id) === 'light');
+        const group = lights.find((id) => {
+            const state = hass && hass.states ? hass.states[id] : null;
+            return state && state.attributes && Array.isArray(state.attributes.entity_id)
+                && state.attributes.entity_id.length > 1;
+        });
+        return { type: `custom:${CARD_TAG}`, entity: group || lights[0] || '' };
     }
 
     setConfig(raw) {
@@ -2108,11 +2257,677 @@ class BuschLightDialog extends HTMLElement {
 }
 
 // ---------------------------------------------------------------------------
+// Visual editor
+// ---------------------------------------------------------------------------
+
+const EDITOR_STYLES = `
+:host { display: block; }
+.ed { display: flex; flex-direction: column; gap: 12px; }
+details {
+    border: 1px solid var(--divider-color, #e0e0e0);
+    border-radius: 10px;
+    padding: 0 12px;
+}
+details[open] { padding-bottom: 12px; }
+summary {
+    cursor: pointer;
+    padding: 12px 0;
+    font-weight: 500;
+    color: var(--primary-text-color);
+    list-style-position: inside;
+}
+.hint {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: var(--secondary-text-color);
+}
+.preview {
+    border: 1px solid var(--divider-color, #e0e0e0);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--primary-text-color);
+}
+.preview .head {
+    font-weight: 500;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.preview .count { color: var(--secondary-text-color); font-weight: 400; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.chip {
+    font-size: 11px;
+    line-height: 20px;
+    padding: 0 8px;
+    border-radius: 10px;
+    background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+    color: var(--primary-text-color);
+    white-space: nowrap;
+}
+.chip.dead {
+    background: repeating-linear-gradient(45deg,
+        rgba(219, 68, 55, 0.14), rgba(219, 68, 55, 0.14) 5px,
+        transparent 5px, transparent 10px);
+    color: var(--error-color, #db4437);
+}
+.note { margin-top: 8px; font-size: 12px; color: var(--secondary-text-color); }
+.note.warn { color: var(--warning-color, #ffa600); }
+.scene-row {
+    border: 1px solid var(--divider-color, #e0e0e0);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+}
+.scene-bar { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+.scene-bar .spacer { flex: 1; }
+.iconbtn {
+    border: none;
+    background: none;
+    color: var(--secondary-text-color);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: inline-flex;
+}
+.iconbtn:hover { background: var(--secondary-background-color, rgba(0, 0, 0, 0.06)); }
+.iconbtn[disabled] { opacity: 0.35; cursor: default; }
+.iconbtn.danger { color: var(--error-color, #db4437); }
+.addbtn {
+    border: 1px dashed var(--divider-color, #bdbdbd);
+    background: none;
+    color: var(--primary-color, #03a9f4);
+    border-radius: 10px;
+    padding: 10px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 13px;
+}
+.fallback { color: var(--error-color, #db4437); font-size: 13px; padding: 8px 0; }
+`;
+
+/**
+ * Makes sure Home Assistant's form elements exist.
+ *
+ * `ha-form` is loaded lazily by the frontend, so a card editor opened before
+ * any built-in editor would find it undefined. Building the built-in entities
+ * editor once pulls it in — the established way to do this from a custom card.
+ */
+let formElementsPromise = null;
+function ensureFormElements() {
+    if (customElements.get('ha-form')) return Promise.resolve(true);
+    if (!formElementsPromise) {
+        formElementsPromise = (async () => {
+            try {
+                if (window.loadCardHelpers) {
+                    const helpers = await window.loadCardHelpers();
+                    const card = await helpers.createCardElement({ type: 'entities', entities: [] });
+                    if (card && card.constructor && card.constructor.getConfigElement) {
+                        await card.constructor.getConfigElement();
+                    }
+                }
+            } catch (e) {
+                /* nothing else to try — the fallback notice covers it */
+            }
+            return !!customElements.get('ha-form');
+        })();
+    }
+    return formElementsPromise;
+}
+
+const LIGHT_FILTER = [{ domain: 'light' }, { domain: 'switch' }, { domain: 'group' }];
+const SCENE_FILTER = [{ domain: 'scene' }, { domain: 'script' }];
+
+function hexToRgbArray(value) {
+    const color = parseColor(value);
+    return color ? [Math.round(color.r), Math.round(color.g), Math.round(color.b)] : undefined;
+}
+
+function rgbArrayToHex(rgb) {
+    if (!Array.isArray(rgb) || rgb.length < 3) return undefined;
+    return (
+        '#' +
+        rgb
+            .slice(0, 3)
+            .map((v) => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0'))
+            .join('')
+    );
+}
+
+class BuschLightCardEditor extends HTMLElement {
+    constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        this._config = {};
+        this._hass = null;
+        this._built = false;
+        this._sceneCount = -1;
+        this._forms = {};
+    }
+
+    setConfig(config) {
+        this._config = toSnakeConfig(config || {});
+        this._render();
+    }
+
+    set hass(hass) {
+        this._hass = hass;
+        Object.keys(this._forms).forEach((key) => {
+            if (this._forms[key]) this._forms[key].hass = hass;
+        });
+        if (this._sceneForms) this._sceneForms.forEach((f) => (f.hass = hass));
+        this._renderPreview();
+    }
+
+    get hass() {
+        return this._hass;
+    }
+
+    connectedCallback() {
+        this._render();
+    }
+
+    // -- config plumbing ----------------------------------------------------
+
+    /**
+     * Merges a patch and drops everything that matches its default, so the
+     * YAML the editor produces stays as short as a hand-written one.
+     */
+    _emit(patch) {
+        const next = Object.assign({}, this._config, patch);
+
+        Object.keys(CONFIG_DEFAULTS).forEach((key) => {
+            if (next[key] !== undefined && next[key] === CONFIG_DEFAULTS[key]) delete next[key];
+        });
+        ['title', 'icon', 'description', 'off_color', 'default_color'].forEach((key) => {
+            if (next[key] === '' || next[key] === null || next[key] === undefined) delete next[key];
+        });
+        if (Array.isArray(next.entities) && !next.entities.length) delete next.entities;
+        if (Array.isArray(next.scenes) && !next.scenes.length) delete next.scenes;
+
+        next.type = 'custom:' + CARD_TAG;
+        this._config = next;
+
+        this.dispatchEvent(
+            new CustomEvent('config-changed', {
+                detail: { config: next },
+                bubbles: true,
+                composed: true
+            })
+        );
+        this._syncForms();
+        this._renderPreview();
+    }
+
+    _label(key) {
+        return translate(this._hass, key);
+    }
+
+    _actionOptions() {
+        return [
+            { value: 'dialog', label: this._label('edActDialog') },
+            { value: 'toggle', label: this._label('edActToggle') },
+            { value: 'more-info', label: this._label('edActMoreInfo') },
+            { value: 'none', label: this._label('edActNone') }
+        ];
+    }
+
+    _data(names) {
+        const c = this._config;
+        const all = {
+            entity: c.entity || '',
+            entities: Array.isArray(c.entities) ? c.entities : [],
+            title: c.title || '',
+            icon: c.icon || '',
+            description: c.description || '',
+            resolve_groups: c.resolve_groups !== false,
+            max_depth: c.max_depth === undefined ? DEFAULT_MAX_DEPTH : c.max_depth,
+            show_unavailable: c.show_unavailable !== false,
+            off_color: c.off_color || '',
+            default_color: c.default_color || '',
+            hue_borders: c.hue_borders !== false,
+            show_switch: c.show_switch !== false,
+            slider: c.slider !== false,
+            allow_zero: c.allow_zero === true,
+            off_shadow: c.off_shadow !== false,
+            tap_action: c.tap_action || CONFIG_DEFAULTS.tap_action,
+            hold_action: c.hold_action || CONFIG_DEFAULTS.hold_action
+        };
+        const out = {};
+        names.forEach((n) => (out[n] = all[n]));
+        return out;
+    }
+
+    // -- building -----------------------------------------------------------
+
+    _render() {
+        if (!this.isConnected) return;
+        ensureFormElements().then((ok) => {
+            if (!ok) {
+                this._buildFallback();
+                return;
+            }
+            if (!this._built) this._build();
+            this._syncForms();
+            this._syncScenes();
+            this._renderPreview();
+        });
+    }
+
+    _buildFallback() {
+        this.shadowRoot.innerHTML = '';
+        const style = document.createElement('style');
+        style.textContent = EDITOR_STYLES;
+        const box = document.createElement('div');
+        box.className = 'fallback';
+        box.textContent = this._label('edNoForm');
+        this.shadowRoot.appendChild(style);
+        this.shadowRoot.appendChild(box);
+    }
+
+    _makeForm(names, schema) {
+        const form = document.createElement('ha-form');
+        form.hass = this._hass;
+        form.schema = schema;
+        form.data = this._data(names);
+        form.computeLabel = (item) => {
+            if (!item.name) return ''; // grid wrappers carry no label
+            return this._label('ed' + item.name.replace(/(^|_)([a-z])/g, (m, p, c) => c.toUpperCase()));
+        };
+        form.addEventListener('value-changed', (event) => {
+            event.stopPropagation();
+            this._emit(event.detail.value);
+        });
+        form.__names = names;
+        return form;
+    }
+
+    _section(titleKey, node, open) {
+        const details = document.createElement('details');
+        if (open) details.open = true;
+        const summary = document.createElement('summary');
+        summary.textContent = this._label(titleKey);
+        details.appendChild(summary);
+        details.appendChild(node);
+        return details;
+    }
+
+    _build() {
+        const root = this.shadowRoot;
+        root.innerHTML = '';
+        const style = document.createElement('style');
+        style.textContent = EDITOR_STYLES;
+        root.appendChild(style);
+
+        const wrap = document.createElement('div');
+        wrap.className = 'ed';
+
+        // --- what to control
+        this._forms.basic = this._makeForm(
+            ['entity', 'entities', 'title', 'icon', 'description'],
+            [
+                { name: 'entity', required: true, selector: { entity: { filter: LIGHT_FILTER } } },
+                { name: 'entities', selector: { entity: { multiple: true, filter: LIGHT_FILTER } } },
+                {
+                    name: '',
+                    type: 'grid',
+                    schema: [
+                        { name: 'title', selector: { text: {} } },
+                        { name: 'icon', selector: { icon: {} } }
+                    ]
+                },
+                { name: 'description', selector: { text: {} } }
+            ]
+        );
+        wrap.appendChild(this._forms.basic);
+
+        // --- live resolution preview: the whole point of this card, visible
+        this._preview = document.createElement('div');
+        this._preview.className = 'preview';
+        wrap.appendChild(this._preview);
+
+        // --- group resolution
+        const resolveBox = document.createElement('div');
+        this._forms.resolve = this._makeForm(
+            ['resolve_groups', 'max_depth', 'show_unavailable'],
+            [
+                { name: 'resolve_groups', selector: { boolean: {} } },
+                { name: 'max_depth', selector: { number: { min: 1, max: 20, mode: 'box' } } },
+                { name: 'show_unavailable', selector: { boolean: {} } }
+            ]
+        );
+        resolveBox.appendChild(this._forms.resolve);
+        const hint = document.createElement('p');
+        hint.className = 'hint';
+        hint.textContent = this._label('edResolveHint');
+        resolveBox.appendChild(hint);
+        wrap.appendChild(this._section('edSectionResolve', resolveBox, true));
+
+        // --- appearance
+        this._forms.look = this._makeForm(
+            ['off_color', 'default_color', 'hue_borders', 'show_switch', 'slider', 'allow_zero', 'off_shadow'],
+            [
+                {
+                    name: '',
+                    type: 'grid',
+                    schema: [
+                        { name: 'off_color', selector: { text: {} } },
+                        { name: 'default_color', selector: { text: {} } }
+                    ]
+                },
+                {
+                    name: '',
+                    type: 'grid',
+                    schema: [
+                        { name: 'hue_borders', selector: { boolean: {} } },
+                        { name: 'show_switch', selector: { boolean: {} } },
+                        { name: 'slider', selector: { boolean: {} } },
+                        { name: 'allow_zero', selector: { boolean: {} } },
+                        { name: 'off_shadow', selector: { boolean: {} } }
+                    ]
+                }
+            ]
+        );
+        const lookBox = document.createElement('div');
+        lookBox.appendChild(this._forms.look);
+        const colorHint = document.createElement('p');
+        colorHint.className = 'hint';
+        colorHint.textContent = this._label('edColorHint');
+        lookBox.appendChild(colorHint);
+        wrap.appendChild(this._section('edSectionLook', lookBox, false));
+
+        // --- actions
+        const actions = this._actionOptions();
+        this._forms.actions = this._makeForm(
+            ['tap_action', 'hold_action'],
+            [
+                {
+                    name: '',
+                    type: 'grid',
+                    schema: [
+                        { name: 'tap_action', selector: { select: { mode: 'dropdown', options: actions } } },
+                        { name: 'hold_action', selector: { select: { mode: 'dropdown', options: actions } } }
+                    ]
+                }
+            ]
+        );
+        wrap.appendChild(this._section('edSectionActions', this._forms.actions, false));
+
+        // --- scenes
+        const sceneBox = document.createElement('div');
+        this._sceneList = document.createElement('div');
+        sceneBox.appendChild(this._sceneList);
+        const add = document.createElement('button');
+        add.className = 'addbtn';
+        add.textContent = '+  ' + this._label('edAddScene');
+        add.addEventListener('click', () => {
+            const scenes = (this._config.scenes || []).slice();
+            scenes.push({ entity: '' });
+            this._emit({ scenes: scenes });
+            this._syncScenes(true);
+        });
+        sceneBox.appendChild(add);
+        wrap.appendChild(this._section('edSectionScenes', sceneBox, true));
+
+        root.appendChild(wrap);
+        this._built = true;
+    }
+
+    /**
+     * Pushes current values back into the forms without rebuilding them.
+     *
+     * The form the cursor is in is left alone: writing a value back into a
+     * field that is being typed in fights the user for the caret.
+     */
+    _syncForms() {
+        const focused = this.shadowRoot ? this.shadowRoot.activeElement : null;
+        Object.keys(this._forms).forEach((key) => {
+            const form = this._forms[key];
+            if (!form || !form.__names) return;
+            if (focused && (focused === form || form.contains(focused))) return;
+            form.data = this._data(form.__names);
+        });
+    }
+
+    // -- scenes -------------------------------------------------------------
+
+    /**
+     * Scene rows are rebuilt only when their number changes. Rebuilding on
+     * every keystroke would move focus out of the field being typed in.
+     */
+    _syncScenes(force) {
+        if (!this._sceneList) return;
+        const scenes = Array.isArray(this._config.scenes) ? this._config.scenes : [];
+        if (!force && scenes.length === this._sceneCount) {
+            if (this._sceneForms) {
+                this._sceneForms.forEach((form, index) => {
+                    form.data = this._sceneData(scenes[index]);
+                });
+            }
+            return;
+        }
+        this._sceneCount = scenes.length;
+        this._sceneForms = [];
+        this._sceneList.innerHTML = '';
+        scenes.forEach((scene, index) => {
+            this._sceneList.appendChild(this._sceneRow(scene, index, scenes.length));
+        });
+    }
+
+    _sceneData(scene) {
+        const raw = typeof scene === 'string' ? { entity: scene } : scene || {};
+        return {
+            entity: raw.entity || '',
+            title: raw.title || '',
+            icon: raw.icon || '',
+            color: hexToRgbArray(raw.color)
+        };
+    }
+
+    _sceneRow(scene, index, total) {
+        const row = document.createElement('div');
+        row.className = 'scene-row';
+
+        const form = document.createElement('ha-form');
+        form.hass = this._hass;
+        form.data = this._sceneData(scene);
+        form.schema = [
+            { name: 'entity', selector: { entity: { filter: SCENE_FILTER } } },
+            {
+                name: '',
+                type: 'grid',
+                schema: [
+                    { name: 'title', selector: { text: {} } },
+                    { name: 'icon', selector: { icon: {} } }
+                ]
+            },
+            { name: 'color', selector: { color_rgb: {} } }
+        ];
+        form.computeLabel = (item) => {
+            if (item.name === 'entity') return this._label('edSectionScenes');
+            if (item.name === 'title') return this._label('edSceneTitle');
+            if (item.name === 'icon') return this._label('edIcon');
+            if (item.name === 'color') return this._label('edSceneColor');
+            return item.name;
+        };
+        form.addEventListener('value-changed', (event) => {
+            event.stopPropagation();
+            const value = event.detail.value;
+            const next = { entity: value.entity || '' };
+            if (value.title) next.title = value.title;
+            if (value.icon) next.icon = value.icon;
+            const hex = rgbArrayToHex(value.color);
+            if (hex) next.color = hex;
+            this._replaceScene(index, next);
+        });
+        row.appendChild(form);
+        this._sceneForms.push(form);
+
+        const bar = document.createElement('div');
+        bar.className = 'scene-bar';
+        const spacer = document.createElement('span');
+        spacer.className = 'spacer';
+        bar.appendChild(spacer);
+        bar.appendChild(this._sceneButton('mdi:arrow-up', 'edUp', index === 0, () => this._moveScene(index, -1)));
+        bar.appendChild(
+            this._sceneButton('mdi:arrow-down', 'edDown', index === total - 1, () => this._moveScene(index, 1))
+        );
+        bar.appendChild(this._sceneButton('mdi:delete', 'edRemove', false, () => this._removeScene(index), true));
+        row.appendChild(bar);
+
+        return row;
+    }
+
+    _sceneButton(icon, labelKey, disabled, onClick, danger) {
+        const button = document.createElement('button');
+        button.className = 'iconbtn' + (danger ? ' danger' : '');
+        button.title = this._label(labelKey);
+        if (disabled) button.setAttribute('disabled', '');
+        else button.addEventListener('click', onClick);
+        const haIcon = document.createElement('ha-icon');
+        haIcon.setAttribute('icon', icon);
+        button.appendChild(haIcon);
+        return button;
+    }
+
+    _replaceScene(index, value) {
+        const scenes = (this._config.scenes || []).slice();
+        scenes[index] = value;
+        this._emit({ scenes: scenes });
+    }
+
+    _moveScene(index, delta) {
+        const scenes = (this._config.scenes || []).slice();
+        const target = index + delta;
+        if (target < 0 || target >= scenes.length) return;
+        const held = scenes[index];
+        scenes[index] = scenes[target];
+        scenes[target] = held;
+        this._emit({ scenes: scenes });
+        this._syncScenes(true);
+    }
+
+    _removeScene(index) {
+        const scenes = (this._config.scenes || []).slice();
+        scenes.splice(index, 1);
+        this._emit({ scenes: scenes });
+        this._syncScenes(true);
+    }
+
+    // -- resolution preview -------------------------------------------------
+
+    /**
+     * Runs the card's own resolver against the live state and reports what it
+     * found. Without this, "resolve nested groups" is a switch whose effect is
+     * invisible until the card is placed.
+     */
+    _renderPreview() {
+        const box = this._preview;
+        if (!box) return;
+        box.innerHTML = '';
+
+        const roots = []
+            .concat(this._config.entity ? [this._config.entity] : [])
+            .concat(Array.isArray(this._config.entities) ? this._config.entities : [])
+            .filter(Boolean);
+
+        const head = document.createElement('div');
+        head.className = 'head';
+        const label = document.createElement('span');
+        label.textContent = this._label('edPreview') + ':';
+        head.appendChild(label);
+        box.appendChild(head);
+
+        if (!this._hass || !roots.length) {
+            const none = document.createElement('span');
+            none.className = 'count';
+            none.textContent = this._label('edPreviewNone');
+            head.appendChild(none);
+            return;
+        }
+
+        const follow = this._config.resolve_groups !== false;
+        const depth = this._config.max_depth === undefined ? DEFAULT_MAX_DEPTH : this._config.max_depth;
+        const result = resolveEntities(this._hass, roots, { maxDepth: depth, resolveGroups: follow });
+
+        const dead = result.leaves.filter((id) => {
+            const state = this._hass.states[id];
+            return !state || state.state === 'unavailable';
+        });
+
+        const count = document.createElement('span');
+        count.className = 'count';
+        count.textContent = follow
+            ? this._label('edPreviewCount')
+                  .split('{leaves}').join(result.leaves.length)
+                  .split('{groups}').join(result.groups.length)
+                  .split('{depth}').join(result.maxDepth)
+            : this._label('edPreviewFlat');
+        head.appendChild(count);
+
+        const chips = document.createElement('div');
+        chips.className = 'chips';
+        result.leaves.forEach((id) => {
+            const state = this._hass.states[id];
+            const isDead = !state || state.state === 'unavailable';
+            const chip = document.createElement('span');
+            chip.className = 'chip' + (isDead ? ' dead' : '');
+            chip.textContent =
+                state && state.attributes && state.attributes.friendly_name
+                    ? state.attributes.friendly_name
+                    : id;
+            chip.title = id;
+            chips.appendChild(chip);
+        });
+        box.appendChild(chips);
+
+        const notes = [];
+        if (dead.length) {
+            notes.push({
+                warn: true,
+                text: translate(this._hass, 'edPreviewDead', { n: dead.length })
+            });
+        }
+        if (result.dropped.length) {
+            notes.push({ text: translate(this._hass, 'edPreviewDropped', { n: result.dropped.length }) });
+        }
+        if (result.truncated.length) {
+            notes.push({
+                warn: true,
+                text: translate(this._hass, 'edPreviewTruncated', { list: result.truncated.join(', ') })
+            });
+        }
+        if (result.recovered.length) {
+            notes.push({
+                warn: true,
+                text: translate(this._hass, 'edPreviewRecovered', { list: result.recovered.join(', ') })
+            });
+        }
+        notes.forEach((note) => {
+            const div = document.createElement('div');
+            div.className = 'note' + (note.warn ? ' warn' : '');
+            div.textContent = note.text;
+            box.appendChild(div);
+        });
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Registration
 // ---------------------------------------------------------------------------
 
 if (!customElements.get(CARD_TAG)) customElements.define(CARD_TAG, BuschLightCard);
 if (!customElements.get(DIALOG_TAG)) customElements.define(DIALOG_TAG, BuschLightDialog);
+if (!customElements.get(EDITOR_TAG)) customElements.define(EDITOR_TAG, BuschLightCardEditor);
+
+// Editor internals, exposed for the browser test harness the same way the
+// card's are.
+BuschLightCard.__internals.BuschLightCardEditor = BuschLightCardEditor;
+BuschLightCard.__internals.toSnakeConfig = toSnakeConfig;
+BuschLightCard.__internals.CONFIG_DEFAULTS = CONFIG_DEFAULTS;
+BuschLightCard.__internals.hexToRgbArray = hexToRgbArray;
+BuschLightCard.__internals.rgbArrayToHex = rgbArrayToHex;
 
 window.customCards = window.customCards || [];
 if (!window.customCards.some((c) => c.type === CARD_TAG)) {
@@ -2120,7 +2935,7 @@ if (!window.customCards.some((c) => c.type === CARD_TAG)) {
         type: CARD_TAG,
         name: 'Busch Light Card',
         description: 'Hue-like light and scene control. Resolves nested groups on every level and survives unavailable entities.',
-        preview: false,
+        preview: true,
         documentationURL: 'https://github.com/luukkii123/ha-busch-lightcards'
     });
 }
