@@ -1,9 +1,9 @@
 {
   "cardFile": "/repo/dist/busch-lightcards.js",
-  "servedFrom": "http://127.0.0.1:59009/dist/busch-lightcards.js",
+  "servedFrom": "http://127.0.0.1:45063/dist/busch-lightcards.js",
   "requests": [
-    "http://127.0.0.1:59009/docs/render/ergebnis/harness.html",
-    "http://127.0.0.1:59009/dist/busch-lightcards.js"
+    "http://127.0.0.1:45063/docs/render/ergebnis/harness.html",
+    "http://127.0.0.1:45063/dist/busch-lightcards.js"
   ],
   "badResponses": [],
   "requestFailures": [],
@@ -161,6 +161,21 @@
       "detail": "{\"zIndex\": \"100000\", \"intruderZ\": \"1000\", \"topmost\": \"busch-light-dialog\"}"
     },
     {
+      "name": "dialog header carries a master switch, reflecting the group",
+      "pass": true,
+      "detail": "{\"present\": true, \"on\": true}"
+    },
+    {
+      "name": "the master switch drives the whole group, skipping the dead one",
+      "pass": true,
+      "detail": "{\"calls\": [{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": [\"light.kinderzimmer_spot_1\", \"light.vorhang\", \"light.ledstreifen_kinderzimm\", \"light.kinderzimmer_spot_2\", \"light.kinderzimmer_spot_3\"]}}], \"targets\": [\"light.kinderzimmer_spot_1\", \"light.kinderzimmer_spot_2\", \"light.kinderzimmer_spot_3\", \"light.ledstreifen_kinderzimm\", \"light.vorhang\"]}"
+    },
+    {
+      "name": "the master switch is disabled when nothing is reachable",
+      "pass": true,
+      "detail": "True"
+    },
+    {
       "name": "brightness label on a light tile follows the tile's text colour",
       "pass": true,
       "detail": "{\"name\": \"Kinderzimmer Spot 2\", \"tileColor\": \"rgb(17, 17, 17)\", \"pctColor\": \"rgb(17, 17, 17)\"}"
@@ -179,6 +194,16 @@
       "name": "white tab swaps in a temperature bar spanning that range",
       "pass": true,
       "detail": "expected rgb(255, 187, 73) .. rgb(190, 228, 243) in linear-gradient(90deg, rgb(255, 187, 73) 0%, rgb(255, 199, 106) 8%, rgb(255, 211, 138) 17%, rgb(255, 223, 171) 25%, rgb(255, 236, 203) 33%, rgb(255, 248, 236) 4"
+    },
+    {
+      "name": "temperature marker stays inside its bar at both ends",
+      "pass": true,
+      "detail": "{\"atMax\": {\"markerLeft\": 572, \"markerRight\": 598, \"barLeft\": 70, \"barRight\": 598, \"scrollWidth\": 560, \"clientWidth\": 560, \"bodyScroll\": 668, \"bodyClient\": 668}, \"atMin\": {\"markerLeft\": 70, \"markerRight\": 96, \"barLeft\": 70, \"barRight\": 598, \"scrollWidth\": 560, \"clientWidth\": 560, \"bodyScroll\": 668, \"bodyClient\": 668}}"
+    },
+    {
+      "name": "the dialog never scrolls sideways",
+      "pass": true,
+      "detail": "{\"max\": {\"markerLeft\": 572, \"markerRight\": 598, \"barLeft\": 70, \"barRight\": 598, \"scrollWidth\": 560, \"clientWidth\": 560, \"bodyScroll\": 668, \"bodyClient\": 668}, \"min\": {\"markerLeft\": 70, \"markerRight\": 96, \"barLeft\": 70, \"barRight\": 598, \"scrollWidth\": 560, \"clientWidth\": 560, \"bodyScroll\": 668, \"bodyClient\": 668}}"
     },
     {
       "name": "resolution keeps the group structure, not just the leaves",
@@ -298,7 +323,7 @@
     {
       "name": "every reachable light tile has its own switch, the dead one none",
       "pass": true,
-      "detail": "{\"sceneBadges\": true, \"sceneIcons\": [\"mdi:white-balance-sunny\", \"mdi:power-sleep\", \"mdi:leaf-maple\", \"mdi:palette\", \"mdi:palette\"], \"sceneBadgeColors\": [\"rgb(255, 224, 163)\", \"rgb(43, 58, 103)\", \"rgb(194, 98, 42)\", \"rgb(123, 47, 247)\", \"rgb(255, 218, 149)\"], \"tilesWithSwitch\": 5, \"deadWithSwitch\": 0, \"totalTiles\": 6, \"nestedButtons\": 0, \"switchCalls\": [{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": \"light.vorhang\"}}], \"detailTitle\": \"Kuschelecke\", \"hasBackButton\": true}"
+      "detail": "{\"sceneBadges\": true, \"sceneIcons\": [\"mdi:white-balance-sunny\", \"mdi:power-sleep\", \"mdi:leaf-maple\", \"mdi:palette\", \"mdi:palette\"], \"sceneBadgeColors\": [\"rgb(255, 224, 163)\", \"rgb(43, 58, 103)\", \"rgb(194, 98, 42)\", \"rgb(123, 47, 247)\", \"rgb(255, 218, 149)\"], \"tilesWithSwitch\": 5, \"deadWithSwitch\": 0, \"totalTiles\": 6, \"nestedButtons\": 0, \"switchCalls\": [{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": \"light.vorhang\"}}], \"detailTitle\": \"Kuschelecke\", \"hasBackButton\": true, \"detailSwitchPresent\": true, \"detailSwitchOn\": true, \"detailSwitchCalls\": [{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": \"light.vorhang\"}}]}"
     },
     {
       "name": "tiles are not nested buttons",
@@ -314,6 +339,11 @@
       "name": "tapping the tile body opens that light's detail view",
       "pass": true,
       "detail": "{\"title\": \"Kuschelecke\", \"back\": true}"
+    },
+    {
+      "name": "the master switch follows into the detail view and drives that light",
+      "pass": true,
+      "detail": "[{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": \"light.vorhang\"}}]"
     },
     {
       "name": "card offers a visual editor",
@@ -414,7 +444,7 @@
     "dialog-groups.png",
     "dialog-tiles.png"
   ],
-  "harnessUrl": "http://127.0.0.1:59009/docs/render/ergebnis/harness.html",
+  "harnessUrl": "http://127.0.0.1:45063/docs/render/ergebnis/harness.html",
   "resolution": {
     "leaves": [
       "light.kinderzimmer_spot_1",
@@ -690,6 +720,26 @@
     "intruderZ": "1000",
     "topmost": "busch-light-dialog"
   },
+  "masterSwitch": {
+    "present": true,
+    "onInGroupView": true,
+    "groupCalls": [
+      {
+        "domain": "light",
+        "service": "turn_off",
+        "data": {
+          "entity_id": [
+            "light.kinderzimmer_spot_1",
+            "light.vorhang",
+            "light.ledstreifen_kinderzimm",
+            "light.kinderzimmer_spot_2",
+            "light.kinderzimmer_spot_3"
+          ]
+        }
+      }
+    ],
+    "disabledWhenAllDead": true
+  },
   "dialogWhiteTab": {
     "hasWheel": false,
     "hasTempBar": true,
@@ -708,6 +758,28 @@
       228,
       243
     ]
+  },
+  "tempBarOverflow": {
+    "atMax": {
+      "markerLeft": 572,
+      "markerRight": 598,
+      "barLeft": 70,
+      "barRight": 598,
+      "scrollWidth": 560,
+      "clientWidth": 560,
+      "bodyScroll": 668,
+      "bodyClient": 668
+    },
+    "atMin": {
+      "markerLeft": 70,
+      "markerRight": 96,
+      "barLeft": 70,
+      "barRight": 598,
+      "scrollWidth": 560,
+      "clientWidth": 560,
+      "bodyScroll": 668,
+      "bodyClient": 668
+    }
   },
   "sections": {
     "sections": [
@@ -886,7 +958,18 @@
       }
     ],
     "detailTitle": "Kuschelecke",
-    "hasBackButton": true
+    "hasBackButton": true,
+    "detailSwitchPresent": true,
+    "detailSwitchOn": true,
+    "detailSwitchCalls": [
+      {
+        "domain": "light",
+        "service": "turn_off",
+        "data": {
+          "entity_id": "light.vorhang"
+        }
+      }
+    ]
   },
   "editor": {
     "hasGetConfigElement": true,
@@ -1071,6 +1154,32 @@
     "hue:bulb-group-recessed-ceiling",
     "mdi:lightbulb",
     "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:alert-circle-outline",
+    "mdi:alert-circle-outline",
+    "mdi:alert-circle-outline",
+    "mdi:alert-circle-outline",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:alert-circle-outline",
+    "mdi:alert-circle-outline",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
     "mdi:alert-circle-outline",
     "mdi:lightbulb-group",
     "mdi:lightbulb-group",
@@ -1154,7 +1263,7 @@
     "mdi:delete"
   ],
   "vendorRequests": [],
-  "passed": 79,
+  "passed": 85,
   "failed": 0,
   "clean": true
 }

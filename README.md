@@ -115,6 +115,10 @@ state, and it still says so in words rather than erroring.
 
 ![Dialog with scenes, colour wheel and per-light tiles](docs/images/dialog.png)
 
+- **A master switch in the header**, always — in the group view it drives the
+  whole group, in a light's detail view that one light. The card's own switch
+  is behind the dialog, so without it there was no way to turn everything off
+  without closing first.
 - **Scene tiles** — one square tile per scene, the colour riding in a round
   badge rather than flooding the tile, so the label stays readable whatever
   colour it carries. The icon comes from the scene itself. A scene entity that
@@ -231,7 +235,7 @@ docker run --rm \
       python3 /repo/docs/render/render.py /repo/dist/busch-lightcards.js /repo/docs/render/ergebnis'
 ```
 
-79 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
+85 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
 self-reference, deleted members, foreign domains, the depth limit, the
 unavailable-group memory (cold and warm), aggregation, service-call routing,
 the rendered card text, the dialog and how it stacks against a Leaflet-grade
@@ -239,7 +243,9 @@ z-index, the group blocks (structure, per-group counts and toggles, the
 already-shown note, `flat` mode), Zigbee2MQTT resolution with a control run
 that removes `group_entities` again, the two attributes deliberately not
 followed, scene import (matching, group-only scenes, reversibility), the tile
-layout, and the visual editor (option coverage,
+layout, the header's master switch in both views, the temperature marker
+staying inside its bar so the sheet never scrolls sideways, and the visual
+editor (option coverage,
 labels, live preview, minimal output, camelCase folding, scene add/reorder/
 delete, colour round-trip).
 

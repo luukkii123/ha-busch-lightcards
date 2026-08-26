@@ -18,7 +18,7 @@
  * README for why.
  */
 
-const CARD_VERSION = '0.4.0';
+const CARD_VERSION = '0.5.0';
 
 const CARD_TAG = 'busch-light-card';
 const DIALOG_TAG = 'busch-light-dialog';
@@ -1151,7 +1151,11 @@ function onDrag(element, handler) {
         if (element.hasAttribute('disabled')) return;
         active = true;
         pointerId = event.pointerId;
-        element.setPointerCapture(pointerId);
+        try {
+            element.setPointerCapture(pointerId);
+        } catch (e) {
+            /* no live pointer to capture — carry on without it */
+        }
         event.preventDefault();
         report(event, false);
     });
@@ -1723,7 +1727,10 @@ const DIALOG_STYLES = `
     position: relative;
     width: min(560px, 100%);
     max-height: 92vh;
-    overflow: auto;
+    /* Vertical only. Nothing in here is meant to scroll sideways, so an
+       element that overhangs must be clipped, not turned into a scrollbar. */
+    overflow-y: auto;
+    overflow-x: hidden;
     background: ${DIALOG_BG};
     color: #fff;
     border-radius: 16px 16px 0 0;
@@ -1899,6 +1906,10 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 .marker {
     position: absolute;
     top: 50%;
+    /* border-box, so the 3px ring counts inside the 26px: otherwise the thing
+       is really 32px wide and both the -13px offset and the inset travel are
+       three pixels short at each end. */
+    box-sizing: border-box;
     width: 26px;
     height: 26px;
     margin: -13px 0 0 -13px;
@@ -1949,6 +1960,11 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 .gtoggle.on { background: var(--primary-color, #03a9f4); }
 .gtoggle.on .gknob { transform: translateX(14px); }
 .gtoggle[disabled] { opacity: 0.4; cursor: default; }
+/* The master switch, in the header where it is always reachable — the card's
+   own switch is behind the dialog. */
+.head .headsw { width: 42px; height: 24px; border-radius: 12px; }
+.head .headsw .gknob { width: 20px; height: 20px; }
+.head .headsw.on .gknob { transform: translateX(18px); }
 `;
 
 // ---------------------------------------------------------------------------
@@ -2061,6 +2077,20 @@ class BuschLightDialog extends HTMLElement {
         who.appendChild(h1);
         who.appendChild(sub);
         head.appendChild(who);
+
+        // The master switch, always in the header: it belongs to whatever the
+        // header names — the whole group, or the single light in detail view.
+        head.appendChild(
+            detail
+                ? this._makeHeadSwitch(detail.isOn, !detail.isAvailable, () =>
+                      hass.callService(detail.domain, detail.isOn ? 'turn_off' : 'turn_on', {
+                          entity_id: detail.entityId
+                      })
+                  )
+                : this._makeHeadSwitch(model.isOn, model.isAllUnavailable || model.isEmpty, () =>
+                      model.toggle()
+                  )
+        );
 
         head.appendChild(this._makeIconButton('mdi:close', () => this.close()));
         sheet.appendChild(head);
@@ -2178,17 +2208,9 @@ class BuschLightDialog extends HTMLElement {
                     else hass.callService('light', 'turn_on', { entity_id: light.entityId, brightness_pct: pct });
                 })
             );
-        } else {
-            wrap.appendChild(this._heading(translate(hass, 'brightness')));
-            const toggleRow = document.createElement('button');
-            toggleRow.className = 'scene';
-            toggleRow.style.width = '100%';
-            toggleRow.textContent = light.isOn ? translate(hass, 'allOff') : 'An';
-            toggleRow.addEventListener('click', () => {
-                hass.callService(light.domain, light.isOn ? 'turn_off' : 'turn_on', { entity_id: light.entityId });
-            });
-            wrap.appendChild(toggleRow);
         }
+        // A light without brightness needs no row of its own: the header
+        // switch above already turns it on and off.
 
         sheet.appendChild(wrap);
 
@@ -2215,6 +2237,18 @@ class BuschLightDialog extends HTMLElement {
         const h3 = document.createElement('h3');
         h3.textContent = text;
         return h3;
+    }
+
+    _makeHeadSwitch(isOn, disabled, onClick) {
+        const toggle = document.createElement('button');
+        toggle.className = 'gtoggle headsw' + (isOn ? ' on' : '');
+        toggle.setAttribute('aria-label', 'toggle');
+        const knob = document.createElement('span');
+        knob.className = 'gknob';
+        toggle.appendChild(knob);
+        if (disabled) toggle.setAttribute('disabled', '');
+        else toggle.addEventListener('click', onClick);
+        return toggle;
     }
 
     _makeIconButton(icon, onClick) {
@@ -2553,8 +2587,15 @@ class BuschLightDialog extends HTMLElement {
         return wrap;
     }
 
-    /** Colour temperature bar, drawn along Hue's own curve. */
+    /**
+     * Colour temperature bar, drawn along Hue's own curve.
+     *
+     * The marker travels inset by its own radius. At `left: 100%` it hung 13 px
+     * past the bar, which was enough to give the whole sheet a horizontal
+     * scrollbar.
+     */
     _makeTempBar(minKelvin, maxKelvin, currentKelvin, onPick) {
+        const markerLeft = (ratio) => `calc(13px + (100% - 26px) * ${clamp(ratio, 0, 1)})`;
         const bar = document.createElement('div');
         bar.className = 'tempbar';
 
@@ -2571,7 +2612,7 @@ class BuschLightDialog extends HTMLElement {
         marker.className = 'marker';
         if (currentKelvin) {
             const ratio = clamp((currentKelvin - minKelvin) / (maxKelvin - minKelvin), 0, 1);
-            marker.style.left = ratio * 100 + '%';
+            marker.style.left = markerLeft(ratio);
             const rgb = tempToRgb(currentKelvin);
             marker.style.background = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
         } else {
@@ -2584,7 +2625,7 @@ class BuschLightDialog extends HTMLElement {
             const kelvin = minKelvin + (maxKelvin - minKelvin) * ratio;
             const rgb = tempToRgb(kelvin);
             marker.style.display = '';
-            marker.style.left = ratio * 100 + '%';
+            marker.style.left = markerLeft(ratio);
             marker.style.background = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
             this._dragging = !done;
             if (done) onPick(kelvin);

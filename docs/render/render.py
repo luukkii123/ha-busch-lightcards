@@ -692,6 +692,51 @@ def main():
                   and int(stacking["zIndex"]) > int(stacking["intruderZ"]),
                   json.dumps(stacking))
 
+            # The card's own switch is behind the dialog, so the header carries
+            # a master switch of its own — in both views.
+            master = page.evaluate(
+                f"""(states) => {{
+                    const I = {internals};
+                    const sr = document.querySelector('busch-light-dialog').shadowRoot;
+                    const sw = () => sr.querySelector('.head .headsw');
+                    const out = {{
+                        present: !!sw(),
+                        onInGroupView: sw() ? sw().classList.contains('on') : null
+                    }};
+                    window.__serviceCalls = [];
+                    sw().click();
+                    out.groupCalls = window.__serviceCalls.slice();
+
+                    // and once more with every member unreachable
+                    I.clearMemberCache();
+                    const dead = JSON.parse(JSON.stringify(states));
+                    Object.keys(dead).forEach(k => {{
+                        if (k.startsWith('light.')) dead[k].state = 'unavailable';
+                    }});
+                    const dlg = document.querySelector('busch-light-dialog');
+                    dlg.hass = window.makeHass(dead);
+                    out.disabledWhenAllDead = dlg.shadowRoot
+                        .querySelector('.head .headsw').hasAttribute('disabled');
+                    dlg.hass = window.makeHass(states);
+                    return out;
+                }}""",
+                lit_states,
+            )
+            report["masterSwitch"] = master
+            targets = []
+            for call in master["groupCalls"]:
+                target = call["data"]["entity_id"]
+                targets.extend(target if isinstance(target, list) else [target])
+            check("dialog header carries a master switch, reflecting the group",
+                  master["present"] and master["onInGroupView"] is True,
+                  json.dumps({"present": master["present"], "on": master["onInGroupView"]}))
+            check("the master switch drives the whole group, skipping the dead one",
+                  master["groupCalls"] and all(c["service"] == "turn_off" for c in master["groupCalls"])
+                  and "light.hubschrauberlampe" not in targets and len(targets) == 5,
+                  json.dumps({"calls": master["groupCalls"], "targets": sorted(targets)}))
+            check("the master switch is disabled when nothing is reachable",
+                  master["disabledWhenAllDead"] is True, str(master["disabledWhenAllDead"]))
+
             check("brightness label on a light tile follows the tile's text colour",
                   dialog["litTilePct"] is not None
                   and dialog["litTilePct"]["pctColor"] == dialog["litTilePct"]["tileColor"],
@@ -748,6 +793,50 @@ def main():
                   and start_css in after_tab["gradient"]
                   and end_css in after_tab["gradient"],
                   f"expected {start_css} .. {end_css} in {after_tab['gradient'][:160]}")
+            # The marker used to sit at `left: 100%` and hang half its width
+            # past the bar, which gave the whole sheet a horizontal scrollbar.
+            overflow = page.evaluate(
+                """() => {
+                    const sr = document.querySelector('busch-light-dialog').shadowRoot;
+                    const sheet = sr.querySelector('.sheet');
+                    const bar = sr.querySelector('.tempbar');
+                    const marker = () => bar.querySelector('.marker');
+                    const drag = (x) => {
+                        const r = bar.getBoundingClientRect();
+                        const y = r.top + r.height / 2;
+                        ['pointerdown', 'pointerup'].forEach(type =>
+                            bar.dispatchEvent(new PointerEvent(type,
+                                { bubbles: true, pointerId: 7, clientX: x, clientY: y })));
+                    };
+                    const measure = () => {
+                        const b = bar.getBoundingClientRect();
+                        const m = marker().getBoundingClientRect();
+                        return {
+                            markerLeft: Math.round(m.left), markerRight: Math.round(m.right),
+                            barLeft: Math.round(b.left), barRight: Math.round(b.right),
+                            scrollWidth: sheet.scrollWidth, clientWidth: sheet.clientWidth,
+                            bodyScroll: document.documentElement.scrollWidth,
+                            bodyClient: document.documentElement.clientWidth
+                        };
+                    };
+                    drag(bar.getBoundingClientRect().right + 60);   // past the warm/cold end
+                    const atMax = measure();
+                    drag(bar.getBoundingClientRect().left - 60);
+                    const atMin = measure();
+                    return { atMax: atMax, atMin: atMin };
+                }"""
+            )
+            report["tempBarOverflow"] = overflow
+            check("temperature marker stays inside its bar at both ends",
+                  overflow["atMax"]["markerRight"] <= overflow["atMax"]["barRight"]
+                  and overflow["atMin"]["markerLeft"] >= overflow["atMin"]["barLeft"],
+                  json.dumps(overflow))
+            check("the dialog never scrolls sideways",
+                  overflow["atMax"]["scrollWidth"] <= overflow["atMax"]["clientWidth"]
+                  and overflow["atMin"]["scrollWidth"] <= overflow["atMin"]["clientWidth"]
+                  and overflow["atMax"]["bodyScroll"] <= overflow["atMax"]["bodyClient"],
+                  json.dumps({"max": overflow["atMax"], "min": overflow["atMin"]}))
+
             page.wait_for_timeout(300)
             shot = out_dir / "dialog-white.png"
             page.screenshot(path=str(shot))
@@ -1053,6 +1142,15 @@ def main():
                     { bubbles: true, pointerId: 1, clientX: 10, clientY: 10 }));
                 out.detailTitle = sr.querySelector('.head h1').textContent;
                 out.hasBackButton = sr.querySelectorAll('.head .iconbtn').length === 2;
+
+                // the master switch follows into the detail view and acts on
+                // that one light
+                const detailSw = sr.querySelector('.head .headsw');
+                out.detailSwitchPresent = !!detailSw;
+                out.detailSwitchOn = detailSw ? detailSw.classList.contains('on') : null;
+                window.__serviceCalls = [];
+                detailSw.click();
+                out.detailSwitchCalls = window.__serviceCalls.slice();
                 return out;
             }""",
             {"root": fixture["root"], "states": lit_states,
@@ -1081,6 +1179,12 @@ def main():
         check("tapping the tile body opens that light's detail view",
               tiles["detailTitle"] == "Kuschelecke" and tiles["hasBackButton"],
               json.dumps({"title": tiles["detailTitle"], "back": tiles["hasBackButton"]}))
+        check("the master switch follows into the detail view and drives that light",
+              tiles["detailSwitchPresent"] and tiles["detailSwitchOn"] is True
+              and len(tiles["detailSwitchCalls"]) == 1
+              and tiles["detailSwitchCalls"][0]["service"] == "turn_off"
+              and tiles["detailSwitchCalls"][0]["data"]["entity_id"] == "light.vorhang",
+              json.dumps(tiles["detailSwitchCalls"]))
 
         page.wait_for_timeout(300)
         shot = out_dir / "dialog-tiles.png"
