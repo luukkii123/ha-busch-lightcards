@@ -18,7 +18,7 @@
  * README for why.
  */
 
-const CARD_VERSION = '0.3.0';
+const CARD_VERSION = '0.4.0';
 
 const CARD_TAG = 'busch-light-card';
 const DIALOG_TAG = 'busch-light-dialog';
@@ -49,6 +49,27 @@ const GROUP_DOMAINS = new Set(['light', 'switch', 'group']);
 
 /** Domains this card can actually switch. Anything else is dropped on resolve. */
 const LEAF_DOMAINS = new Set(['light', 'switch']);
+
+/**
+ * Attributes that name a group's members. There is no single convention — each
+ * integration picked its own, and reading only the first one silently loses
+ * whole platforms.
+ *
+ *   entity_id       Home Assistant light-group helpers and old-style group.*
+ *   group_entities  Zigbee2MQTT, on light.* and switch.* alike
+ *   lights          Magic Areas (measured identical to its entity_id)
+ *
+ * Deliberately NOT followed, both measured on a live 2026.8 install:
+ *
+ *   child_ids   Magic Areas' internal sub-group ids
+ *               (light.…_lights_overhead_lights) — they resolve to `unknown`,
+ *               so following them would invent members that do not exist.
+ *   entities    switch.schedule_* helpers, pointing at climate.* and
+ *               media_player.* — those are schedule targets, not members.
+ *               Treating any list of entity ids as membership would turn a
+ *               timer switch into a light group.
+ */
+const MEMBER_ATTRIBUTES = ['entity_id', 'group_entities', 'lights'];
 
 const DEFAULT_MAX_DEPTH = 10;
 
@@ -125,6 +146,9 @@ const STRINGS = {
         edActNone: 'Nothing',
         edSectionScenes: 'Scenes',
         edAddScene: 'Add scene',
+        edImportScenes: 'Import every scene using these lights ({n})',
+        edImportNone: 'No scene uses these lights',
+        edImportAllThere: 'All {n} matching scenes are already listed',
         edSceneTitle: 'Label (optional)',
         edSceneColor: 'Tile colour',
         edUp: 'Move up',
@@ -191,6 +215,9 @@ const STRINGS = {
         edActNone: 'Nichts',
         edSectionScenes: 'Szenen',
         edAddScene: 'Szene hinzufügen',
+        edImportScenes: 'Alle Szenen mit diesen Lampen übernehmen ({n})',
+        edImportNone: 'Keine Szene benutzt diese Lampen',
+        edImportAllThere: 'Alle {n} passenden Szenen stehen schon in der Liste',
         edSceneTitle: 'Beschriftung (freiwillig)',
         edSceneColor: 'Kachelfarbe',
         edUp: 'Nach oben',
@@ -451,16 +478,24 @@ function clearMemberCache() {
 function groupMembers(hass, entityId) {
     if (!GROUP_DOMAINS.has(domainOf(entityId))) return null;
     const state = hass && hass.states ? hass.states[entityId] : null;
-    const live = state && state.attributes ? state.attributes.entity_id : null;
+    const attributes = (state && state.attributes) || {};
 
-    if (Array.isArray(live) && live.length) {
-        // A group listing itself would otherwise be an immediate cycle.
-        const cleaned = live.filter((m) => typeof m === 'string' && m && m !== entityId);
-        if (cleaned.length) {
-            MEMBER_CACHE.set(entityId, cleaned);
-            return cleaned;
-        }
-        return null;
+    // Union across the known attributes, not first-wins: an integration may
+    // publish two of them, and Magic Areas publishes the same list twice.
+    const live = [];
+    MEMBER_ATTRIBUTES.forEach((name) => {
+        const value = attributes[name];
+        if (!Array.isArray(value)) return;
+        value.forEach((member) => {
+            // A group listing itself would otherwise be an immediate cycle.
+            if (typeof member !== 'string' || !member || member === entityId) return;
+            if (live.indexOf(member) === -1) live.push(member);
+        });
+    });
+
+    if (live.length) {
+        MEMBER_CACHE.set(entityId, live);
+        return live;
     }
 
     // Only fall back to the remembered list while the entity is actually
@@ -590,7 +625,8 @@ function resolveSections(hass, roots, options) {
         groups.push(entityId);
 
         const state = hass && hass.states ? hass.states[entityId] : null;
-        const publishes = state && state.attributes && Array.isArray(state.attributes.entity_id);
+        const attributes = (state && state.attributes) || {};
+        const publishes = MEMBER_ATTRIBUTES.some((name) => Array.isArray(attributes[name]));
         if (!publishes) recovered.push(entityId);
 
         const own = makeSection(entityId, depth);
@@ -614,6 +650,38 @@ function resolveSections(hass, roots, options) {
         sections,
         emptyGroups
     };
+}
+
+/**
+ * Every scene that touches at least one of these lights.
+ *
+ * A Home Assistant scene lists the entities it sets in `attributes.entity_id`,
+ * so this needs no extra API — and it is exactly the set worth offering on a
+ * card that drives those lights. Sorted by name so a re-import produces the
+ * same order.
+ *
+ * Note this reads `entity_id` directly rather than going through
+ * `groupMembers()`: a scene is not a group, and must never be expanded as one.
+ */
+function scenesForLights(hass, entityIds) {
+    const wanted = new Set(entityIds || []);
+    const states = (hass && hass.states) || {};
+    const found = [];
+
+    Object.keys(states).forEach((id) => {
+        if (domainOf(id) !== 'scene') return;
+        const attributes = states[id].attributes || {};
+        const members = attributes.entity_id;
+        if (!Array.isArray(members)) return;
+        if (members.some((member) => wanted.has(member))) found.push(id);
+    });
+
+    const nameOf = (id) => {
+        const attributes = states[id].attributes || {};
+        return String(attributes.friendly_name || id).toLowerCase();
+    };
+    found.sort((a, b) => (nameOf(a) < nameOf(b) ? -1 : nameOf(a) > nameOf(b) ? 1 : 0));
+    return found;
 }
 
 // ---------------------------------------------------------------------------
@@ -1607,6 +1675,8 @@ class BuschLightCard extends HTMLElement {
 BuschLightCard.__internals = {
     resolveEntities,
     resolveSections,
+    scenesForLights,
+    MEMBER_ATTRIBUTES,
     groupMembers,
     clearMemberCache,
     GroupModel,
@@ -1703,50 +1773,55 @@ h3 {
     color: #aaa;
     margin: 18px 0 8px;
 }
-.scenes {
-    display: flex;
+/* Scenes and lights share one square-tile grid, so the dialog reads as one
+   surface rather than a strip above a grid. */
+.scenes, .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
     gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    scrollbar-width: thin;
 }
 .scene {
-    flex: 0 0 auto;
-    width: 104px;
-    height: 62px;
-    border-radius: 10px;
+    height: 106px;
+    border-radius: 12px;
     border: none;
     cursor: pointer;
     color: #fff;
     background: ${DIALOG_TILE_OFF};
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
-    padding: 8px;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 10px;
     box-sizing: border-box;
     text-align: left;
     font-size: 12px;
     line-height: 1.25;
     overflow: hidden;
 }
+/* The colour rides in a round badge instead of flooding the whole tile —
+   that keeps the label readable whatever colour the scene carries. */
+.scene .badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: ${WARM_COLOR};
+}
+.scene .badge ha-icon { --mdc-icon-size: 22px; }
 .scene span {
     overflow: hidden;
-    text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
 }
 .scene[disabled] { opacity: 0.4; cursor: default; }
-.tiles {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-    gap: 8px;
-}
 .tile {
     position: relative;
-    height: 96px;
+    height: 118px;
     border-radius: 12px;
-    border: none;
     padding: 8px;
     box-sizing: border-box;
     cursor: pointer;
@@ -1755,24 +1830,34 @@ h3 {
     color: #fff;
     display: flex;
     flex-direction: column;
+    align-items: center;
     justify-content: space-between;
-    text-align: left;
+    text-align: center;
     touch-action: none;
+    -webkit-tap-highlight-color: transparent;
 }
+/* Shades the DARK part from the top, so its height is the missing brightness.
+   Filling from the bottom read backwards: a dim lamp looked like a bright one
+   with a bright band on top. */
 .tile .tfill {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 0;
+    top: 0;
     height: 0%;
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(0, 0, 0, 0.32);
     pointer-events: none;
     transition: height 0.2s ease-out;
 }
 .tile.dragging .tfill { transition: none; }
-.tile .trow { position: relative; display: flex; justify-content: space-between; align-items: flex-start; }
+/* On a coloured tile the theme's accent clashes; the switch borrows the
+   tile's own contrast instead. */
+.tile.lit .tsw { background: rgba(0, 0, 0, 0.25); }
+.tile.lit .tsw.on { background: rgba(0, 0, 0, 0.45); }
+.tile .thead { position: relative; width: 100%; display: flex; justify-content: flex-end; min-height: 14px; }
+.tile .tmid { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.tile .ticon { --mdc-icon-size: 26px; }
 .tile .tname {
-    position: relative;
     font-size: 12px;
     line-height: 1.2;
     overflow: hidden;
@@ -1781,7 +1866,8 @@ h3 {
     -webkit-box-orient: vertical;
 }
 /* currentColor, not a fixed white: a lit tile flips its text to dark. */
-.tile .tpct { position: relative; font-size: 11px; color: currentColor; opacity: 0.75; }
+.tile .tpct { font-size: 11px; color: currentColor; opacity: 0.75; }
+.tile .tsw { position: relative; }
 .tile.dead {
     background: repeating-linear-gradient(45deg, #2a2a2a, #2a2a2a 6px, #222 6px, #222 12px);
     color: #888;
@@ -2146,15 +2232,25 @@ class BuschLightDialog extends HTMLElement {
         button.className = 'scene';
         const state = this._hass.states ? this._hass.states[scene.entity] : null;
         const missing = !state;
-        const color = parseColor(scene.color);
-        if (color) {
-            button.style.background = colorToCss(color);
-            button.style.color = foregroundFor(color, '#fff', '#111', 0);
-        }
+        const color = parseColor(scene.color) || parseColor(WARM_COLOR);
+
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.style.background = colorToCss(color);
+        const icon = document.createElement('ha-icon');
+        icon.setAttribute(
+            'icon',
+            scene.icon || (state && state.attributes && state.attributes.icon) || 'mdi:palette'
+        );
+        icon.style.color = foregroundFor(color, '#fff', 'rgba(0,0,0,0.75)', 0);
+        badge.appendChild(icon);
+        button.appendChild(badge);
+
         const label = document.createElement('span');
         label.textContent =
             scene.title || (state && state.attributes && state.attributes.friendly_name) || scene.entity;
         button.appendChild(label);
+
         if (missing) {
             button.setAttribute('disabled', '');
             button.title = scene.entity + ' — ' + translate(this._hass, 'unreachable');
@@ -2220,28 +2316,36 @@ class BuschLightDialog extends HTMLElement {
     }
 
     _makeLightTile(light) {
-        const tile = document.createElement('button');
+        // A div, not a button: it carries its own toggle button, and nesting
+        // buttons is invalid.
+        const tile = document.createElement('div');
         tile.className = 'tile' + (light.isAvailable ? '' : ' dead');
+        tile.setAttribute('role', 'button');
+        if (light.isAvailable) tile.setAttribute('tabindex', '0');
 
         const fill = document.createElement('div');
         fill.className = 'tfill';
         tile.appendChild(fill);
 
-        const row = document.createElement('div');
-        row.className = 'trow';
-        const icon = document.createElement('ha-icon');
-        icon.setAttribute('icon', light.isAvailable ? light.icon : 'mdi:alert-circle-outline');
-        row.appendChild(icon);
+        const head = document.createElement('div');
+        head.className = 'thead';
         const pct = document.createElement('span');
         pct.className = 'tpct';
         pct.textContent = light.isAvailable ? (light.isOn ? light.brightnessPct + ' %' : '') : '';
-        row.appendChild(pct);
-        tile.appendChild(row);
+        head.appendChild(pct);
+        tile.appendChild(head);
 
+        const mid = document.createElement('div');
+        mid.className = 'tmid';
+        const icon = document.createElement('ha-icon');
+        icon.className = 'ticon';
+        icon.setAttribute('icon', light.isAvailable ? light.icon : 'mdi:alert-circle-outline');
+        mid.appendChild(icon);
         const name = document.createElement('div');
         name.className = 'tname';
         name.textContent = light.name;
-        tile.appendChild(name);
+        mid.appendChild(name);
+        tile.appendChild(mid);
 
         if (!light.isAvailable) {
             // Shown, greyed and inert. Hiding it would make a missing lamp
@@ -2250,19 +2354,37 @@ class BuschLightDialog extends HTMLElement {
             return tile;
         }
 
+        // Its own switch, so on/off is one visible tap instead of a gesture
+        // nobody discovers.
+        const toggle = document.createElement('button');
+        toggle.className = 'gtoggle tsw' + (light.isOn ? ' on' : '');
+        toggle.setAttribute('aria-label', light.name);
+        const knob = document.createElement('span');
+        knob.className = 'gknob';
+        toggle.appendChild(knob);
+        toggle.addEventListener('pointerdown', (event) => event.stopPropagation());
+        toggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            this._hass.callService(light.domain, light.isOn ? 'turn_off' : 'turn_on', {
+                entity_id: light.entityId
+            });
+        });
+        tile.appendChild(toggle);
+
         const color = light.color;
         if (light.isOn) {
+            tile.classList.add('lit');
             tile.style.background = color ? colorToCss(color) : WARM_COLOR;
             tile.style.color = foregroundFor(color || parseColor(WARM_COLOR), '#fff', '#111', 0);
-            fill.style.height = light.brightnessPct + '%';
-            fill.style.background = 'rgba(0, 0, 0, 0.16)';
+            // height = the darkness, not the brightness
+            fill.style.height = 100 - light.brightnessPct + '%';
         }
 
-        // Drag up/down dims, a plain tap toggles, a long press opens detail.
+        // The switch does on/off, so the tile itself is free for the two things
+        // that used to need a long press: drag up/down dims, a plain tap opens
+        // that light's detail view.
         let moved = false;
         let startY = 0;
-        let holdTimer = null;
-        let opened = false;
 
         onDrag(tile, (point, done) => {
             if (!moved) startY = point.y;
@@ -2271,42 +2393,26 @@ class BuschLightDialog extends HTMLElement {
                 moved = true;
                 this._dragging = true;
                 tile.classList.add('dragging');
-                clearTimeout(holdTimer);
                 const value = clamp(Math.round(((point.height - point.y) / point.height) * 100), 1, 100);
-                fill.style.height = value + '%';
+                fill.style.height = 100 - value + '%';
                 pct.textContent = value + ' %';
             }
-            if (done) {
-                clearTimeout(holdTimer);
-                tile.classList.remove('dragging');
-                this._dragging = false;
-                if (moved) {
-                    const value = clamp(Math.round(((point.height - point.y) / point.height) * 100), 1, 100);
-                    this._hass.callService('light', 'turn_on', {
-                        entity_id: light.entityId,
-                        brightness_pct: value
-                    });
-                    moved = false;
-                } else if (!opened) {
-                    this._hass.callService(light.domain, light.isOn ? 'turn_off' : 'turn_on', {
-                        entity_id: light.entityId
-                    });
-                }
-                opened = false;
-            }
-        });
+            if (!done) return;
 
-        tile.addEventListener('pointerdown', () => {
-            clearTimeout(holdTimer);
-            holdTimer = setTimeout(() => {
-                if (moved) return;
-                opened = true;
-                this._detailEntity = light.entityId;
-                this._renderSheet();
-            }, 500);
+            tile.classList.remove('dragging');
+            this._dragging = false;
+            if (moved) {
+                const value = clamp(Math.round(((point.height - point.y) / point.height) * 100), 1, 100);
+                this._hass.callService('light', 'turn_on', {
+                    entity_id: light.entityId,
+                    brightness_pct: value
+                });
+                moved = false;
+                return;
+            }
+            this._detailEntity = light.entityId;
+            this._renderSheet();
         });
-        tile.addEventListener('pointerup', () => clearTimeout(holdTimer));
-        tile.addEventListener('pointercancel', () => clearTimeout(holdTimer));
 
         return tile;
     }
@@ -2575,6 +2681,11 @@ summary {
     width: 100%;
     cursor: pointer;
     font-size: 13px;
+}
+.addbtn[disabled] {
+    color: var(--secondary-text-color);
+    cursor: default;
+    opacity: 0.7;
 }
 .fallback { color: var(--error-color, #db4437); font-size: 13px; padding: 8px 0; }
 `;
@@ -2913,6 +3024,15 @@ class BuschLightCardEditor extends HTMLElement {
             this._syncScenes(true);
         });
         sceneBox.appendChild(add);
+
+        // One click pulls in every scene that touches these lights. Removing
+        // one afterwards is the same delete button as any hand-added row —
+        // an import must not be a one-way door.
+        this._importBtn = document.createElement('button');
+        this._importBtn.className = 'addbtn';
+        this._importBtn.style.marginTop = '6px';
+        this._importBtn.addEventListener('click', () => this._importScenes());
+        sceneBox.appendChild(this._importBtn);
         wrap.appendChild(this._section('edSectionScenes', sceneBox, true));
 
         root.appendChild(wrap);
@@ -3036,6 +3156,60 @@ class BuschLightCardEditor extends HTMLElement {
         return button;
     }
 
+    /**
+     * Everything this card touches: the resolved lights **and** the groups it
+     * walked through. Scenes often name the group rather than its lamps — in
+     * this installation `scene.taglicht_2` lists `light.kinderzimmerspots`,
+     * not the three spots behind it — so matching on leaves alone would miss
+     * exactly the scenes worth importing.
+     */
+    _resolvedIds() {
+        const roots = []
+            .concat(this._config.entity ? [this._config.entity] : [])
+            .concat(Array.isArray(this._config.entities) ? this._config.entities : [])
+            .filter(Boolean);
+        if (!this._hass || !roots.length) return [];
+        const result = resolveEntities(this._hass, roots, {
+            maxDepth: this._config.max_depth === undefined ? DEFAULT_MAX_DEPTH : this._config.max_depth,
+            resolveGroups: this._config.resolve_groups !== false
+        });
+        return result.leaves.concat(result.groups);
+    }
+
+    _matchingScenes() {
+        return scenesForLights(this._hass, this._resolvedIds());
+    }
+
+    _importScenes() {
+        const existing = (this._config.scenes || []).map((s) => (typeof s === 'string' ? s : s.entity));
+        const fresh = this._matchingScenes().filter((id) => existing.indexOf(id) === -1);
+        if (!fresh.length) return;
+        const scenes = (this._config.scenes || []).concat(fresh.map((id) => ({ entity: id })));
+        this._emit({ scenes: scenes });
+        this._syncScenes(true);
+    }
+
+    /** Keeps the import button's label honest about what it would add. */
+    _syncImportButton() {
+        if (!this._importBtn) return;
+        const matching = this._matchingScenes();
+        const existing = (this._config.scenes || []).map((s) => (typeof s === 'string' ? s : s.entity));
+        const fresh = matching.filter((id) => existing.indexOf(id) === -1);
+
+        if (!matching.length) {
+            this._importBtn.textContent = this._label('edImportNone');
+            this._importBtn.setAttribute('disabled', '');
+            return;
+        }
+        if (!fresh.length) {
+            this._importBtn.textContent = translate(this._hass, 'edImportAllThere', { n: matching.length });
+            this._importBtn.setAttribute('disabled', '');
+            return;
+        }
+        this._importBtn.removeAttribute('disabled');
+        this._importBtn.textContent = '↧  ' + translate(this._hass, 'edImportScenes', { n: fresh.length });
+    }
+
     _replaceScene(index, value) {
         const scenes = (this._config.scenes || []).slice();
         scenes[index] = value;
@@ -3068,6 +3242,7 @@ class BuschLightCardEditor extends HTMLElement {
      * invisible until the card is placed.
      */
     _renderPreview() {
+        this._syncImportButton();
         const box = this._preview;
         if (!box) return;
         box.innerHTML = '';

@@ -843,7 +843,9 @@ def main():
                 window.__serviceCalls = [];
                 const sr = document.querySelector('busch-light-dialog').shadowRoot;
                 const blocks = Array.from(sr.querySelectorAll('.group'));
-                blocks[0].querySelector('.gtoggle').click();   // "Spots", both on
+                // .group-head, not just .gtoggle — since v0.4.0 the tiles
+                // carry switches of their own class.
+                blocks[0].querySelector('.group-head .gtoggle').click();   // "Spots", both on
                 const spots = window.__serviceCalls.slice();
 
                 // A section holding an unreachable member is only reachable
@@ -908,6 +910,182 @@ def main():
               flat_dialog["blocks"] == 0 and flat_dialog["grids"] == 1
               and flat_dialog["tiles"] == 6 and flat_dialog["alreadyNote"] is False,
               json.dumps(flat_dialog))
+
+        # ------------------------------------------------------------------
+        # 7c. Zigbee2MQTT groups hide their members under `group_entities`
+        # ------------------------------------------------------------------
+        zig = fixture["zigbee"]
+        zig_states = with_entity_ids(zig["states"])
+        zigbee = page.evaluate(
+            f"""(payload) => {{
+                const I = {internals};
+                const out = {{ attributes: I.MEMBER_ATTRIBUTES }};
+
+                I.clearMemberCache();
+                const full = I.resolveSections(window.makeHass(payload.states), [payload.root], {{}});
+                out.leaves = full.leaves;
+                out.sectionNames = full.sections.map(s => s.name);
+                out.emptyGroups = full.emptyGroups;
+                out.maxDepth = full.maxDepth;
+
+                // Control run: same data with `group_entities` removed. If the
+                // attribute is what makes the difference, this must fall back
+                // to naming the two Zigbee groups as if they were lamps.
+                const blind = JSON.parse(JSON.stringify(payload.states));
+                Object.keys(blind).forEach(k => {{ delete blind[k].attributes.group_entities; }});
+                I.clearMemberCache();
+                out.leavesBlind = I.resolveEntities(window.makeHass(blind), [payload.root], {{}}).leaves;
+
+                // child_ids must NOT be followed — those ids do not exist.
+                out.childIds = payload.states[payload.root].attributes.child_ids;
+
+                // nor `entities` on a schedule helper, which points at media players
+                I.clearMemberCache();
+                out.schedule = I.resolveEntities(window.makeHass(payload.states),
+                    ['switch.schedule_fernseher_ausschalten'], {{}}).leaves;
+
+                return out;
+            }}""",
+            {"root": zig["root"], "states": zig_states},
+        )
+        report["zigbee"] = zigbee
+        exp = zig["expected"]
+
+        check("Zigbee2MQTT groups resolve through their `group_entities`",
+              zigbee["leaves"] == exp["leaves"] and zigbee["maxDepth"] == exp["maxDepth"],
+              f"got {zigbee['leaves']}")
+        check("without that attribute the same tree stops at the Zigbee groups",
+              zigbee["leavesBlind"] == exp["leavesWithoutGroupEntities"]
+              and len(zigbee["leavesBlind"]) == 7 and len(zigbee["leaves"]) == 5,
+              f"blind={zigbee['leavesBlind']}")
+        check("the Zigbee group becomes its own block in the dialog",
+              zigbee["sectionNames"] == exp["sectionNames"]
+              and zigbee["emptyGroups"] == exp["emptyGroups"],
+              json.dumps({"sections": zigbee["sectionNames"],
+                          "empty": zigbee["emptyGroups"]}, ensure_ascii=False))
+        check("only the three proven member attributes are followed",
+              zigbee["attributes"] == ["entity_id", "group_entities", "lights"],
+              json.dumps(zigbee["attributes"]))
+        check("child_ids is ignored — those ids resolve to nothing",
+              zigbee["childIds"] and not any(c in zigbee["leaves"] for c in zigbee["childIds"]),
+              json.dumps(zigbee["childIds"]))
+        check("a schedule helper's `entities` is not mistaken for membership",
+              zigbee["schedule"] == ["switch.schedule_fernseher_ausschalten"],
+              json.dumps(zigbee["schedule"]))
+
+        # ------------------------------------------------------------------
+        # 7d. Importing every scene that uses these lights
+        # ------------------------------------------------------------------
+        scene_import = page.evaluate(
+            f"""(states) => {{
+                const I = {internals};
+                I.clearMemberCache();
+                const hass = window.makeHass(states);
+                const r = I.resolveSections(hass, [{json.dumps(fixture['root'])}], {{}});
+                return {{
+                    all: I.scenesForLights(hass, r.leaves.concat(r.groups)),
+                    leavesOnly: I.scenesForLights(hass, r.leaves),
+                    none: I.scenesForLights(hass, [])
+                }};
+            }}""",
+            base_states,
+        )
+        report["sceneImport"] = scene_import
+        expected_import = fixture["expectedSceneImport"]
+
+        check("scene import finds every scene touching these lights, sorted by name",
+              scene_import["all"] == expected_import["forNurseryRoot"],
+              json.dumps(scene_import["all"]))
+        check("scenes for other rooms are left out",
+              "scene.herbst" not in scene_import["all"]
+              and "scene.fernschauen_wohnzimmer" not in scene_import["all"],
+              json.dumps(scene_import["all"]))
+        check("matching includes the traversed groups, not just the leaves",
+              expected_import["leavesOnlyWouldMiss"][0] in scene_import["all"]
+              and expected_import["leavesOnlyWouldMiss"][0] not in scene_import["leavesOnly"],
+              json.dumps({"all": scene_import["all"], "leavesOnly": scene_import["leavesOnly"]}))
+        check("an empty light list imports nothing",
+              scene_import["none"] == [], json.dumps(scene_import["none"]))
+
+        # ------------------------------------------------------------------
+        # 7e. The redesigned tiles
+        # ------------------------------------------------------------------
+        tiles = page.evaluate(
+            """(payload) => {
+                const old = document.querySelector('busch-light-dialog');
+                if (old) old.remove();
+                const card = document.querySelector('busch-light-card');
+                card.setConfig({ type: 'custom:busch-light-card', entity: payload.root,
+                                 scenes: payload.scenes });
+                card.hass = window.makeHass(payload.states);
+                card.shadowRoot.querySelector('.tap').dispatchEvent(
+                    new MouseEvent('click', { bubbles: true }));
+                const sr = document.querySelector('busch-light-dialog').shadowRoot;
+
+                const sceneTiles = Array.from(sr.querySelectorAll('.scene'));
+                const lightTiles = Array.from(sr.querySelectorAll('.tile'));
+                const out = {
+                    sceneBadges: sceneTiles.length
+                        && sceneTiles.every(s => !!s.querySelector('.badge ha-icon')),
+                    sceneIcons: sceneTiles.map(s => s.querySelector('.badge ha-icon')
+                        .getAttribute('icon')),
+                    sceneBadgeColors: sceneTiles.map(s =>
+                        getComputedStyle(s.querySelector('.badge')).backgroundColor),
+                    tilesWithSwitch: lightTiles.filter(t => t.querySelector('.tsw')).length,
+                    deadWithSwitch: lightTiles.filter(t => t.classList.contains('dead')
+                        && t.querySelector('.tsw')).length,
+                    totalTiles: lightTiles.length,
+                    nestedButtons: lightTiles.filter(t => t.tagName.toLowerCase() === 'button').length
+                };
+
+                // the switch acts on that one light only
+                window.__serviceCalls = [];
+                const lit = lightTiles.find(t => t.querySelector('.tsw.on'));
+                lit.querySelector('.tsw').click();
+                out.switchCalls = window.__serviceCalls.slice();
+
+                // tapping the tile body opens that light's detail view
+                const target = lightTiles.find(t => t.querySelector('.tname')
+                    .textContent === 'Kuschelecke');
+                target.dispatchEvent(new PointerEvent('pointerdown',
+                    { bubbles: true, pointerId: 1, clientX: 10, clientY: 10 }));
+                target.dispatchEvent(new PointerEvent('pointerup',
+                    { bubbles: true, pointerId: 1, clientX: 10, clientY: 10 }));
+                out.detailTitle = sr.querySelector('.head h1').textContent;
+                out.hasBackButton = sr.querySelectorAll('.head .iconbtn').length === 2;
+                return out;
+            }""",
+            {"root": fixture["root"], "states": lit_states,
+             "scenes": fixture["scenesConfig"]},
+        )
+        report["tiles"] = tiles
+
+        check("scene tiles carry a round icon badge instead of a flooded colour",
+              tiles["sceneBadges"] and "mdi:white-balance-sunny" in tiles["sceneIcons"]
+              and "mdi:power-sleep" in tiles["sceneIcons"],
+              json.dumps(tiles["sceneIcons"]))
+        check("a scene without its own icon still gets one",
+              tiles["sceneIcons"].count("mdi:palette") >= 1,
+              json.dumps(tiles["sceneIcons"]))
+        check("every reachable light tile has its own switch, the dead one none",
+              tiles["tilesWithSwitch"] == 5 and tiles["deadWithSwitch"] == 0
+              and tiles["totalTiles"] == 6,
+              json.dumps(tiles))
+        check("tiles are not nested buttons",
+              tiles["nestedButtons"] == 0, str(tiles["nestedButtons"]))
+        check("the tile switch acts on that light alone",
+              len(tiles["switchCalls"]) == 1
+              and tiles["switchCalls"][0]["service"] == "turn_off"
+              and isinstance(tiles["switchCalls"][0]["data"]["entity_id"], str),
+              json.dumps(tiles["switchCalls"]))
+        check("tapping the tile body opens that light's detail view",
+              tiles["detailTitle"] == "Kuschelecke" and tiles["hasBackButton"],
+              json.dumps({"title": tiles["detailTitle"], "back": tiles["hasBackButton"]}))
+
+        page.wait_for_timeout(300)
+        shot = out_dir / "dialog-tiles.png"
+        page.screenshot(path=str(shot))
+        report["screenshots"].append(shot.name)
 
         # ------------------------------------------------------------------
         # 8. The visual editor
@@ -1009,6 +1187,32 @@ def main():
                 // --- colour round trip
                 out.colorRoundTrip = I.rgbArrayToHex(I.hexToRgbArray('#ffe0a3'));
 
+                // --- scene import button
+                ed.setConfig({{ type: 'custom:busch-light-card', entity: payload.root }});
+                await settle(); await settle();
+                const importBtn = () => Array.from(ed.shadowRoot.querySelectorAll('.addbtn'))
+                    .find(b => b.textContent.indexOf('übernehmen') !== -1
+                            || b.textContent.indexOf('stehen schon') !== -1
+                            || b.textContent.indexOf('Keine Szene') !== -1);
+                out.importLabelBefore = importBtn().textContent.trim();
+                out.importDisabledBefore = importBtn().hasAttribute('disabled');
+
+                importBtn().click(); await settle();
+                out.afterImport = emitted;
+                out.rowsAfterImport = ed.shadowRoot.querySelectorAll('.scene-row').length;
+
+                // a second click has nothing left to add
+                out.importLabelAfter = importBtn().textContent.trim();
+                out.importDisabledAfter = importBtn().hasAttribute('disabled');
+
+                // …and removing one makes it offer that one again
+                ed.shadowRoot.querySelectorAll('.scene-row')[0]
+                    .querySelectorAll('.iconbtn')[2].click();
+                await settle();
+                out.afterRemoveOne = emitted;
+                out.importLabelAfterRemove = importBtn().textContent.trim();
+                out.importDisabledAfterRemove = importBtn().hasAttribute('disabled');
+
                 return out;
             }}""",
             {"root": fixture["root"], "states": lit_states},
@@ -1090,6 +1294,29 @@ def main():
                           "rows": editor["sceneRowsAfterDelete"]}, ensure_ascii=False))
         check("colour survives the hex/rgb round trip the picker needs",
               editor["colorRoundTrip"] == "#ffe0a3", str(editor["colorRoundTrip"]))
+
+        # The import must not be a one-way door: what it adds, the same delete
+        # button removes, and the button then offers it again.
+        expected_import = fixture["expectedSceneImport"]["forNurseryRoot"]
+        check("import button offers exactly the matching scenes",
+              not editor["importDisabledBefore"]
+              and str(len(expected_import)) in editor["importLabelBefore"],
+              json.dumps({"label": editor["importLabelBefore"],
+                          "disabled": editor["importDisabledBefore"]}, ensure_ascii=False))
+        check("importing writes those scenes into the config",
+              [s["entity"] for s in editor["afterImport"]["scenes"]] == expected_import
+              and editor["rowsAfterImport"] == len(expected_import),
+              json.dumps(editor["afterImport"]["scenes"]))
+        check("a second import has nothing left to add",
+              editor["importDisabledAfter"] and "schon" in editor["importLabelAfter"],
+              json.dumps({"label": editor["importLabelAfter"],
+                          "disabled": editor["importDisabledAfter"]}, ensure_ascii=False))
+        check("a removed scene is offered again, so the import is reversible",
+              [s["entity"] for s in editor["afterRemoveOne"]["scenes"]] == expected_import[1:]
+              and not editor["importDisabledAfterRemove"]
+              and "(1)" in editor["importLabelAfterRemove"],
+              json.dumps({"scenes": editor["afterRemoveOne"].get("scenes"),
+                          "label": editor["importLabelAfterRemove"]}, ensure_ascii=False))
 
         report["iconsAsked"] = page.evaluate("() => window.__iconsAsked")
         browser.close()

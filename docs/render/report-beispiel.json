@@ -1,9 +1,9 @@
 {
   "cardFile": "/repo/dist/busch-lightcards.js",
-  "servedFrom": "http://127.0.0.1:49577/dist/busch-lightcards.js",
+  "servedFrom": "http://127.0.0.1:59009/dist/busch-lightcards.js",
   "requests": [
-    "http://127.0.0.1:49577/docs/render/ergebnis/harness.html",
-    "http://127.0.0.1:49577/dist/busch-lightcards.js"
+    "http://127.0.0.1:59009/docs/render/ergebnis/harness.html",
+    "http://127.0.0.1:59009/dist/busch-lightcards.js"
   ],
   "badResponses": [],
   "requestFailures": [],
@@ -236,6 +236,86 @@
       "detail": "{\"blocks\": 0, \"grids\": 1, \"tiles\": 6, \"alreadyNote\": false}"
     },
     {
+      "name": "Zigbee2MQTT groups resolve through their `group_entities`",
+      "pass": true,
+      "detail": "got ['light.partyraum_spot_1', 'light.partyraum_spot_2', 'light.partyraum_spot_3', 'light.partyraum_deckenlampe', 'light.h61b5_384d']"
+    },
+    {
+      "name": "without that attribute the same tree stops at the Zigbee groups",
+      "pass": true,
+      "detail": "blind=['light.partyraum_spot_1', 'light.partyraum_spot_2', 'light.partyraum_spot_3', 'light.zigbee_partyraum_lampen', 'light.zigbee_partyraum_spots', 'light.h61b5_384d', 'light.partyraum_deckenlampe']"
+    },
+    {
+      "name": "the Zigbee group becomes its own block in the dialog",
+      "pass": true,
+      "detail": "{\"sections\": [\"K Partyraum Alle Lichter\", \"Zigbee Partyraum Lampen\"], \"empty\": [\"light.zigbee_partyraum_spots\"]}"
+    },
+    {
+      "name": "only the three proven member attributes are followed",
+      "pass": true,
+      "detail": "[\"entity_id\", \"group_entities\", \"lights\"]"
+    },
+    {
+      "name": "child_ids is ignored — those ids resolve to nothing",
+      "pass": true,
+      "detail": "[\"light.magic_areas_light_groups_k_partyraum_lights_overhead_lights\", \"light.magic_areas_light_groups_k_partyraum_lights_accent_lights\"]"
+    },
+    {
+      "name": "a schedule helper's `entities` is not mistaken for membership",
+      "pass": true,
+      "detail": "[\"switch.schedule_fernseher_ausschalten\"]"
+    },
+    {
+      "name": "scene import finds every scene touching these lights, sorted by name",
+      "pass": true,
+      "detail": "[\"scene.neue_szene\", \"scene.nur_gruppe\", \"scene.taglicht_2\"]"
+    },
+    {
+      "name": "scenes for other rooms are left out",
+      "pass": true,
+      "detail": "[\"scene.neue_szene\", \"scene.nur_gruppe\", \"scene.taglicht_2\"]"
+    },
+    {
+      "name": "matching includes the traversed groups, not just the leaves",
+      "pass": true,
+      "detail": "{\"all\": [\"scene.neue_szene\", \"scene.nur_gruppe\", \"scene.taglicht_2\"], \"leavesOnly\": [\"scene.neue_szene\", \"scene.taglicht_2\"]}"
+    },
+    {
+      "name": "an empty light list imports nothing",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "scene tiles carry a round icon badge instead of a flooded colour",
+      "pass": true,
+      "detail": "[\"mdi:white-balance-sunny\", \"mdi:power-sleep\", \"mdi:leaf-maple\", \"mdi:palette\", \"mdi:palette\"]"
+    },
+    {
+      "name": "a scene without its own icon still gets one",
+      "pass": true,
+      "detail": "[\"mdi:white-balance-sunny\", \"mdi:power-sleep\", \"mdi:leaf-maple\", \"mdi:palette\", \"mdi:palette\"]"
+    },
+    {
+      "name": "every reachable light tile has its own switch, the dead one none",
+      "pass": true,
+      "detail": "{\"sceneBadges\": true, \"sceneIcons\": [\"mdi:white-balance-sunny\", \"mdi:power-sleep\", \"mdi:leaf-maple\", \"mdi:palette\", \"mdi:palette\"], \"sceneBadgeColors\": [\"rgb(255, 224, 163)\", \"rgb(43, 58, 103)\", \"rgb(194, 98, 42)\", \"rgb(123, 47, 247)\", \"rgb(255, 218, 149)\"], \"tilesWithSwitch\": 5, \"deadWithSwitch\": 0, \"totalTiles\": 6, \"nestedButtons\": 0, \"switchCalls\": [{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": \"light.vorhang\"}}], \"detailTitle\": \"Kuschelecke\", \"hasBackButton\": true}"
+    },
+    {
+      "name": "tiles are not nested buttons",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "the tile switch acts on that light alone",
+      "pass": true,
+      "detail": "[{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": \"light.vorhang\"}}]"
+    },
+    {
+      "name": "tapping the tile body opens that light's detail view",
+      "pass": true,
+      "detail": "{\"title\": \"Kuschelecke\", \"back\": true}"
+    },
+    {
       "name": "card offers a visual editor",
       "pass": true,
       "detail": "{\"tag\": \"busch-light-card-editor\"}"
@@ -304,6 +384,26 @@
       "name": "colour survives the hex/rgb round trip the picker needs",
       "pass": true,
       "detail": "#ffe0a3"
+    },
+    {
+      "name": "import button offers exactly the matching scenes",
+      "pass": true,
+      "detail": "{\"label\": \"↧  Alle Szenen mit diesen Lampen übernehmen (3)\", \"disabled\": false}"
+    },
+    {
+      "name": "importing writes those scenes into the config",
+      "pass": true,
+      "detail": "[{\"entity\": \"scene.neue_szene\"}, {\"entity\": \"scene.nur_gruppe\"}, {\"entity\": \"scene.taglicht_2\"}]"
+    },
+    {
+      "name": "a second import has nothing left to add",
+      "pass": true,
+      "detail": "{\"label\": \"Alle 3 passenden Szenen stehen schon in der Liste\", \"disabled\": true}"
+    },
+    {
+      "name": "a removed scene is offered again, so the import is reversible",
+      "pass": true,
+      "detail": "{\"scenes\": [{\"entity\": \"scene.nur_gruppe\"}, {\"entity\": \"scene.taglicht_2\"}], \"label\": \"↧  Alle Szenen mit diesen Lampen übernehmen (1)\"}"
     }
   ],
   "screenshots": [
@@ -311,9 +411,10 @@
     "card-on.png",
     "dialog.png",
     "dialog-white.png",
-    "dialog-groups.png"
+    "dialog-groups.png",
+    "dialog-tiles.png"
   ],
-  "harnessUrl": "http://127.0.0.1:49577/docs/render/ergebnis/harness.html",
+  "harnessUrl": "http://127.0.0.1:59009/docs/render/ergebnis/harness.html",
   "resolution": {
     "leaves": [
       "light.kinderzimmer_spot_1",
@@ -705,6 +806,88 @@
     "tiles": 6,
     "alreadyNote": false
   },
+  "zigbee": {
+    "attributes": [
+      "entity_id",
+      "group_entities",
+      "lights"
+    ],
+    "leaves": [
+      "light.partyraum_spot_1",
+      "light.partyraum_spot_2",
+      "light.partyraum_spot_3",
+      "light.partyraum_deckenlampe",
+      "light.h61b5_384d"
+    ],
+    "sectionNames": [
+      "K Partyraum Alle Lichter",
+      "Zigbee Partyraum Lampen"
+    ],
+    "emptyGroups": [
+      "light.zigbee_partyraum_spots"
+    ],
+    "maxDepth": 2,
+    "leavesBlind": [
+      "light.partyraum_spot_1",
+      "light.partyraum_spot_2",
+      "light.partyraum_spot_3",
+      "light.zigbee_partyraum_lampen",
+      "light.zigbee_partyraum_spots",
+      "light.h61b5_384d",
+      "light.partyraum_deckenlampe"
+    ],
+    "childIds": [
+      "light.magic_areas_light_groups_k_partyraum_lights_overhead_lights",
+      "light.magic_areas_light_groups_k_partyraum_lights_accent_lights"
+    ],
+    "schedule": [
+      "switch.schedule_fernseher_ausschalten"
+    ]
+  },
+  "sceneImport": {
+    "all": [
+      "scene.neue_szene",
+      "scene.nur_gruppe",
+      "scene.taglicht_2"
+    ],
+    "leavesOnly": [
+      "scene.neue_szene",
+      "scene.taglicht_2"
+    ],
+    "none": []
+  },
+  "tiles": {
+    "sceneBadges": true,
+    "sceneIcons": [
+      "mdi:white-balance-sunny",
+      "mdi:power-sleep",
+      "mdi:leaf-maple",
+      "mdi:palette",
+      "mdi:palette"
+    ],
+    "sceneBadgeColors": [
+      "rgb(255, 224, 163)",
+      "rgb(43, 58, 103)",
+      "rgb(194, 98, 42)",
+      "rgb(123, 47, 247)",
+      "rgb(255, 218, 149)"
+    ],
+    "tilesWithSwitch": 5,
+    "deadWithSwitch": 0,
+    "totalTiles": 6,
+    "nestedButtons": 0,
+    "switchCalls": [
+      {
+        "domain": "light",
+        "service": "turn_off",
+        "data": {
+          "entity_id": "light.vorhang"
+        }
+      }
+    ],
+    "detailTitle": "Kuschelecke",
+    "hasBackButton": true
+  },
   "editor": {
     "hasGetConfigElement": true,
     "editorTag": "busch-light-card-editor",
@@ -832,7 +1015,41 @@
       ]
     },
     "sceneRowsAfterDelete": 1,
-    "colorRoundTrip": "#ffe0a3"
+    "colorRoundTrip": "#ffe0a3",
+    "importLabelBefore": "↧  Alle Szenen mit diesen Lampen übernehmen (3)",
+    "importDisabledBefore": false,
+    "afterImport": {
+      "type": "custom:busch-light-card",
+      "entity": "light.magic_areas_light_groups_ld_kinderzimmer_all_lights",
+      "scenes": [
+        {
+          "entity": "scene.neue_szene"
+        },
+        {
+          "entity": "scene.nur_gruppe"
+        },
+        {
+          "entity": "scene.taglicht_2"
+        }
+      ]
+    },
+    "rowsAfterImport": 3,
+    "importLabelAfter": "Alle 3 passenden Szenen stehen schon in der Liste",
+    "importDisabledAfter": true,
+    "afterRemoveOne": {
+      "type": "custom:busch-light-card",
+      "entity": "light.magic_areas_light_groups_ld_kinderzimmer_all_lights",
+      "scenes": [
+        {
+          "entity": "scene.nur_gruppe"
+        },
+        {
+          "entity": "scene.taglicht_2"
+        }
+      ]
+    },
+    "importLabelAfterRemove": "↧  Alle Szenen mit diesen Lampen übernehmen (1)",
+    "importDisabledAfterRemove": false
   },
   "iconsAsked": [
     "mdi:alert-circle-outline",
@@ -842,6 +1059,11 @@
     "mdi:lightbulb-group",
     "mdi:lightbulb-group",
     "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
     "mdi:lightbulb",
     "mdi:alert-circle-outline",
     "mdi:teddy-bear",
@@ -853,6 +1075,11 @@
     "mdi:lightbulb-group",
     "mdi:lightbulb-group",
     "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
     "mdi:lightbulb",
     "mdi:alert-circle-outline",
     "mdi:teddy-bear",
@@ -867,6 +1094,46 @@
     "mdi:led-strip-variant",
     "mdi:lightbulb",
     "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:arrow-left",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:delete",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:delete",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:delete",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:delete",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:delete",
     "mdi:arrow-up",
     "mdi:arrow-down",
     "mdi:delete",
@@ -887,7 +1154,7 @@
     "mdi:delete"
   ],
   "vendorRequests": [],
-  "passed": 59,
+  "passed": 79,
   "failed": 0,
   "clean": true
 }

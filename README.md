@@ -35,6 +35,17 @@ resolves to 6 distinct lights, not 7 mixed entities
 
 - **Every level**, not just the first. `max_depth` (default 10) is the only bound,
   and reaching it is reported rather than silently swallowed.
+- **Three member attributes, because there is no single convention.**
+  `entity_id` (Home Assistant light groups and old-style `group.*`),
+  `group_entities` (**Zigbee2MQTT**, on lights and switches alike) and `lights`
+  (Magic Areas). Reading only the first loses whole platforms: a Zigbee2MQTT
+  group publishes nothing under `entity_id`, so it used to arrive as a single
+  opaque entity.
+  Two lists that *look* like membership are deliberately **not** followed, both
+  measured on a live install: Magic Areas' `child_ids` names internal sub-group
+  ids that resolve to nothing, and `switch.schedule_*` helpers carry an
+  `entities` list of `climate.*` / `media_player.*` targets. Treating any list
+  of entity ids as membership would turn a timer switch into a light group.
 - **Duplicates collapse.** A light sitting in three parent groups is counted,
   shown and switched once.
 - **Cycles terminate.** A group that contains itself, directly or through a
@@ -104,18 +115,22 @@ state, and it still says so in words rather than erroring.
 
 ![Dialog with scenes, colour wheel and per-light tiles](docs/images/dialog.png)
 
-- **Scene row** — one tile per configured scene, each with its own colour. A
-  scene entity that does not exist is greyed out and disabled, not a crash.
+- **Scene tiles** — one square tile per scene, the colour riding in a round
+  badge rather than flooding the tile, so the label stays readable whatever
+  colour it carries. The icon comes from the scene itself. A scene entity that
+  does not exist is greyed out and disabled, not a crash.
+- **Light tiles** — each carries its own switch, so on/off is one visible tap
+  instead of a gesture nobody discovers. Tapping the tile body opens that
+  light's detail view; dragging up and down dims it. The shading runs from the
+  top and shows the *missing* brightness, so a dim lamp looks dim.
 - **Group brightness** — moves the lit members while anything is lit, and every
   reachable member when all are off. That is what the Hue app does.
 - **Colour / White** — an HSV wheel and a colour-temperature bar drawn along
   Hue's own curve (2000 K → 4200 K → 6500 K), not a black-body approximation.
   The bar spans the **intersection** of the members' supported ranges, so it
   can never ask a lamp for a temperature it cannot do.
-- **Light tiles** — one per resolved light. Tap toggles, drag up and down dims,
-  press and hold opens that single light's detail view. An unreachable light is
-  hatched, inert and named — hiding it would make a missing lamp look like a
-  lamp that was never in the group.
+- **An unreachable light** is hatched, inert and named — hiding it would make a
+  missing lamp look like a lamp that was never in the group.
 
 <img src="docs/images/dialog-mobile.png" width="320" alt="The same dialog at phone width">
 
@@ -144,6 +159,12 @@ every option below has a field. Three things about it are worth knowing:
 - **A config in upstream camelCase is folded into snake_case** the first time
   you open it (`resolveGroups` → `resolve_groups`). Keeping both spellings of
   one option would let them drift apart silently.
+- **One button imports every scene that uses these lights.** It matches
+  against the resolved lights *and* the groups walked through — scenes often
+  name the group rather than its lamps, and matching leaves alone would miss
+  exactly the ones worth having. What it adds, the ordinary delete button
+  removes again, and the button then offers that scene back: an import must not
+  be a one-way door.
 
 The colour fields are text, not swatches, on purpose: `off_color` has to be
 *emptiable* so the theme can decide, and the fields also accept `warm`, `cold`
@@ -210,12 +231,15 @@ docker run --rm \
       python3 /repo/docs/render/render.py /repo/dist/busch-lightcards.js /repo/docs/render/ergebnis'
 ```
 
-59 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
+79 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
 self-reference, deleted members, foreign domains, the depth limit, the
 unavailable-group memory (cold and warm), aggregation, service-call routing,
 the rendered card text, the dialog and how it stacks against a Leaflet-grade
 z-index, the group blocks (structure, per-group counts and toggles, the
-already-shown note, `flat` mode), and the visual editor (option coverage,
+already-shown note, `flat` mode), Zigbee2MQTT resolution with a control run
+that removes `group_entities` again, the two attributes deliberately not
+followed, scene import (matching, group-only scenes, reversibility), the tile
+layout, and the visual editor (option coverage,
 labels, live preview, minimal output, camelCase folding, scene add/reorder/
 delete, colour round-trip).
 

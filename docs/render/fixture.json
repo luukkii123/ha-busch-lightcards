@@ -167,10 +167,229 @@
       }
     },
 
-    "scene.taglicht": { "state": "2026-08-24T18:20:48.459004+00:00", "attributes": { "friendly_name": "Taglicht" } },
-    "scene.nachtlicht": { "state": "2026-05-31T19:56:10.513876+00:00", "attributes": { "friendly_name": "Nachtlicht" } },
-    "scene.herbst": { "state": "2026-04-16T17:18:02.620203+00:00", "attributes": { "friendly_name": "Herbst" } },
-    "scene.fernschauen_wohnzimmer": { "state": "2026-08-24T17:23:53.657378+00:00", "attributes": { "friendly_name": "Lila" } }
+    "scene.neue_szene": {
+      "state": "2026-08-25T18:11:43.348857+00:00",
+      "attributes": {
+        "friendly_name": "Nachtlicht",
+        "icon": "mdi:power-sleep",
+        "entity_id": [
+          "light.hubschrauberlampe",
+          "light.kinderzimmerspots",
+          "light.vorhang",
+          "light.ledstreifen_kinderzimm",
+          "light.zigbee_flurlampen"
+        ]
+      }
+    },
+    "scene.taglicht_2": {
+      "_comment": "Names the GROUP light.kinderzimmerspots, never the three spots behind it — the case that breaks a leaf-only scene match.",
+      "state": "2026-08-02T05:00:00.597903+00:00",
+      "attributes": {
+        "friendly_name": "Taglicht",
+        "icon": "mdi:white-balance-sunny",
+        "entity_id": [
+          "light.hubschrauberlampe",
+          "light.kinderzimmerspots",
+          "light.magic_areas_light_groups_ld_kinderzimmer_accent_lights"
+        ]
+      }
+    },
+    "scene.nur_gruppe": {
+      "_synthetic": true,
+      "_comment": "Invented: names ONLY the group, no leaf. Matching scenes against resolved leaves alone would miss it — this is the case that forces the match to include the traversed groups.",
+      "state": "2026-08-25T10:00:00.000000+00:00",
+      "attributes": {
+        "friendly_name": "Nur Gruppe",
+        "icon": "mdi:lightbulb-group",
+        "entity_id": ["light.kinderzimmerspots"]
+      }
+    },
+    "scene.herbst": {
+      "_comment": "Bedroom lights only — must NOT be imported for the nursery card.",
+      "state": "2025-10-11T18:31:41.952326+00:00",
+      "attributes": {
+        "friendly_name": "Herbst",
+        "icon": "mdi:leaf-maple",
+        "entity_id": ["light.led_bett", "light.led_schlafzimmer_elfen"]
+      }
+    },
+    "scene.fernschauen_wohnzimmer": {
+      "_comment": "Living-room lights only — also must NOT be imported. Carries no icon, so the tile has to fall back.",
+      "state": "2026-04-16T17:18:02.620203+00:00",
+      "attributes": {
+        "friendly_name": "Lila",
+        "entity_id": [
+          "light.led_kugellampe",
+          "light.fernseh_unterkasten",
+          "light.kallax_links",
+          "light.kallax_rechts"
+        ]
+      }
+    }
+  },
+
+  "zigbee": {
+    "_comment": "Second scenario, captured verbatim on 2026-08-25. A Magic Areas group holding two Zigbee2MQTT groups, which publish their members under `group_entities` — not `entity_id`. Before v0.4.0 the card stopped at the Z2M groups and reported 7 entities; it should report 5 lights.",
+    "root": "light.magic_areas_light_groups_k_partyraum_all_lights",
+    "expected": {
+      "leaves": [
+        "light.partyraum_spot_1",
+        "light.partyraum_spot_2",
+        "light.partyraum_spot_3",
+        "light.partyraum_deckenlampe",
+        "light.h61b5_384d"
+      ],
+      "leavesWithoutGroupEntities": [
+        "light.partyraum_spot_1",
+        "light.partyraum_spot_2",
+        "light.partyraum_spot_3",
+        "light.zigbee_partyraum_lampen",
+        "light.zigbee_partyraum_spots",
+        "light.h61b5_384d",
+        "light.partyraum_deckenlampe"
+      ],
+      "sectionNames": ["K Partyraum Alle Lichter", "Zigbee Partyraum Lampen"],
+      "emptyGroups": ["light.zigbee_partyraum_spots"],
+      "maxDepth": 2
+    },
+    "states": {
+      "light.magic_areas_light_groups_k_partyraum_all_lights": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "K Partyraum Alle Lichter",
+          "icon": "mdi:lightbulb-group",
+          "supported_color_modes": ["color_temp", "rgb", "xy"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 9009,
+          "entity_id": [
+            "light.partyraum_spot_1",
+            "light.partyraum_spot_2",
+            "light.partyraum_spot_3",
+            "light.zigbee_partyraum_lampen",
+            "light.zigbee_partyraum_spots",
+            "light.h61b5_384d",
+            "light.partyraum_deckenlampe"
+          ],
+          "lights": [
+            "light.partyraum_spot_1",
+            "light.partyraum_spot_2",
+            "light.partyraum_spot_3",
+            "light.zigbee_partyraum_lampen",
+            "light.zigbee_partyraum_spots",
+            "light.h61b5_384d",
+            "light.partyraum_deckenlampe"
+          ],
+          "child_ids": [
+            "light.magic_areas_light_groups_k_partyraum_lights_overhead_lights",
+            "light.magic_areas_light_groups_k_partyraum_lights_accent_lights"
+          ]
+        }
+      },
+      "light.zigbee_partyraum_lampen": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Zigbee Partyraum Lampen",
+          "supported_color_modes": ["color_temp", "xy"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 6535,
+          "group_entities": [
+            "light.partyraum_deckenlampe",
+            "light.partyraum_spot_1",
+            "light.partyraum_spot_2",
+            "light.partyraum_spot_3"
+          ]
+        }
+      },
+      "light.zigbee_partyraum_spots": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Zigbee Partyraum Spots",
+          "icon": "phu:wall-spot",
+          "supported_color_modes": ["color_temp", "xy"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 6535,
+          "group_entities": [
+            "light.partyraum_spot_1",
+            "light.partyraum_spot_2",
+            "light.partyraum_spot_3"
+          ]
+        }
+      },
+      "light.partyraum_spot_1": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Partyraum Spot 1",
+          "supported_color_modes": ["color_temp", "xy"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 6535
+        }
+      },
+      "light.partyraum_spot_2": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Partyraum Spot 2",
+          "supported_color_modes": ["color_temp", "xy"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 6535
+        }
+      },
+      "light.partyraum_spot_3": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Partyraum Spot 3",
+          "supported_color_modes": ["color_temp", "xy"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 6535
+        }
+      },
+      "light.partyraum_deckenlampe": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Partyraum Deckenlampe ",
+          "icon": "phu:ceiling-lamp-round",
+          "supported_color_modes": ["color_temp"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 6666
+        }
+      },
+      "light.h61b5_384d": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "LED Deckenleiste Partyraum",
+          "icon": "mdi:led-strip-variant",
+          "supported_color_modes": ["color_temp", "rgb"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 9009
+        }
+      },
+      "switch.schedule_fernseher_ausschalten": {
+        "_comment": "A schedule helper, not a group. Its `entities` attribute points at media players — proof that treating any list of entity ids as membership is wrong.",
+        "state": "on",
+        "attributes": {
+          "friendly_name": "Fernseher ausschalten",
+          "entities": [
+            "media_player.fernseher_wohnzimmer",
+            "media_player.ld_schlafzimmer_beamer_schlafzimmer"
+          ]
+        }
+      }
+    }
   },
 
   "overrides": {
@@ -215,10 +434,16 @@
   },
 
   "scenesConfig": [
-    { "entity": "scene.taglicht", "color": "#ffe0a3" },
-    { "entity": "scene.nachtlicht", "color": "#2b3a67" },
+    { "entity": "scene.taglicht_2", "color": "#ffe0a3" },
+    { "entity": "scene.neue_szene", "color": "#2b3a67" },
     { "entity": "scene.herbst", "color": "#c2622a" },
     { "entity": "scene.fernschauen_wohnzimmer", "title": "Lila", "color": "#7b2ff7" },
     { "entity": "scene.gibt_es_nicht", "title": "Fehlt absichtlich" }
-  ]
+  ],
+
+  "expectedSceneImport": {
+    "_comment": "Sorted by friendly name: Nachtlicht, Nur Gruppe, Taglicht. Herbst and Lila touch other rooms and must stay out.",
+    "forNurseryRoot": ["scene.neue_szene", "scene.nur_gruppe", "scene.taglicht_2"],
+    "leavesOnlyWouldMiss": ["scene.nur_gruppe"]
+  }
 }
