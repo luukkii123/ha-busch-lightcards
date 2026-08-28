@@ -18,11 +18,14 @@
  * README for why.
  */
 
-const CARD_VERSION = '0.5.0';
+const CARD_VERSION = '0.6.0';
 
 const CARD_TAG = 'busch-light-card';
 const DIALOG_TAG = 'busch-light-dialog';
 const EDITOR_TAG = 'busch-light-card-editor';
+
+/** Marks the history entries the dialog pushes for the back gesture. */
+const DIALOG_HISTORY_KEY = 'buschLightDialog';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -1982,8 +1985,30 @@ class BuschLightDialog extends HTMLElement {
         this._detailEntity = null; // null = the whole group
         this._tab = 'colour';
         this._dragging = false;
+        // How many history entries this dialog has pushed. Back consumes them.
+        this._depth = 0;
+        this._closing = false;
+        this._closed = false;
         this._onKey = (event) => {
-            if (event.key === 'Escape') this.close();
+            if (event.key !== 'Escape') return;
+            event.stopPropagation();
+            this._goBack();
+        };
+        this._onPop = () => {
+            if (this._closing) {
+                this._closing = false;
+                this._dismiss();
+                return;
+            }
+            if (this._detailEntity) {
+                // Back out of one light's detail view, not out of the dialog.
+                this._depth = Math.max(0, this._depth - 1);
+                this._detailEntity = null;
+                this._renderSheet();
+                return;
+            }
+            this._depth = 0;
+            this._dismiss();
         };
     }
 
@@ -1999,13 +2024,62 @@ class BuschLightDialog extends HTMLElement {
 
     connectedCallback() {
         document.addEventListener('keydown', this._onKey);
+        window.addEventListener('popstate', this._onPop);
+        // The phone's back gesture is a history navigation. Without an entry
+        // of its own the dialog would stay open and the whole dashboard would
+        // be left instead.
+        this._push();
     }
 
     disconnectedCallback() {
         document.removeEventListener('keydown', this._onKey);
+        window.removeEventListener('popstate', this._onPop);
+    }
+
+    /** Adds one history entry, keeping the URL as it is. */
+    _push() {
+        try {
+            history.pushState({ [DIALOG_HISTORY_KEY]: this._depth + 1 }, '', location.href);
+            this._depth += 1;
+        } catch (e) {
+            // Private modes and rate limits can refuse this. Escape and the
+            // close button still work; only the back gesture is lost.
+        }
+    }
+
+    /** Escape and the header's arrow: one step back, not always all the way out. */
+    _goBack() {
+        if (this._detailEntity) {
+            if (this._depth > 1) {
+                history.back(); // the popstate handler returns to the group view
+                return;
+            }
+            this._detailEntity = null;
+            this._renderSheet();
+            return;
+        }
+        this.close();
     }
 
     close() {
+        if (this._depth > 0) {
+            const steps = this._depth;
+            this._depth = 0;
+            this._closing = true;
+            history.go(-steps);
+            // Insurance: if popstate never arrives, the dialog must not stay
+            // stuck open.
+            setTimeout(() => {
+                if (this.isConnected) this._dismiss();
+            }, 300);
+            return;
+        }
+        this._dismiss();
+    }
+
+    _dismiss() {
+        if (this._closed) return;
+        this._closed = true;
         this.dispatchEvent(new CustomEvent('dialog-closed'));
         this.remove();
     }
@@ -2048,10 +2122,7 @@ class BuschLightDialog extends HTMLElement {
         head.className = 'head';
 
         if (this._detailEntity) {
-            const back = this._makeIconButton('mdi:arrow-left', () => {
-                this._detailEntity = null;
-                this._renderSheet();
-            });
+            const back = this._makeIconButton('mdi:arrow-left', () => this._goBack());
             back.title = translate(hass, 'back');
             head.appendChild(back);
         }
@@ -2445,6 +2516,8 @@ class BuschLightDialog extends HTMLElement {
                 return;
             }
             this._detailEntity = light.entityId;
+            // Its own history entry, so back returns here rather than closing.
+            this._push();
             this._renderSheet();
         });
 

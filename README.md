@@ -115,6 +115,11 @@ state, and it still says so in words rather than erroring.
 
 ![Dialog with scenes, colour wheel and per-light tiles](docs/images/dialog.png)
 
+- **Escape and the phone's back gesture close it**, one step at a time: from a
+  light's detail view they return to the group, and only then close. The dialog
+  takes a history entry of its own for this — without one, Back leaves the
+  whole dashboard instead, which is what happens on a phone. Closing puts the
+  history back exactly where it was.
 - **A master switch in the header**, always — in the group view it drives the
   whole group, in a light's detail view that one light. The card's own switch
   is behind the dialog, so without it there was no way to turn everything off
@@ -235,7 +240,7 @@ docker run --rm \
       python3 /repo/docs/render/render.py /repo/dist/busch-lightcards.js /repo/docs/render/ergebnis'
 ```
 
-85 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
+91 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
 self-reference, deleted members, foreign domains, the depth limit, the
 unavailable-group memory (cold and warm), aggregation, service-call routing,
 the rendered card text, the dialog and how it stacks against a Leaflet-grade
@@ -244,8 +249,8 @@ already-shown note, `flat` mode), Zigbee2MQTT resolution with a control run
 that removes `group_entities` again, the two attributes deliberately not
 followed, scene import (matching, group-only scenes, reversibility), the tile
 layout, the header's master switch in both views, the temperature marker
-staying inside its bar so the sheet never scrolls sideways, and the visual
-editor (option coverage,
+staying inside its bar so the sheet never scrolls sideways, Escape and the back
+gesture at both levels, and the visual editor (option coverage,
 labels, live preview, minimal output, camelCase folding, scene add/reorder/
 delete, colour round-trip).
 

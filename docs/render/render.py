@@ -1192,6 +1192,114 @@ def main():
         report["screenshots"].append(shot.name)
 
         # ------------------------------------------------------------------
+        # 7f. Escape and the phone's back gesture
+        # ------------------------------------------------------------------
+        back = page.evaluate(
+            """async (payload) => {
+                const wait = () => new Promise(r => setTimeout(r, 90));
+                const dlg = () => document.querySelector('busch-light-dialog');
+                const openCard = () => {
+                    const old = dlg();
+                    if (old) old.remove();
+                    const card = document.querySelector('busch-light-card');
+                    card.setConfig({ type: 'custom:busch-light-card', entity: payload.root });
+                    card.hass = window.makeHass(payload.states);
+                    card.shadowRoot.querySelector('.tap').dispatchEvent(
+                        new MouseEvent('click', { bubbles: true }));
+                };
+                const esc = () => document.dispatchEvent(
+                    new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+                const openDetail = () => {
+                    const sr = dlg().shadowRoot;
+                    const t = Array.from(sr.querySelectorAll('.tile'))
+                        .find(x => x.querySelector('.tname').textContent === 'Kuschelecke');
+                    ['pointerdown', 'pointerup'].forEach(type => t.dispatchEvent(
+                        new PointerEvent(type, { bubbles: true, pointerId: 9,
+                                                 clientX: 10, clientY: 10 })));
+                };
+                const out = {};
+
+                // --- Escape from the group view closes it
+                openCard(); await wait();
+                out.stateAfterOpen = history.state && history.state.buschLightDialog;
+                esc(); await wait();
+                out.closedByEscape = !dlg();
+
+                // --- the back gesture closes it too
+                openCard(); await wait();
+                history.back(); await wait();
+                out.closedByBack = !dlg();
+
+                // --- back from a light's detail view returns to the group,
+                //     and only the next back closes
+                openCard(); await wait();
+                openDetail(); await wait();
+                out.stateInDetail = history.state && history.state.buschLightDialog;
+                out.detailTitle = dlg().shadowRoot.querySelector('.head h1').textContent;
+                history.back(); await wait();
+                out.stillOpenAfterFirstBack = !!dlg();
+                out.titleAfterFirstBack = dlg()
+                    ? dlg().shadowRoot.querySelector('.head h1').textContent : null;
+                history.back(); await wait();
+                out.closedBySecondBack = !dlg();
+
+                // --- Escape does the same one-step-back in the detail view
+                openCard(); await wait();
+                openDetail(); await wait();
+                esc(); await wait();
+                out.escFromDetailKeepsDialog = !!dlg();
+                out.titleAfterEsc = dlg()
+                    ? dlg().shadowRoot.querySelector('.head h1').textContent : null;
+                esc(); await wait();
+                out.escTwiceCloses = !dlg();
+
+                // --- the close button consumes the entry it pushed, so the
+                //     next back must not have to undo a leftover.
+                //     history.length is useless here: pushState discards any
+                //     forward entries the earlier steps left, so it can even
+                //     shrink. What matters is landing back on the same state.
+                const stateBefore = JSON.stringify(history.state);
+                openCard(); await wait();
+                const lenOpen = history.length;
+                dlg().shadowRoot.querySelector('.head .iconbtn').click(); await wait();
+                out.closedByButton = !dlg();
+                out.stateRestored = JSON.stringify(history.state) === stateBefore;
+                out.lengthUnchangedByClose = history.length === lenOpen;
+                return out;
+            }""",
+            {"root": fixture["root"], "states": lit_states},
+        )
+        report["backButton"] = back
+
+        check("the dialog takes a history entry of its own when it opens",
+              back["stateAfterOpen"] == 1, json.dumps(back["stateAfterOpen"]))
+        check("Escape closes the dialog",
+              back["closedByEscape"] is True, str(back["closedByEscape"]))
+        check("the phone's back gesture closes the dialog",
+              back["closedByBack"] is True, str(back["closedByBack"]))
+        check("back from a light's detail view returns to the group first",
+              back["stateInDetail"] == 2
+              and back["detailTitle"] == "Kuschelecke"
+              and back["stillOpenAfterFirstBack"] is True
+              and back["titleAfterFirstBack"] == "LD Kinderzimmer Alle Lichter"
+              and back["closedBySecondBack"] is True,
+              json.dumps(back))
+        check("Escape steps back the same way, one level at a time",
+              back["escFromDetailKeepsDialog"] is True
+              and back["titleAfterEsc"] == "LD Kinderzimmer Alle Lichter"
+              and back["escTwiceCloses"] is True,
+              json.dumps({"kept": back["escFromDetailKeepsDialog"],
+                          "title": back["titleAfterEsc"],
+                          "closed": back["escTwiceCloses"]}, ensure_ascii=False))
+        check("closing puts the history back where it was before opening",
+              back["closedByButton"] is True
+              and back["stateRestored"] is True
+              and back["lengthUnchangedByClose"] is True,
+              json.dumps({"closed": back["closedByButton"],
+                          "restored": back["stateRestored"],
+                          "lengthKept": back["lengthUnchangedByClose"]}))
+
+        # ------------------------------------------------------------------
         # 8. The visual editor
         # ------------------------------------------------------------------
         editor = page.evaluate(

@@ -1,9 +1,9 @@
 {
   "cardFile": "/repo/dist/busch-lightcards.js",
-  "servedFrom": "http://127.0.0.1:45063/dist/busch-lightcards.js",
+  "servedFrom": "http://127.0.0.1:35745/dist/busch-lightcards.js",
   "requests": [
-    "http://127.0.0.1:45063/docs/render/ergebnis/harness.html",
-    "http://127.0.0.1:45063/dist/busch-lightcards.js"
+    "http://127.0.0.1:35745/docs/render/ergebnis/harness.html",
+    "http://127.0.0.1:35745/dist/busch-lightcards.js"
   ],
   "badResponses": [],
   "requestFailures": [],
@@ -346,6 +346,36 @@
       "detail": "[{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": \"light.vorhang\"}}]"
     },
     {
+      "name": "the dialog takes a history entry of its own when it opens",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "Escape closes the dialog",
+      "pass": true,
+      "detail": "True"
+    },
+    {
+      "name": "the phone's back gesture closes the dialog",
+      "pass": true,
+      "detail": "True"
+    },
+    {
+      "name": "back from a light's detail view returns to the group first",
+      "pass": true,
+      "detail": "{\"stateAfterOpen\": 1, \"closedByEscape\": true, \"closedByBack\": true, \"stateInDetail\": 2, \"detailTitle\": \"Kuschelecke\", \"stillOpenAfterFirstBack\": true, \"titleAfterFirstBack\": \"LD Kinderzimmer Alle Lichter\", \"closedBySecondBack\": true, \"escFromDetailKeepsDialog\": true, \"titleAfterEsc\": \"LD Kinderzimmer Alle Lichter\", \"escTwiceCloses\": true, \"closedByButton\": true, \"stateRestored\": true, \"lengthUnchangedByClose\": true}"
+    },
+    {
+      "name": "Escape steps back the same way, one level at a time",
+      "pass": true,
+      "detail": "{\"kept\": true, \"title\": \"LD Kinderzimmer Alle Lichter\", \"closed\": true}"
+    },
+    {
+      "name": "closing puts the history back where it was before opening",
+      "pass": true,
+      "detail": "{\"closed\": true, \"restored\": true, \"lengthKept\": true}"
+    },
+    {
       "name": "card offers a visual editor",
       "pass": true,
       "detail": "{\"tag\": \"busch-light-card-editor\"}"
@@ -444,7 +474,7 @@
     "dialog-groups.png",
     "dialog-tiles.png"
   ],
-  "harnessUrl": "http://127.0.0.1:45063/docs/render/ergebnis/harness.html",
+  "harnessUrl": "http://127.0.0.1:35745/docs/render/ergebnis/harness.html",
   "resolution": {
     "leaves": [
       "light.kinderzimmer_spot_1",
@@ -971,6 +1001,22 @@
       }
     ]
   },
+  "backButton": {
+    "stateAfterOpen": 1,
+    "closedByEscape": true,
+    "closedByBack": true,
+    "stateInDetail": 2,
+    "detailTitle": "Kuschelecke",
+    "stillOpenAfterFirstBack": true,
+    "titleAfterFirstBack": "LD Kinderzimmer Alle Lichter",
+    "closedBySecondBack": true,
+    "escFromDetailKeepsDialog": true,
+    "titleAfterEsc": "LD Kinderzimmer Alle Lichter",
+    "escTwiceCloses": true,
+    "closedByButton": true,
+    "stateRestored": true,
+    "lengthUnchangedByClose": true
+  },
   "editor": {
     "hasGetConfigElement": true,
     "editorTag": "busch-light-card-editor",
@@ -1228,6 +1274,83 @@
     "mdi:lightbulb",
     "mdi:arrow-left",
     "mdi:close",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:arrow-left",
+    "mdi:close",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:arrow-left",
+    "mdi:close",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:arrow-left",
+    "mdi:close",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
     "mdi:arrow-up",
     "mdi:arrow-down",
     "mdi:delete",
@@ -1263,7 +1386,7 @@
     "mdi:delete"
   ],
   "vendorRequests": [],
-  "passed": 85,
+  "passed": 91,
   "failed": 0,
   "clean": true
 }
