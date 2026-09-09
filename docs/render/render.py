@@ -41,105 +41,12 @@ for _kandidat in ("/work", str(HERE)):
     if _kandidat not in sys.path:
         sys.path.insert(0, _kandidat)
 try:
-    import regeln
-    from regeln import messe_text, messe_popup, lauf_breiten, bewerte, zaehle
+    from regeln import (messe_text, messe_popup, lauf_breiten, selbsttest,
+                        bewerte, zaehle)
     REGELN_DA = True
 except ImportError:
     REGELN_DA = False
 
-
-# ── Rule 1, check 1, and the ellipsis it prescribes ─────────────────────────
-#
-# `docs/ui-regeln.md` demands two things of a one-line text container that a
-# Chromium engine cannot grant at the same time:
-#
-#   * the code rule: `overflow: hidden; text-overflow: ellipsis;
-#     white-space: nowrap; min-width: 0`
-#   * check 1:       `scrollWidth <= clientWidth`
-#
-# A line that is actually shortened keeps its full text width in
-# `scrollWidth` — the ellipsis is painted, the layout overflow stays. Measured
-# in this very container, see `report.json` → `uiRegeln.befund_ellipsis.probe`:
-# a bare `<div>` carrying exactly those four properties reports
-# scrollWidth 336 against clientWidth 150. `overflow: clip` does not change it,
-# and `-webkit-line-clamp: 1` only moves the overflow into the height.
-#
-# So a width overflow on an element that provably carries the prescribed
-# truncation is NOT a violation of rule 1 ("no text sticks out past the edge
-# of its card"): the text is clipped, not spilled. It is moved to
-# `gekuerzt_statt_ueberlauf` with its measurements, where it can be counted
-# but does not fail the run. Everything else stays a violation: overflow in
-# HEIGHT, a rectangle outside the card, and any overlap — including on those
-# same elements.
-JS_GEKUERZT = None
-if REGELN_DA:
-    JS_GEKUERZT = regeln.JS_HILFEN + r"""
-(({ karteSel }) => {
-  const host = tief(karteSel, document) || document.querySelector(karteSel);
-  if (!host) return [];
-  const out = [];
-  for (const el of alleElemente(host)) {
-    const st = getComputedStyle(el);
-    if (st.textOverflow === 'ellipsis' && st.whiteSpace === 'nowrap'
-        && st.overflowX !== 'visible')
-      out.push(pfad(el));
-  }
-  return out;
-})
-"""
-
-
-def messe_text_gekuerzt(page, karten_selektor):
-    """messe_text, minus the width overflow that IS the prescribed ellipsis."""
-    ergebnis = messe_text(page, karten_selektor)
-    if "ueberlauf" not in ergebnis:
-        return ergebnis
-    gekuerzt = set(page.evaluate(JS_GEKUERZT, {"karteSel": karten_selektor}))
-    behalten, verschoben = [], []
-    for eintrag in ergebnis["ueberlauf"]:
-        m = eintrag["masse"]
-        nur_breite = m["scrollH"] <= m["clientH"] + 1
-        if nur_breite and eintrag["selektor"] in gekuerzt:
-            verschoben.append(eintrag)
-        else:
-            behalten.append(eintrag)
-    ergebnis["ueberlauf_roh"] = len(ergebnis["ueberlauf"])
-    ergebnis["ueberlauf"] = behalten
-    ergebnis["gekuerzt_statt_ueberlauf"] = verschoben
-    return ergebnis
-
-
-def probe_ellipsis(page):
-    """Proof that the conflict is Chromium's, not this card's.
-
-    Builds a plain div with exactly the four properties the spec prescribes,
-    fills it with text that cannot fit, and reads the numbers back.
-    """
-    return page.evaluate(
-        """() => {
-            const mach = (css, text) => {
-                const d = document.createElement('div');
-                d.style.cssText = 'position:fixed;left:-9999px;top:0;width:150px;'
-                    + 'font:16px sans-serif;' + css;
-                d.textContent = text;
-                document.body.appendChild(d);
-                const m = { scrollW: d.scrollWidth, clientW: d.clientWidth,
-                            scrollH: d.scrollHeight, clientH: d.clientHeight };
-                d.remove();
-                return m;
-            };
-            const lang = 'Ein sehr langer Text der ganz sicher nicht passt';
-            const vier = 'overflow:hidden;text-overflow:ellipsis;'
-                       + 'white-space:nowrap;min-width:0;';
-            return {
-                vorschrift_langer_text: mach(vier, lang),
-                vorschrift_kurzer_text: mach(vier, 'kurz'),
-                mit_overflow_clip: mach(vier + 'overflow:clip;', lang),
-                mit_line_clamp_1: mach('overflow:hidden;display:-webkit-box;'
-                    + '-webkit-line-clamp:1;-webkit-box-orient:vertical;'
-                    + 'overflow-wrap:anywhere;', lang)
-            };
-        }""")
 
 
 def serve(directory, port_holder):
@@ -1763,6 +1670,106 @@ def main():
                           "anzahl": len(helfer["paare"])}, ensure_ascii=False))
 
         # ------------------------------------------------------------------
+        # 8c. The three things fix round 1 was about
+        # ------------------------------------------------------------------
+        fix1 = page.evaluate(
+            f"""(payload) => {{
+                const I = {internals};
+                const out = {{}};
+
+                // (a) both configuration errors come out of the dictionary,
+                //     in the user's language — once with hass already set,
+                //     once with setConfig running first, as Lovelace does it.
+                const lies = (config, hassZuerst) => {{
+                    const stack = document.getElementById('stack');
+                    stack.innerHTML = '';
+                    const card = document.createElement('busch-light-card');
+                    const hass = window.makeHass(payload.states);
+                    if (hassZuerst) card.hass = hass;
+                    card.setConfig(config);
+                    stack.appendChild(card);
+                    if (!hassZuerst) card.hass = hass;
+                    const box = card.shadowRoot.querySelector('.error');
+                    return box ? box.textContent : null;
+                }};
+                const typ = 'custom:busch-light-card';
+                out.fehlerKeineEntitaet = lies({{ type: typ }}, true);
+                out.fehlerKeineEntitaetSpaeteresHass = lies({{ type: typ }}, false);
+                out.fehlerSzene = lies(
+                    {{ type: typ, entity: payload.root, scenes: [{{ titel: 'ohne' }}] }}, true);
+                out.sollKeineEntitaet = I.TEXTE.de.texte.fehlerKeineEntitaet;
+                out.sollSzeneAnfang = I.TEXTE.de.texte.fehlerSzeneOhneEntitaet.split('{{')[0];
+                out.englischImWoerterbuch = I.TEXTE.en.texte.fehlerKeineEntitaet;
+
+                // (b) the close X is the FIRST child of the dialog header.
+                const alt = document.querySelector('busch-light-dialog');
+                if (alt) alt.remove();
+                const card = document.createElement('busch-light-card');
+                card.setConfig({{ type: typ, entity: payload.root }});
+                document.getElementById('stack').innerHTML = '';
+                document.getElementById('stack').appendChild(card);
+                card.hass = window.makeHass(payload.states);
+                card.shadowRoot.querySelector('.tap')
+                    .dispatchEvent(new MouseEvent('click', {{ bubbles: true }}));
+                const kopf = document.querySelector('busch-light-dialog')
+                    .shadowRoot.querySelector('.head');
+                out.kopfKinder = Array.from(kopf.children).map((k) =>
+                    k.localName + '.' + (k.className || '') +
+                    (k.querySelector('ha-icon')
+                        ? '[' + k.querySelector('ha-icon').getAttribute('icon') + ']' : ''));
+                const x = kopf.querySelector('.iconbtn');
+                out.schliessenIstErstes = kopf.children[0] === x;
+                out.schliessenSymbol = x.querySelector('ha-icon').getAttribute('icon');
+                document.querySelector('busch-light-dialog').remove();
+
+                return out;
+            }}""",
+            {"root": fixture["root"], "states": lit_states})
+        report["fixRunde1"] = fix1
+
+        check("both configuration errors come from the dictionary, in German",
+              fix1["fehlerKeineEntitaet"] == fix1["sollKeineEntitaet"]
+              and fix1["fehlerKeineEntitaetSpaeteresHass"] == fix1["sollKeineEntitaet"]
+              and fix1["fehlerSzene"] is not None
+              and fix1["fehlerSzene"].startswith(fix1["sollSzeneAnfang"])
+              and fix1["fehlerKeineEntitaet"] != fix1["englischImWoerterbuch"],
+              json.dumps(fix1, ensure_ascii=False)[:500])
+
+        check("the dialog's close X is the first thing in the header",
+              fix1["schliessenIstErstes"] is True
+              and fix1["schliessenSymbol"] == "mdi:close",
+              json.dumps({"kopf": fix1["kopfKinder"],
+                          "erstes": fix1["schliessenIstErstes"]}, ensure_ascii=False))
+
+        entfernen = page.evaluate(
+            f"""async (payload) => {{
+                const CardClass = customElements.get('busch-light-card');
+                const ed = CardClass.getConfigElement();
+                document.getElementById('stack').innerHTML = '';
+                document.getElementById('stack').appendChild(ed);
+                ed.hass = window.makeHass(payload.states);
+                ed.setConfig({{ type: 'custom:busch-light-card', entity: payload.root,
+                                scenes: [{{ entity: 'scene.taglicht' }}] }});
+                await new Promise(r => setTimeout(r, 0));
+                await new Promise(r => setTimeout(r, 0));
+                const knoepfe = ed.shadowRoot.querySelectorAll('.scene-row .iconbtn');
+                const weg = knoepfe[knoepfe.length - 1];
+                return {{ symbol: weg.querySelector('ha-icon').getAttribute('icon'),
+                          klassen: weg.className,
+                          beschriftung: weg.title,
+                          rotImStilblatt: /iconbtn\.danger/.test(
+                              ed.shadowRoot.querySelector('style').textContent) }};
+            }}""",
+            {"root": fixture["root"], "states": lit_states})
+        report["fixRunde1Entfernen"] = entfernen
+        check("removing a scene row is reversible: Remove, mdi:close, not red",
+              entfernen["symbol"] == "mdi:close"
+              and "danger" not in entfernen["klassen"]
+              and entfernen["beschriftung"] == "Entfernen"
+              and entfernen["rotImStilblatt"] is False,
+              json.dumps(entfernen, ensure_ascii=False))
+
+        # ------------------------------------------------------------------
         # 9. The four UI rules (hacs/docs/ui-regeln.md), measured
         # ------------------------------------------------------------------
         # Rule 1 wants 320/480/960 px in both themes; rule 4 wants the card to
@@ -1792,21 +1799,39 @@ def main():
                         if (alt) alt.remove();
                     }""")
 
+            # Does messe_text see anything at all, and does it leave the
+            # deliberate truncation alone? Without this the whole run could be
+            # green because the tool is blind. bewerte() fails the run if
+            # either probe comes back wrong.
             baue_karte()
             schliesse_dialog()
+            page.set_viewport_size({"width": 620, "height": 1200})
+            page.wait_for_timeout(200)
+            report["uiRegeln"]["selbsttest_karte"] = selbsttest(page, "busch-light-card")
+            oeffne_dialog()
+            page.wait_for_timeout(300)
+            report["uiRegeln"]["selbsttest_dialog"] = selbsttest(page, ".sheet")
+            schliesse_dialog()
+
             report["uiRegeln"]["regel1_karte"] = lauf_breiten(
                 page,
-                messung=lambda pg: messe_text_gekuerzt(pg, "busch-light-card"),
+                messung=lambda pg: messe_text(pg, "busch-light-card"),
                 vor_messung=lambda pg: (schliesse_dialog(), baue_karte()))
 
-            # The open dialog, measured against its own :host. A taller
-            # viewport on purpose: the sheet scrolls past 92vh, and content
-            # scrolled out of sight would report a rectangle below the host
-            # without a single line of text having left its box. What is
+            # Measured against `.sheet`, not against `busch-light-dialog`.
+            # The host is `position: fixed; inset: 0` and therefore fills the
+            # window, so check 2 ("the rectangle lies inside the popup") would
+            # be met by anything at all, and the scrim of check 5 would have
+            # no point left to click. The sheet is the box the text really
+            # has to stay in.
+            #
+            # A taller viewport on purpose: the sheet scrolls past 92vh, and
+            # content scrolled out of sight would report a rectangle below the
+            # sheet without a single line of text having left its box. What is
             # measured here is containment, not scrolling.
             report["uiRegeln"]["regel1_dialog"] = lauf_breiten(
                 page, hoehe=2000,
-                messung=lambda pg: messe_text_gekuerzt(pg, "busch-light-dialog"),
+                messung=lambda pg: messe_text(pg, ".sheet"),
                 vor_messung=lambda pg: (baue_karte(), oeffne_dialog()))
             schliesse_dialog()
 
@@ -1816,27 +1841,10 @@ def main():
             report["uiRegeln"]["regel2_dialog"] = lauf_breiten(
                 page, hoehe=2000,
                 messung=lambda pg: messe_popup(
-                    pg, oeffne_dialog, "busch-light-dialog", ".head .iconbtn"),
+                    pg, oeffne_dialog, ".sheet", ".head .iconbtn"),
                 vor_messung=lambda pg: (schliesse_dialog(), baue_karte()))
             schliesse_dialog()
 
-            report["uiRegeln"]["befund_ellipsis"] = {
-                "was": "Regel 1, Pruefung 1 (scrollWidth <= clientWidth) und die "
-                       "von Regel 1 vorgeschriebene Kuerzung (overflow: hidden + "
-                       "text-overflow: ellipsis + white-space: nowrap) schliessen "
-                       "einander in Chromium aus, sobald eine Zeile wirklich "
-                       "gekuerzt wird.",
-                "folge": "Breitenueberlauf an einem Element, das die vorgeschriebene "
-                         "Kuerzung nachweislich traegt, steht unter "
-                         "'gekuerzt_statt_ueberlauf' statt unter 'ueberlauf'. "
-                         "Hoehenueberlauf, Rechteck ausserhalb der Karte und jede "
-                         "Ueberlappung bleiben Verstoesse, auch dort.",
-                "probe": probe_ellipsis(page),
-                "verschoben": sum(
-                    len(lauf["messung"].get("gekuerzt_statt_ueberlauf", []))
-                    for teil in ("regel1_karte", "regel1_dialog")
-                    for lauf in report["uiRegeln"][teil]["laeufe"]),
-            }
             report["uiRegeln"]["zaehlung"] = zaehle(report["uiRegeln"])
             report["uiRegelnVerstoesse"] = bewerte(report["uiRegeln"])
 
@@ -1874,8 +1882,15 @@ def main():
                  z.get("ausserhalb", 0), z.get("ueberlappung", 0),
                  z.get("verletzt", 0), z.get("geprueft", 0),
                  z.get("kein_urteil", 0)))
-        print("            davon vorschriftsmaessig gekuerzt (kein Verstoss): %d"
-              % report["uiRegeln"]["befund_ellipsis"]["verschoben"])
+        print("            gekuerzt (vorschriftsmaessig, kein Verstoss): %d"
+              % z.get("gekuerzt", 0))
+        for name in ("selbsttest_karte", "selbsttest_dialog"):
+            st = report["uiRegeln"].get(name, {})
+            print("            %s: ueberlauf=%s ausserhalb=%s "
+                  "ellipsis_verschont=%s ellipsis_gezaehlt=%s"
+                  % (name, st.get("ueberlauf_erkannt"), st.get("ausserhalb_erkannt"),
+                     st.get("ellipsis_nicht_gemeldet"),
+                     st.get("ellipsis_als_gekuerzt_gezaehlt")))
     else:
         print("UI-Regeln: NICHT gemessen — regeln.py fehlt (/work nicht gemountet)")
     print(f"requests={len(report['requests'])} bad={len(report['badResponses'])} "

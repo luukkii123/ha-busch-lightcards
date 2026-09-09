@@ -218,7 +218,9 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             previewDropped: '{n} Mitglieder verworfen (weder Lampe noch Schalter)',
             previewTruncated: 'Tiefenbegrenzung erreicht bei: {list}',
             previewRecovered: 'Gemerkte Mitglieder benutzt für: {list}',
-            noForm: 'Die Formularelemente von Home Assistant sind nicht geladen. Bitte diese Karte in YAML einrichten.'
+            noForm: 'Die Formularelemente von Home Assistant sind nicht geladen. Bitte diese Karte in YAML einrichten.',
+            fehlerKeineEntitaet: 'Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe" eine Entität wählen.',
+            fehlerSzeneOhneEntitaet: 'Ein Szeneneintrag hat keine Entität: {eintrag}. Jede Szenenkachel braucht eine Szene oder ein Skript.'
         }
     },
     en: {
@@ -323,7 +325,9 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             previewDropped: '{n} members dropped (not a light or switch)',
             previewTruncated: 'Depth limit reached at: {list}',
             previewRecovered: 'Remembered members used for: {list}',
-            noForm: 'The Home Assistant form elements did not load. Please configure this card in YAML.'
+            noForm: 'The Home Assistant form elements did not load. Please configure this card in YAML.',
+            fehlerKeineEntitaet: 'This card needs a light, a switch or a group. Pick an entity under “Light, switch or group” in the editor.',
+            fehlerSzeneOhneEntitaet: 'A scene entry has no entity: {eintrag}. Every scene tile needs a scene or a script.'
         }
     }
 };
@@ -376,6 +380,23 @@ function fieldLabel(hass, name) {
     const table = textTable(hass);
     const text = table.labels[name] !== undefined ? table.labels[name] : TEXTE_BUSCH_LIGHT_CARD.en.labels[name];
     return text === undefined ? name : text;
+}
+
+/**
+ * A configuration error the user will read on the card.
+ *
+ * It carries a dictionary key, not a sentence: `setConfig` runs before `hass`
+ * exists, so the language is only known once the card renders the error box.
+ * Rule 3 — no user-visible text outside the dictionary — applies to error
+ * messages too, and a thrown string is the easiest place to forget that.
+ */
+class ConfigError extends Error {
+    constructor(key, vars) {
+        super(key);
+        this.name = 'ConfigError';
+        this.textKey = key;
+        this.textVars = vars || null;
+    }
 }
 
 /** The editor helper of one schema field. A whole sentence, with a full stop. */
@@ -1173,7 +1194,7 @@ function parseSceneConfig(raw) {
             color: raw.color
         };
     }
-    throw new Error(`Scene entry needs an 'entity': ${JSON.stringify(raw)}`);
+    throw new ConfigError('fehlerSzeneOhneEntitaet', { eintrag: JSON.stringify(raw) });
 }
 
 function normalizeConfig(raw) {
@@ -1192,7 +1213,7 @@ function normalizeConfig(raw) {
     }
 
     if (!entityIds.length) {
-        throw new Error("busch-light-card: 'entity' or 'entities' is required.");
+        throw new ConfigError('fehlerKeineEntitaet');
     }
 
     opts.entityIds = entityIds;
@@ -1587,9 +1608,17 @@ class BuschLightCard extends HTMLElement {
         try {
             this._opts = normalizeConfig(raw || {});
             this._error = null;
+            this._errorKey = null;
+            this._errorVars = null;
         } catch (e) {
             this._opts = null;
-            this._error = e && e.message ? e.message : String(e);
+            // Remembered as a key, translated when the box is drawn: at this
+            // point `hass` — and with it the language — may still be missing.
+            this._errorKey = e && e.textKey ? e.textKey : null;
+            this._errorVars = e && e.textVars ? e.textVars : null;
+            this._error = this._errorKey
+                ? translate(this._hass, this._errorKey, this._errorVars)
+                : (e && e.message ? e.message : String(e));
         }
         this._built = false;
         this.shadowRoot.innerHTML = '';
@@ -1637,6 +1666,11 @@ class BuschLightCard extends HTMLElement {
         root.appendChild(style);
 
         if (this._error) {
+            // By now `hass` may have arrived, so the sentence is written in
+            // the user's language rather than the browser's.
+            if (this._errorKey) {
+                this._error = translate(this._hass, this._errorKey, this._errorVars);
+            }
             const box = document.createElement('div');
             box.className = 'error';
             box.textContent = this._error;
@@ -2420,6 +2454,11 @@ class BuschLightDialog extends HTMLElement {
             head.appendChild(back);
         }
 
+        // Rule 2, anatomy: the close X sits top LEFT, ahead of the title. In
+        // the detail view the back arrow keeps the first place — it is the
+        // narrower step, and the X beside it still closes the whole dialog.
+        head.appendChild(this._makeIconButton('mdi:close', () => this.close()));
+
         const who = document.createElement('div');
         who.className = 'who';
         const h1 = document.createElement('h1');
@@ -2456,7 +2495,6 @@ class BuschLightDialog extends HTMLElement {
                   )
         );
 
-        head.appendChild(this._makeIconButton('mdi:close', () => this.close()));
         sheet.appendChild(head);
 
         if (detail) {
@@ -3094,7 +3132,6 @@ summary {
 }
 .iconbtn:hover { background: var(--secondary-background-color, rgba(0, 0, 0, 0.06)); }
 .iconbtn[disabled] { opacity: 0.35; cursor: default; }
-.iconbtn.danger { color: var(--error-color, #db4437); }
 .addbtn {
     border: 1px dashed var(--divider-color, #bdbdbd);
     background: none;
@@ -3627,15 +3664,18 @@ class BuschLightCardEditor extends HTMLElement {
         bar.appendChild(
             this._sceneButton('mdi:arrow-down', 'down', index === total - 1, () => this._moveScene(index, 1))
         );
-        bar.appendChild(this._sceneButton('mdi:delete', 'remove', false, () => this._removeScene(index), true));
+        // Removes the row from this card's config — it deletes nothing in
+        // Home Assistant. So: Remove, mdi:close, and not red. Red is for the
+        // final kind (docs/ui-regeln.md, rule 4, wording).
+        bar.appendChild(this._sceneButton('mdi:close', 'remove', false, () => this._removeScene(index)));
         row.appendChild(bar);
 
         return row;
     }
 
-    _sceneButton(icon, labelKey, disabled, onClick, danger) {
+    _sceneButton(icon, labelKey, disabled, onClick) {
         const button = document.createElement('button');
-        button.className = 'iconbtn' + (danger ? ' danger' : '');
+        button.className = 'iconbtn';
         button.title = this._ui(labelKey);
         if (disabled) button.setAttribute('disabled', '');
         else button.addEventListener('click', onClick);

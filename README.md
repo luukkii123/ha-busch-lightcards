@@ -244,7 +244,7 @@ docker run --rm \
       python3 /cards/docs/render/render.py /cards/dist/busch-lightcards.js /cards/docs/render/ergebnis'
 ```
 
-96 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
+99 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
 self-reference, deleted members, foreign domains, the depth limit, the
 unavailable-group memory (cold and warm), aggregation, service-call routing,
 the rendered card text, the dialog and how it stacks against a Leaflet-grade
@@ -260,7 +260,10 @@ delete, colour round-trip) — plus the shape rule 3 asks of the dictionary: a
 label of one to four words without a full stop and a helper that is a whole
 sentence with one, for every schema field in both languages; the card picker
 entry following `navigator.language`; grid columns in multiples of three; and
-`computeHelper` really reaching `ha-form` for every field.
+`computeHelper` really reaching `ha-form` for every field; and the three
+points of fix round 1 — both configuration errors coming out of the dictionary
+in the user's language, the close X sitting first in the dialog header, and the
+scene row's remove button being `mdi:close` and not red.
 
 **Two things are explicitly not proven.**
 
@@ -284,30 +287,29 @@ Against the four rules in `hacs/docs/ui-regeln.md`:
 | Syntax | `node --check dist/busch-lightcards.js` | clean |
 | Namespace | `node ../busch-cards/tests/namensraum.test.js dist/busch-lightcards.js` | 0 failures |
 | Rules 3 and 4, static | `python3 ../scripts/ui-regeln-pruefen.py --repo ha-busch-lightcards` | **0 violations** |
-| Rules 1, 2 and 4, in the browser | the `docker run` above | **96 checks passed, 0 rule violations, exit 0** |
+| Rules 1, 2 and 4, in the browser | the `docker run` above | **99 checks passed, 0 rule violations, exit 0** |
 
-The browser run measures rule 1 (overflow, rectangle inside the card, no
+The browser run measures rule 1 (overflow, rectangle inside the box, no
 overlapping text) and rule 2 (Escape, the back gesture without leaving the
-page, the close button without an orphaned history entry, and who is on top in
-the middle of the popup) at **320, 480 and 960 px in both the light and the
-dark theme** — on the card and on the open dialog. 186 text elements measured,
-**no case left without a judgement**, all 24 rule-2 measurements `bestanden`.
+page, the close button without an orphaned history entry, who is on top in the
+middle of the popup, and a click on the scrim) at **320, 480 and 960 px in
+both the light and the dark theme** — on the card and on the open dialog.
+**186 text elements measured, no case left without a judgement, all 30 rule-2
+measurements `bestanden`.**
 
-**One finding, written into `report.json` under
-`uiRegeln.befund_ellipsis`.** Rule 1 prescribes
-`overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0`
-on a one-line text container — and its own check 1 demands
-`scrollWidth <= clientWidth`. In Chromium the two cannot both hold the moment
-a line is really shortened: the ellipsis is painted, the layout overflow
-stays. Measured in the same container: a bare `div` with exactly those four
-properties reports `scrollWidth 336` against `clientWidth 150`;
-`overflow: clip` changes nothing and `-webkit-line-clamp: 1` only moves the
-overflow into the height (`scrollHeight 54` against `clientHeight 18`). A
-width overflow on an element that provably carries the prescribed truncation
-is therefore listed under `gekuerzt_statt_ueberlauf` rather than counted as a
-violation — four cases, all of them the card title and the dialog title at
-320 px. Overflow in **height**, a rectangle outside the card and any overlap
-stay violations, on those elements too.
+The dialog is measured against `.sheet`, not against `busch-light-dialog`.
+The host is `position: fixed; inset: 0` and fills the window, so "the
+rectangle lies inside the popup" would be met by anything at all and the
+scrim would have no point left to click.
+
+Before measuring anything, `regeln.selbsttest` pushes two probes into the card
+and into the sheet: one that must be reported (`nowrap` without `ellipsis`,
+sticking out to the left) and one that must not (the same text, properly
+truncated inside the box). Both came back right for both targets — without
+that, a green run could just mean the tool was not looking. Four correctly
+truncated lines are counted under `gekuerzt`: the card title and the dialog
+title at 320 px, where Chromium keeps the full text width in `scrollWidth`
+even though the ellipsis is painted.
 
 ## Why there is no build step
 

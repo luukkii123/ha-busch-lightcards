@@ -1,9 +1,9 @@
 {
   "cardFile": "/cards/dist/busch-lightcards.js",
-  "servedFrom": "http://127.0.0.1:59051/dist/busch-lightcards.js",
+  "servedFrom": "http://127.0.0.1:33009/dist/busch-lightcards.js",
   "requests": [
-    "http://127.0.0.1:59051/docs/render/ergebnis/harness.html",
-    "http://127.0.0.1:59051/dist/busch-lightcards.js"
+    "http://127.0.0.1:33009/docs/render/ergebnis/harness.html",
+    "http://127.0.0.1:33009/dist/busch-lightcards.js"
   ],
   "badResponses": [],
   "requestFailures": [],
@@ -489,6 +489,21 @@
       "name": "the editor hands ha-form a computeHelper for every field",
       "pass": true,
       "detail": "{\"ohne\": [], \"anzahl\": 18}"
+    },
+    {
+      "name": "both configuration errors come from the dictionary, in German",
+      "pass": true,
+      "detail": "{\"fehlerKeineEntitaet\": \"Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\\\" eine Entität wählen.\", \"fehlerKeineEntitaetSpaeteresHass\": \"Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\\\" eine Entität wählen.\", \"fehlerSzene\": \"Ein Szeneneintrag hat keine Entität: {\\\"titel\\\":\\\"ohne\\\"}. Jede Szenenkachel braucht eine Szene oder ein Skript.\", \"sollKeineEntitaet\": \"Die"
+    },
+    {
+      "name": "the dialog's close X is the first thing in the header",
+      "pass": true,
+      "detail": "{\"kopf\": [\"button.iconbtn[mdi:close]\", \"div.who\", \"button.gtoggle headsw on\"], \"erstes\": true}"
+    },
+    {
+      "name": "removing a scene row is reversible: Remove, mdi:close, not red",
+      "pass": true,
+      "detail": "{\"symbol\": \"mdi:close\", \"klassen\": \"iconbtn\", \"beschriftung\": \"Entfernen\", \"rotImStilblatt\": false}"
     }
   ],
   "screenshots": [
@@ -499,7 +514,7 @@
     "dialog-groups.png",
     "dialog-tiles.png"
   ],
-  "harnessUrl": "http://127.0.0.1:59051/docs/render/ergebnis/harness.html",
+  "harnessUrl": "http://127.0.0.1:33009/docs/render/ergebnis/harness.html",
   "resolution": {
     "leaves": [
       "light.kinderzimmer_spot_1",
@@ -1590,7 +1605,142 @@
       ]
     ]
   },
+  "fixRunde1": {
+    "fehlerKeineEntitaet": "Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\" eine Entität wählen.",
+    "fehlerKeineEntitaetSpaeteresHass": "Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\" eine Entität wählen.",
+    "fehlerSzene": "Ein Szeneneintrag hat keine Entität: {\"titel\":\"ohne\"}. Jede Szenenkachel braucht eine Szene oder ein Skript.",
+    "sollKeineEntitaet": "Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\" eine Entität wählen.",
+    "sollSzeneAnfang": "Ein Szeneneintrag hat keine Entität: ",
+    "englischImWoerterbuch": "This card needs a light, a switch or a group. Pick an entity under “Light, switch or group” in the editor.",
+    "kopfKinder": [
+      "button.iconbtn[mdi:close]",
+      "div.who",
+      "button.gtoggle headsw on"
+    ],
+    "schliessenIstErstes": true,
+    "schliessenSymbol": "mdi:close"
+  },
+  "fixRunde1Entfernen": {
+    "symbol": "mdi:close",
+    "klassen": "iconbtn",
+    "beschriftung": "Entfernen",
+    "rotImStilblatt": false
+  },
   "uiRegeln": {
+    "selbsttest_karte": {
+      "sonde_gesetzt": true,
+      "ueberlauf_erkannt": true,
+      "ausserhalb_erkannt": true,
+      "ellipsis_nicht_gemeldet": true,
+      "ellipsis_als_gekuerzt_gezaehlt": true,
+      "gekuerzt_mit_sonden": 1,
+      "gekuerzt_ohne_sonden": 0,
+      "befund": {
+        "sonde_ueberlauf": [
+          {
+            "selektor": "html > body > div#stack > busch-light-card > ::shadow > div#regeln-sonde",
+            "text": "Absichtlich viel zu langer Text fuer die Selbstprobe",
+            "masse": {
+              "x": -30,
+              "y": 0,
+              "w": 40,
+              "h": 16,
+              "scrollW": 312,
+              "clientW": 40,
+              "scrollH": 16,
+              "clientH": 16
+            },
+            "richtung": "Breite",
+            "overflow": "hidden",
+            "textOverflow": "clip"
+          }
+        ],
+        "sonde_ausserhalb": [
+          {
+            "selektor": "html > body > div#stack > busch-light-card > ::shadow > div#regeln-sonde",
+            "text": "Absichtlich viel zu langer Text fuer die Selbstprobe",
+            "ueberstand": {
+              "links": 54,
+              "rechts": -586,
+              "oben": 24,
+              "unten": -117
+            },
+            "karte": {
+              "x": 24,
+              "y": 24,
+              "w": 572,
+              "h": 109
+            }
+          },
+          {
+            "selektor": "html > body > div#stack > busch-light-card > ::shadow > div#regeln-sonde-ellipsis",
+            "text": "Absichtlich viel zu langer Text fuer die Selbstprobe",
+            "ueberstand": {
+              "links": 24,
+              "rechts": -556,
+              "oben": 24,
+              "unten": -117
+            },
+            "karte": {
+              "x": 24,
+              "y": 24,
+              "w": 572,
+              "h": 109
+            }
+          }
+        ],
+        "ellipsis_faelschlich_gemeldet": []
+      }
+    },
+    "selbsttest_dialog": {
+      "sonde_gesetzt": true,
+      "ueberlauf_erkannt": true,
+      "ausserhalb_erkannt": true,
+      "ellipsis_nicht_gemeldet": true,
+      "ellipsis_als_gekuerzt_gezaehlt": true,
+      "gekuerzt_mit_sonden": 1,
+      "gekuerzt_ohne_sonden": 0,
+      "befund": {
+        "sonde_ueberlauf": [
+          {
+            "selektor": "html > body > busch-light-dialog > ::shadow > div.sheet > div#regeln-sonde",
+            "text": "Absichtlich viel zu langer Text fuer die Selbstprobe",
+            "masse": {
+              "x": 0,
+              "y": 250,
+              "w": 40,
+              "h": 16,
+              "scrollW": 312,
+              "clientW": 40,
+              "scrollH": 16,
+              "clientH": 16
+            },
+            "richtung": "Breite",
+            "overflow": "hidden",
+            "textOverflow": "clip"
+          }
+        ],
+        "sonde_ausserhalb": [
+          {
+            "selektor": "html > body > busch-light-dialog > ::shadow > div.sheet > div#regeln-sonde",
+            "text": "Absichtlich viel zu langer Text fuer die Selbstprobe",
+            "ueberstand": {
+              "links": 30,
+              "rechts": -550,
+              "oben": 0,
+              "unten": -934
+            },
+            "karte": {
+              "x": 30,
+              "y": 250,
+              "w": 560,
+              "h": 950
+            }
+          }
+        ],
+        "ellipsis_faelschlich_gemeldet": []
+      }
+    },
     "regel1_karte": {
       "laeufe": [
         {
@@ -1600,6 +1750,7 @@
             "ueberlauf": [],
             "ausserhalb": [],
             "ueberlappung": [],
+            "gekuerzt": 1,
             "kein_urteil": 0,
             "kein_urteil_liste": [],
             "geprueft": 4,
@@ -1616,24 +1767,7 @@
               "y": 24,
               "breite": 272,
               "hoehe": 110
-            },
-            "ueberlauf_roh": 1,
-            "gekuerzt_statt_ueberlauf": [
-              {
-                "selektor": "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.tap > div.text > h2",
-                "text": "LD Kinderzimmer Alle Lichter",
-                "masse": {
-                  "x": 80,
-                  "y": 40,
-                  "w": 152,
-                  "h": 18,
-                  "scrollW": 206,
-                  "clientW": 152,
-                  "scrollH": 18,
-                  "clientH": 18
-                }
-              }
-            ]
+            }
           }
         },
         {
@@ -1643,6 +1777,7 @@
             "ueberlauf": [],
             "ausserhalb": [],
             "ueberlappung": [],
+            "gekuerzt": 1,
             "kein_urteil": 0,
             "kein_urteil_liste": [],
             "geprueft": 4,
@@ -1659,24 +1794,7 @@
               "y": 24,
               "breite": 272,
               "hoehe": 110
-            },
-            "ueberlauf_roh": 1,
-            "gekuerzt_statt_ueberlauf": [
-              {
-                "selektor": "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.tap > div.text > h2",
-                "text": "LD Kinderzimmer Alle Lichter",
-                "masse": {
-                  "x": 80,
-                  "y": 40,
-                  "w": 152,
-                  "h": 18,
-                  "scrollW": 206,
-                  "clientW": 152,
-                  "scrollH": 18,
-                  "clientH": 18
-                }
-              }
-            ]
+            }
           }
         },
         {
@@ -1686,6 +1804,7 @@
             "ueberlauf": [],
             "ausserhalb": [],
             "ueberlappung": [],
+            "gekuerzt": 0,
             "kein_urteil": 0,
             "kein_urteil_liste": [],
             "geprueft": 4,
@@ -1702,9 +1821,7 @@
               "y": 24,
               "breite": 432,
               "hoehe": 110
-            },
-            "ueberlauf_roh": 0,
-            "gekuerzt_statt_ueberlauf": []
+            }
           }
         },
         {
@@ -1714,6 +1831,7 @@
             "ueberlauf": [],
             "ausserhalb": [],
             "ueberlappung": [],
+            "gekuerzt": 0,
             "kein_urteil": 0,
             "kein_urteil_liste": [],
             "geprueft": 4,
@@ -1730,9 +1848,7 @@
               "y": 24,
               "breite": 432,
               "hoehe": 110
-            },
-            "ueberlauf_roh": 0,
-            "gekuerzt_statt_ueberlauf": []
+            }
           }
         },
         {
@@ -1742,6 +1858,7 @@
             "ueberlauf": [],
             "ausserhalb": [],
             "ueberlappung": [],
+            "gekuerzt": 0,
             "kein_urteil": 0,
             "kein_urteil_liste": [],
             "geprueft": 4,
@@ -1758,9 +1875,7 @@
               "y": 24,
               "breite": 620,
               "hoehe": 110
-            },
-            "ueberlauf_roh": 0,
-            "gekuerzt_statt_ueberlauf": []
+            }
           }
         },
         {
@@ -1770,6 +1885,7 @@
             "ueberlauf": [],
             "ausserhalb": [],
             "ueberlappung": [],
+            "gekuerzt": 0,
             "kein_urteil": 0,
             "kein_urteil_liste": [],
             "geprueft": 4,
@@ -1786,9 +1902,7 @@
               "y": 24,
               "breite": 620,
               "hoehe": 110
-            },
-            "ueberlauf_roh": 0,
-            "gekuerzt_statt_ueberlauf": []
+            }
           }
         }
       ]
@@ -1802,6 +1916,7 @@
             "ueberlauf": [],
             "ausserhalb": [],
             "ueberlappung": [],
+            "gekuerzt": 1,
             "kein_urteil": 0,
             "kein_urteil_liste": [],
             "geprueft": 27,
@@ -1836,29 +1951,12 @@
               "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist"
             ],
             "karte": {
-              "selektor": "busch-light-dialog",
+              "selektor": ".sheet",
               "x": 0,
-              "y": 0,
+              "y": 678,
               "breite": 320,
-              "hoehe": 2000
-            },
-            "ueberlauf_roh": 1,
-            "gekuerzt_statt_ueberlauf": [
-              {
-                "selektor": "html > body > busch-light-dialog > ::shadow > div.sheet > div.head > div.who > h1",
-                "text": "LD Kinderzimmer Alle Lichter",
-                "masse": {
-                  "x": 16,
-                  "y": 695.1,
-                  "w": 190,
-                  "h": 23,
-                  "scrollW": 258,
-                  "clientW": 190,
-                  "scrollH": 23,
-                  "clientH": 23
-                }
-              }
-            ]
+              "hoehe": 1322
+            }
           }
         },
         {
@@ -1868,6 +1966,7 @@
             "ueberlauf": [],
             "ausserhalb": [],
             "ueberlappung": [],
+            "gekuerzt": 1,
             "kein_urteil": 0,
             "kein_urteil_liste": [],
             "geprueft": 27,
@@ -1902,29 +2001,12 @@
               "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist"
             ],
             "karte": {
-              "selektor": "busch-light-dialog",
+              "selektor": ".sheet",
               "x": 0,
-              "y": 0,
+              "y": 678,
               "breite": 320,
-              "hoehe": 2000
-            },
-            "ueberlauf_roh": 1,
-            "gekuerzt_statt_ueberlauf": [
-              {
-                "selektor": "html > body > busch-light-dialog > ::shadow > div.sheet > div.head > div.who > h1",
-                "text": "LD Kinderzimmer Alle Lichter",
-                "masse": {
-                  "x": 16,
-                  "y": 695.1,
-                  "w": 190,
-                  "h": 23,
-                  "scrollW": 258,
-                  "clientW": 190,
-                  "scrollH": 23,
-                  "clientH": 23
-                }
-              }
-            ]
+              "hoehe": 1322
+            }
           }
         },
         {
@@ -1934,6 +2016,7 @@
             "ueberlauf": [],
             "ausserhalb": [],
             "ueberlappung": [],
+            "gekuerzt": 0,
             "kein_urteil": 0,
             "kein_urteil_liste": [],
             "geprueft": 27,
@@ -1968,14 +2051,12 @@
               "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist"
             ],
             "karte": {
-              "selektor": "busch-light-dialog",
+              "selektor": ".sheet",
               "x": 0,
-              "y": 0,
+              "y": 936,
               "breite": 480,
-              "hoehe": 2000
-            },
-            "ueberlauf_roh": 0,
-            "gekuerzt_statt_ueberlauf": []
+              "hoehe": 1064
+            }
           }
         },
         {
@@ -1985,6 +2066,7 @@
             "ueberlauf": [],
             "ausserhalb": [],
             "ueberlappung": [],
+            "gekuerzt": 0,
             "kein_urteil": 0,
             "kein_urteil_liste": [],
             "geprueft": 27,
@@ -2019,14 +2101,12 @@
               "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist"
             ],
             "karte": {
-              "selektor": "busch-light-dialog",
+              "selektor": ".sheet",
               "x": 0,
-              "y": 0,
+              "y": 936,
               "breite": 480,
-              "hoehe": 2000
-            },
-            "ueberlauf_roh": 0,
-            "gekuerzt_statt_ueberlauf": []
+              "hoehe": 1064
+            }
           }
         },
         {
@@ -2036,6 +2116,7 @@
             "ueberlauf": [],
             "ausserhalb": [],
             "ueberlappung": [],
+            "gekuerzt": 0,
             "kein_urteil": 0,
             "kein_urteil_liste": [],
             "geprueft": 27,
@@ -2070,14 +2151,12 @@
               "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist"
             ],
             "karte": {
-              "selektor": "busch-light-dialog",
-              "x": 0,
-              "y": 0,
-              "breite": 960,
-              "hoehe": 2000
-            },
-            "ueberlauf_roh": 0,
-            "gekuerzt_statt_ueberlauf": []
+              "selektor": ".sheet",
+              "x": 200,
+              "y": 526,
+              "breite": 560,
+              "hoehe": 950
+            }
           }
         },
         {
@@ -2087,6 +2166,7 @@
             "ueberlauf": [],
             "ausserhalb": [],
             "ueberlappung": [],
+            "gekuerzt": 0,
             "kein_urteil": 0,
             "kein_urteil_liste": [],
             "geprueft": 27,
@@ -2121,14 +2201,12 @@
               "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist"
             ],
             "karte": {
-              "selektor": "busch-light-dialog",
-              "x": 0,
-              "y": 0,
-              "breite": 960,
-              "hoehe": 2000
-            },
-            "ueberlauf_roh": 0,
-            "gekuerzt_statt_ueberlauf": []
+              "selektor": ".sheet",
+              "x": 200,
+              "y": 526,
+              "breite": 560,
+              "hoehe": 950
+            }
           }
         }
       ]
@@ -2152,8 +2230,8 @@
               "ergebnis": "bestanden",
               "beleg": {
                 "nach_back_sichtbar": false,
-                "href_vorher": "http://127.0.0.1:59051/docs/render/ergebnis/harness.html",
-                "href_nachher": "http://127.0.0.1:59051/docs/render/ergebnis/harness.html",
+                "href_vorher": "http://127.0.0.1:33009/docs/render/ergebnis/harness.html",
+                "href_nachher": "http://127.0.0.1:33009/docs/render/ergebnis/harness.html",
                 "seite_geblieben": true
               }
             },
@@ -2161,8 +2239,8 @@
               "ergebnis": "bestanden",
               "beleg": {
                 "nach_klick_sichtbar": false,
-                "history_length_vorher": 14,
-                "history_length_nachher": 14
+                "history_length_vorher": 16,
+                "history_length_nachher": 16
               }
             },
             "obenauf": {
@@ -2170,10 +2248,44 @@
               "beleg": {
                 "punkt": {
                   "x": 160,
-                  "y": 1000
+                  "y": 1348
                 },
-                "treffer": "div.scenes",
+                "treffer": "canvas.wheel",
                 "im_popup": true
+              }
+            },
+            "scrim": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 160,
+                  "y": 679
+                },
+                "seite": "oben",
+                "trifft": "div.scrim",
+                "popup_rect": {
+                  "x": 0,
+                  "y": 687,
+                  "w": 320,
+                  "h": 1322
+                },
+                "fenster": {
+                  "w": 320,
+                  "h": 2000
+                },
+                "abgelehnt": [
+                  {
+                    "name": "links",
+                    "x": -8,
+                    "y": 1347.7705078125,
+                    "grund": "ausserhalb des Ansichtsfensters"
+                  }
+                ],
+                "nach_klick_sichtbar": false,
+                "history_length_vorher": 16,
+                "history_length_nachher": 16,
+                "formular_mit_aenderungen": false,
+                "sollverhalten": "schliesst, ohne Verlaufseintrag"
               }
             }
           }
@@ -2195,94 +2307,8 @@
               "ergebnis": "bestanden",
               "beleg": {
                 "nach_back_sichtbar": false,
-                "href_vorher": "http://127.0.0.1:59051/docs/render/ergebnis/harness.html",
-                "href_nachher": "http://127.0.0.1:59051/docs/render/ergebnis/harness.html",
-                "seite_geblieben": true
-              }
-            },
-            "schliessknopf": {
-              "ergebnis": "bestanden",
-              "beleg": {
-                "nach_klick_sichtbar": false,
-                "history_length_vorher": 15,
-                "history_length_nachher": 15
-              }
-            },
-            "obenauf": {
-              "ergebnis": "bestanden",
-              "beleg": {
-                "punkt": {
-                  "x": 160,
-                  "y": 1000
-                },
-                "treffer": "div.scenes",
-                "im_popup": true
-              }
-            }
-          }
-        },
-        {
-          "breite": 480,
-          "thema": "light",
-          "messung": {
-            "escape": {
-              "ergebnis": "bestanden",
-              "beleg": {
-                "nach_escape_sichtbar": false,
-                "zustand": {
-                  "da": false
-                }
-              }
-            },
-            "zurueck": {
-              "ergebnis": "bestanden",
-              "beleg": {
-                "nach_back_sichtbar": false,
-                "href_vorher": "http://127.0.0.1:59051/docs/render/ergebnis/harness.html",
-                "href_nachher": "http://127.0.0.1:59051/docs/render/ergebnis/harness.html",
-                "seite_geblieben": true
-              }
-            },
-            "schliessknopf": {
-              "ergebnis": "bestanden",
-              "beleg": {
-                "nach_klick_sichtbar": false,
-                "history_length_vorher": 16,
-                "history_length_nachher": 16
-              }
-            },
-            "obenauf": {
-              "ergebnis": "bestanden",
-              "beleg": {
-                "punkt": {
-                  "x": 240,
-                  "y": 1000
-                },
-                "treffer": "div.sub",
-                "im_popup": true
-              }
-            }
-          }
-        },
-        {
-          "breite": 480,
-          "thema": "dark",
-          "messung": {
-            "escape": {
-              "ergebnis": "bestanden",
-              "beleg": {
-                "nach_escape_sichtbar": false,
-                "zustand": {
-                  "da": false
-                }
-              }
-            },
-            "zurueck": {
-              "ergebnis": "bestanden",
-              "beleg": {
-                "nach_back_sichtbar": false,
-                "href_vorher": "http://127.0.0.1:59051/docs/render/ergebnis/harness.html",
-                "href_nachher": "http://127.0.0.1:59051/docs/render/ergebnis/harness.html",
+                "href_vorher": "http://127.0.0.1:33009/docs/render/ergebnis/harness.html",
+                "href_nachher": "http://127.0.0.1:33009/docs/render/ergebnis/harness.html",
                 "seite_geblieben": true
               }
             },
@@ -2298,11 +2324,199 @@
               "ergebnis": "bestanden",
               "beleg": {
                 "punkt": {
-                  "x": 240,
-                  "y": 1000
+                  "x": 160,
+                  "y": 1346
                 },
-                "treffer": "div.sub",
+                "treffer": "canvas.wheel",
                 "im_popup": true
+              }
+            },
+            "scrim": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 160,
+                  "y": 677
+                },
+                "seite": "oben",
+                "trifft": "div.scrim",
+                "popup_rect": {
+                  "x": 0,
+                  "y": 685,
+                  "w": 320,
+                  "h": 1322
+                },
+                "fenster": {
+                  "w": 320,
+                  "h": 2000
+                },
+                "abgelehnt": [
+                  {
+                    "name": "links",
+                    "x": -8,
+                    "y": 1345.7933959960938,
+                    "grund": "ausserhalb des Ansichtsfensters"
+                  }
+                ],
+                "nach_klick_sichtbar": false,
+                "history_length_vorher": 17,
+                "history_length_nachher": 17,
+                "formular_mit_aenderungen": false,
+                "sollverhalten": "schliesst, ohne Verlaufseintrag"
+              }
+            }
+          }
+        },
+        {
+          "breite": 480,
+          "thema": "light",
+          "messung": {
+            "escape": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_escape_sichtbar": false,
+                "zustand": {
+                  "da": false
+                }
+              }
+            },
+            "zurueck": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_back_sichtbar": false,
+                "href_vorher": "http://127.0.0.1:33009/docs/render/ergebnis/harness.html",
+                "href_nachher": "http://127.0.0.1:33009/docs/render/ergebnis/harness.html",
+                "seite_geblieben": true
+              }
+            },
+            "schliessknopf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_klick_sichtbar": false,
+                "history_length_vorher": 18,
+                "history_length_nachher": 18
+              }
+            },
+            "obenauf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 240,
+                  "y": 1475
+                },
+                "treffer": "canvas.wheel",
+                "im_popup": true
+              }
+            },
+            "scrim": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 240,
+                  "y": 937
+                },
+                "seite": "oben",
+                "trifft": "div.scrim",
+                "popup_rect": {
+                  "x": 0,
+                  "y": 945,
+                  "w": 480,
+                  "h": 1064
+                },
+                "fenster": {
+                  "w": 480,
+                  "h": 2000
+                },
+                "abgelehnt": [
+                  {
+                    "name": "links",
+                    "x": -8,
+                    "y": 1476.7626342773438,
+                    "grund": "ausserhalb des Ansichtsfensters"
+                  }
+                ],
+                "nach_klick_sichtbar": false,
+                "history_length_vorher": 18,
+                "history_length_nachher": 18,
+                "formular_mit_aenderungen": false,
+                "sollverhalten": "schliesst, ohne Verlaufseintrag"
+              }
+            }
+          }
+        },
+        {
+          "breite": 480,
+          "thema": "dark",
+          "messung": {
+            "escape": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_escape_sichtbar": false,
+                "zustand": {
+                  "da": false
+                }
+              }
+            },
+            "zurueck": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_back_sichtbar": false,
+                "href_vorher": "http://127.0.0.1:33009/docs/render/ergebnis/harness.html",
+                "href_nachher": "http://127.0.0.1:33009/docs/render/ergebnis/harness.html",
+                "seite_geblieben": true
+              }
+            },
+            "schliessknopf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_klick_sichtbar": false,
+                "history_length_vorher": 19,
+                "history_length_nachher": 19
+              }
+            },
+            "obenauf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 240,
+                  "y": 1477
+                },
+                "treffer": "canvas.wheel",
+                "im_popup": true
+              }
+            },
+            "scrim": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 240,
+                  "y": 937
+                },
+                "seite": "oben",
+                "trifft": "div.scrim",
+                "popup_rect": {
+                  "x": 0,
+                  "y": 945,
+                  "w": 480,
+                  "h": 1064
+                },
+                "fenster": {
+                  "w": 480,
+                  "h": 2000
+                },
+                "abgelehnt": [
+                  {
+                    "name": "links",
+                    "x": -8,
+                    "y": 1476.7631225585938,
+                    "grund": "ausserhalb des Ansichtsfensters"
+                  }
+                ],
+                "nach_klick_sichtbar": false,
+                "history_length_vorher": 19,
+                "history_length_nachher": 19,
+                "formular_mit_aenderungen": false,
+                "sollverhalten": "schliesst, ohne Verlaufseintrag"
               }
             }
           }
@@ -2324,8 +2538,8 @@
               "ergebnis": "bestanden",
               "beleg": {
                 "nach_back_sichtbar": false,
-                "href_vorher": "http://127.0.0.1:59051/docs/render/ergebnis/harness.html",
-                "href_nachher": "http://127.0.0.1:59051/docs/render/ergebnis/harness.html",
+                "href_vorher": "http://127.0.0.1:33009/docs/render/ergebnis/harness.html",
+                "href_nachher": "http://127.0.0.1:33009/docs/render/ergebnis/harness.html",
                 "seite_geblieben": true
               }
             },
@@ -2333,8 +2547,8 @@
               "ergebnis": "bestanden",
               "beleg": {
                 "nach_klick_sichtbar": false,
-                "history_length_vorher": 18,
-                "history_length_nachher": 18
+                "history_length_vorher": 20,
+                "history_length_nachher": 20
               }
             },
             "obenauf": {
@@ -2342,10 +2556,37 @@
               "beleg": {
                 "punkt": {
                   "x": 480,
-                  "y": 1000
+                  "y": 1009
                 },
                 "treffer": "canvas.wheel",
                 "im_popup": true
+              }
+            },
+            "scrim": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 192,
+                  "y": 1009
+                },
+                "seite": "links",
+                "trifft": "div.scrim",
+                "popup_rect": {
+                  "x": 200,
+                  "y": 534,
+                  "w": 560,
+                  "h": 950
+                },
+                "fenster": {
+                  "w": 960,
+                  "h": 2000
+                },
+                "abgelehnt": [],
+                "nach_klick_sichtbar": false,
+                "history_length_vorher": 20,
+                "history_length_nachher": 20,
+                "formular_mit_aenderungen": false,
+                "sollverhalten": "schliesst, ohne Verlaufseintrag"
               }
             }
           }
@@ -2367,8 +2608,8 @@
               "ergebnis": "bestanden",
               "beleg": {
                 "nach_back_sichtbar": false,
-                "href_vorher": "http://127.0.0.1:59051/docs/render/ergebnis/harness.html",
-                "href_nachher": "http://127.0.0.1:59051/docs/render/ergebnis/harness.html",
+                "href_vorher": "http://127.0.0.1:33009/docs/render/ergebnis/harness.html",
+                "href_nachher": "http://127.0.0.1:33009/docs/render/ergebnis/harness.html",
                 "seite_geblieben": true
               }
             },
@@ -2376,8 +2617,8 @@
               "ergebnis": "bestanden",
               "beleg": {
                 "nach_klick_sichtbar": false,
-                "history_length_vorher": 19,
-                "history_length_nachher": 19
+                "history_length_vorher": 21,
+                "history_length_nachher": 21
               }
             },
             "obenauf": {
@@ -2385,52 +2626,49 @@
               "beleg": {
                 "punkt": {
                   "x": 480,
-                  "y": 1000
+                  "y": 1009
                 },
                 "treffer": "canvas.wheel",
                 "im_popup": true
+              }
+            },
+            "scrim": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 192,
+                  "y": 1009
+                },
+                "seite": "links",
+                "trifft": "div.scrim",
+                "popup_rect": {
+                  "x": 200,
+                  "y": 534,
+                  "w": 560,
+                  "h": 950
+                },
+                "fenster": {
+                  "w": 960,
+                  "h": 2000
+                },
+                "abgelehnt": [],
+                "nach_klick_sichtbar": false,
+                "history_length_vorher": 21,
+                "history_length_nachher": 21,
+                "formular_mit_aenderungen": false,
+                "sollverhalten": "schliesst, ohne Verlaufseintrag"
               }
             }
           }
         }
       ]
     },
-    "befund_ellipsis": {
-      "was": "Regel 1, Pruefung 1 (scrollWidth <= clientWidth) und die von Regel 1 vorgeschriebene Kuerzung (overflow: hidden + text-overflow: ellipsis + white-space: nowrap) schliessen einander in Chromium aus, sobald eine Zeile wirklich gekuerzt wird.",
-      "folge": "Breitenueberlauf an einem Element, das die vorgeschriebene Kuerzung nachweislich traegt, steht unter 'gekuerzt_statt_ueberlauf' statt unter 'ueberlauf'. Hoehenueberlauf, Rechteck ausserhalb der Karte und jede Ueberlappung bleiben Verstoesse, auch dort.",
-      "probe": {
-        "vorschrift_langer_text": {
-          "scrollW": 336,
-          "clientW": 150,
-          "scrollH": 18,
-          "clientH": 18
-        },
-        "vorschrift_kurzer_text": {
-          "scrollW": 150,
-          "clientW": 150,
-          "scrollH": 18,
-          "clientH": 18
-        },
-        "mit_overflow_clip": {
-          "scrollW": 336,
-          "clientW": 150,
-          "scrollH": 18,
-          "clientH": 18
-        },
-        "mit_line_clamp_1": {
-          "scrollW": 150,
-          "clientW": 150,
-          "scrollH": 54,
-          "clientH": 18
-        }
-      },
-      "verschoben": 4
-    },
     "zaehlung": {
       "ueberlauf": 0,
       "ausserhalb": 0,
       "ueberlappung": 0,
       "verletzt": 0,
+      "gekuerzt": 4,
       "kein_urteil": 0,
       "geprueft": 186
     }
@@ -2609,41 +2847,69 @@
     "mdi:lightbulb",
     "mdi:arrow-up",
     "mdi:arrow-down",
-    "mdi:delete",
+    "mdi:close",
     "mdi:arrow-up",
     "mdi:arrow-down",
-    "mdi:delete",
+    "mdi:close",
     "mdi:arrow-up",
     "mdi:arrow-down",
-    "mdi:delete",
+    "mdi:close",
     "mdi:arrow-up",
     "mdi:arrow-down",
-    "mdi:delete",
+    "mdi:close",
     "mdi:arrow-up",
     "mdi:arrow-down",
-    "mdi:delete",
+    "mdi:close",
     "mdi:arrow-up",
     "mdi:arrow-down",
-    "mdi:delete",
+    "mdi:close",
     "mdi:arrow-up",
     "mdi:arrow-down",
-    "mdi:delete",
+    "mdi:close",
     "mdi:arrow-up",
     "mdi:arrow-down",
-    "mdi:delete",
+    "mdi:close",
     "mdi:arrow-up",
     "mdi:arrow-down",
-    "mdi:delete",
+    "mdi:close",
     "mdi:arrow-up",
     "mdi:arrow-down",
-    "mdi:delete",
+    "mdi:close",
     "mdi:arrow-up",
     "mdi:arrow-down",
-    "mdi:delete",
+    "mdi:close",
+    "mdi:alert-circle-outline",
+    "mdi:alert-circle-outline",
     "mdi:alert-circle-outline",
     "mdi:alert-circle-outline",
     "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:alert-circle-outline",
     "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
     "mdi:alert-circle-outline",
     "mdi:lightbulb-group",
     "mdi:lightbulb-group",
@@ -2813,48 +3079,6 @@
     "hue:bulb-group-recessed-ceiling",
     "mdi:lightbulb",
     "mdi:lightbulb",
-    "mdi:alert-circle-outline",
-    "mdi:lightbulb-group",
-    "mdi:lightbulb-group",
-    "mdi:close",
-    "mdi:white-balance-sunny",
-    "mdi:power-sleep",
-    "mdi:leaf-maple",
-    "mdi:palette",
-    "mdi:palette",
-    "mdi:lightbulb",
-    "mdi:alert-circle-outline",
-    "mdi:teddy-bear",
-    "mdi:led-strip-variant",
-    "hue:bulb-group-recessed-ceiling",
-    "mdi:lightbulb",
-    "mdi:lightbulb",
-    "mdi:close",
-    "mdi:white-balance-sunny",
-    "mdi:power-sleep",
-    "mdi:leaf-maple",
-    "mdi:palette",
-    "mdi:palette",
-    "mdi:lightbulb",
-    "mdi:alert-circle-outline",
-    "mdi:teddy-bear",
-    "mdi:led-strip-variant",
-    "hue:bulb-group-recessed-ceiling",
-    "mdi:lightbulb",
-    "mdi:lightbulb",
-    "mdi:close",
-    "mdi:white-balance-sunny",
-    "mdi:power-sleep",
-    "mdi:leaf-maple",
-    "mdi:palette",
-    "mdi:palette",
-    "mdi:lightbulb",
-    "mdi:alert-circle-outline",
-    "mdi:teddy-bear",
-    "mdi:led-strip-variant",
-    "hue:bulb-group-recessed-ceiling",
-    "mdi:lightbulb",
-    "mdi:lightbulb",
     "mdi:close",
     "mdi:white-balance-sunny",
     "mdi:power-sleep",
@@ -2884,48 +3108,6 @@
     "hue:bulb-group-recessed-ceiling",
     "mdi:lightbulb",
     "mdi:lightbulb",
-    "mdi:close",
-    "mdi:white-balance-sunny",
-    "mdi:power-sleep",
-    "mdi:leaf-maple",
-    "mdi:palette",
-    "mdi:palette",
-    "mdi:lightbulb",
-    "mdi:alert-circle-outline",
-    "mdi:teddy-bear",
-    "mdi:led-strip-variant",
-    "hue:bulb-group-recessed-ceiling",
-    "mdi:lightbulb",
-    "mdi:lightbulb",
-    "mdi:close",
-    "mdi:white-balance-sunny",
-    "mdi:power-sleep",
-    "mdi:leaf-maple",
-    "mdi:palette",
-    "mdi:palette",
-    "mdi:lightbulb",
-    "mdi:alert-circle-outline",
-    "mdi:teddy-bear",
-    "mdi:led-strip-variant",
-    "hue:bulb-group-recessed-ceiling",
-    "mdi:lightbulb",
-    "mdi:lightbulb",
-    "mdi:close",
-    "mdi:white-balance-sunny",
-    "mdi:power-sleep",
-    "mdi:leaf-maple",
-    "mdi:palette",
-    "mdi:palette",
-    "mdi:lightbulb",
-    "mdi:alert-circle-outline",
-    "mdi:teddy-bear",
-    "mdi:led-strip-variant",
-    "hue:bulb-group-recessed-ceiling",
-    "mdi:lightbulb",
-    "mdi:lightbulb",
-    "mdi:alert-circle-outline",
-    "mdi:lightbulb-group",
-    "mdi:lightbulb-group",
     "mdi:close",
     "mdi:white-balance-sunny",
     "mdi:power-sleep",
@@ -3033,9 +3215,171 @@
     "hue:bulb-group-recessed-ceiling",
     "mdi:lightbulb",
     "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
     "mdi:alert-circle-outline",
     "mdi:lightbulb-group",
     "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
     "mdi:close",
     "mdi:white-balance-sunny",
     "mdi:power-sleep",
@@ -3090,7 +3434,7 @@
     "mdi:lightbulb"
   ],
   "vendorRequests": [],
-  "passed": 96,
+  "passed": 99,
   "failed": 0,
   "clean": true
 }
