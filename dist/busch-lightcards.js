@@ -18,7 +18,7 @@
  * README for why.
  */
 
-const CARD_VERSION = '0.6.0';
+const CARD_VERSION = '0.7.0';
 
 const CARD_TAG = 'busch-light-card';
 const DIALOG_TAG = 'busch-light-dialog';
