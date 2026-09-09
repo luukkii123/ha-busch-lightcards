@@ -33,6 +33,114 @@ from playwright.sync_api import sync_playwright
 
 HERE = Path(__file__).resolve().parent
 
+# The shared rule measurements (docs/ui-regeln.md, rules 1 and 2) live one
+# level up, in hacs/docs/render/regeln.py, and are mounted at /work in the
+# container. Without them this script still runs — it just cannot judge the
+# two rules, and says so instead of staying quiet.
+for _kandidat in ("/work", str(HERE)):
+    if _kandidat not in sys.path:
+        sys.path.insert(0, _kandidat)
+try:
+    import regeln
+    from regeln import messe_text, messe_popup, lauf_breiten, bewerte, zaehle
+    REGELN_DA = True
+except ImportError:
+    REGELN_DA = False
+
+
+# ── Rule 1, check 1, and the ellipsis it prescribes ─────────────────────────
+#
+# `docs/ui-regeln.md` demands two things of a one-line text container that a
+# Chromium engine cannot grant at the same time:
+#
+#   * the code rule: `overflow: hidden; text-overflow: ellipsis;
+#     white-space: nowrap; min-width: 0`
+#   * check 1:       `scrollWidth <= clientWidth`
+#
+# A line that is actually shortened keeps its full text width in
+# `scrollWidth` — the ellipsis is painted, the layout overflow stays. Measured
+# in this very container, see `report.json` → `uiRegeln.befund_ellipsis.probe`:
+# a bare `<div>` carrying exactly those four properties reports
+# scrollWidth 336 against clientWidth 150. `overflow: clip` does not change it,
+# and `-webkit-line-clamp: 1` only moves the overflow into the height.
+#
+# So a width overflow on an element that provably carries the prescribed
+# truncation is NOT a violation of rule 1 ("no text sticks out past the edge
+# of its card"): the text is clipped, not spilled. It is moved to
+# `gekuerzt_statt_ueberlauf` with its measurements, where it can be counted
+# but does not fail the run. Everything else stays a violation: overflow in
+# HEIGHT, a rectangle outside the card, and any overlap — including on those
+# same elements.
+JS_GEKUERZT = None
+if REGELN_DA:
+    JS_GEKUERZT = regeln.JS_HILFEN + r"""
+(({ karteSel }) => {
+  const host = tief(karteSel, document) || document.querySelector(karteSel);
+  if (!host) return [];
+  const out = [];
+  for (const el of alleElemente(host)) {
+    const st = getComputedStyle(el);
+    if (st.textOverflow === 'ellipsis' && st.whiteSpace === 'nowrap'
+        && st.overflowX !== 'visible')
+      out.push(pfad(el));
+  }
+  return out;
+})
+"""
+
+
+def messe_text_gekuerzt(page, karten_selektor):
+    """messe_text, minus the width overflow that IS the prescribed ellipsis."""
+    ergebnis = messe_text(page, karten_selektor)
+    if "ueberlauf" not in ergebnis:
+        return ergebnis
+    gekuerzt = set(page.evaluate(JS_GEKUERZT, {"karteSel": karten_selektor}))
+    behalten, verschoben = [], []
+    for eintrag in ergebnis["ueberlauf"]:
+        m = eintrag["masse"]
+        nur_breite = m["scrollH"] <= m["clientH"] + 1
+        if nur_breite and eintrag["selektor"] in gekuerzt:
+            verschoben.append(eintrag)
+        else:
+            behalten.append(eintrag)
+    ergebnis["ueberlauf_roh"] = len(ergebnis["ueberlauf"])
+    ergebnis["ueberlauf"] = behalten
+    ergebnis["gekuerzt_statt_ueberlauf"] = verschoben
+    return ergebnis
+
+
+def probe_ellipsis(page):
+    """Proof that the conflict is Chromium's, not this card's.
+
+    Builds a plain div with exactly the four properties the spec prescribes,
+    fills it with text that cannot fit, and reads the numbers back.
+    """
+    return page.evaluate(
+        """() => {
+            const mach = (css, text) => {
+                const d = document.createElement('div');
+                d.style.cssText = 'position:fixed;left:-9999px;top:0;width:150px;'
+                    + 'font:16px sans-serif;' + css;
+                d.textContent = text;
+                document.body.appendChild(d);
+                const m = { scrollW: d.scrollWidth, clientW: d.clientWidth,
+                            scrollH: d.scrollHeight, clientH: d.clientHeight };
+                d.remove();
+                return m;
+            };
+            const lang = 'Ein sehr langer Text der ganz sicher nicht passt';
+            const vier = 'overflow:hidden;text-overflow:ellipsis;'
+                       + 'white-space:nowrap;min-width:0;';
+            return {
+                vorschrift_langer_text: mach(vier, lang),
+                vorschrift_kurzer_text: mach(vier, 'kurz'),
+                mit_overflow_clip: mach(vier + 'overflow:clip;', lang),
+                mit_line_clamp_1: mach('overflow:hidden;display:-webkit-box;'
+                    + '-webkit-line-clamp:1;-webkit-box-orient:vertical;'
+                    + 'overflow-wrap:anywhere;', lang)
+            };
+        }""")
+
 
 def serve(directory, port_holder):
     handler_cls = http.server.SimpleHTTPRequestHandler
@@ -1530,6 +1638,208 @@ def main():
               json.dumps({"scenes": editor["afterRemoveOne"].get("scenes"),
                           "label": editor["importLabelAfterRemove"]}, ensure_ascii=False))
 
+        # ------------------------------------------------------------------
+        # 8b. Rule 3: a label AND a helper per field, in both languages
+        # ------------------------------------------------------------------
+        # The static script proves the entries exist. What it cannot see is
+        # the shape the spec asks for: a label of one to four words without a
+        # full stop, a helper that is a whole sentence with one — and that the
+        # editor really hands both to ha-form.
+        woerter = page.evaluate(
+            f"""() => {{
+                const I = {internals};
+                const flach = (liste) => liste.reduce((out, item) => out.concat(
+                    item.name ? [item.name] : [],
+                    item.schema ? flach(item.schema) : []), []);
+                const felder = flach(I.SCHEMA);
+                const out = {{ felder: felder, sprachen: {{}} }};
+                for (const sprache of ['de', 'en']) {{
+                    const hass = {{ locale: {{ language: sprache }} }};
+                    out.sprachen[sprache] = felder.map((name) => ({{
+                        name: name,
+                        label: I.fieldLabel(hass, name),
+                        helper: I.fieldHelper(hass, name)
+                    }}));
+                }}
+                out.pickerEintrag = (window.customCards || [])
+                    .filter((c) => c.type === 'busch-light-card')[0] || null;
+                out.woerterbuchName = {{ de: I.TEXTE.de.name, en: I.TEXTE.en.name }};
+                out.woerterbuchBeschreibung = {{ de: I.TEXTE.de.description,
+                                                 en: I.TEXTE.en.description }};
+                out.navigatorSprache = navigator.language;
+                out.ausnahmen = I.SCHEMA_EXCEPTIONS;
+                const probe = document.createElement('busch-light-card');
+                probe.setConfig({{ type: 'custom:busch-light-card', entity: 'light.x' }});
+                out.gridOptions = probe.getGridOptions();
+                return out;
+            }}""")
+        report["regel3Texte"] = woerter
+
+        maengel = []
+        for sprache in ("de", "en"):
+            for eintrag in woerter["sprachen"][sprache]:
+                name, label, helper = eintrag["name"], eintrag["label"], eintrag["helper"]
+                if not label:
+                    maengel.append(f"{sprache}.{name}: kein Label")
+                else:
+                    if len(label.split()) > 4:
+                        maengel.append(f"{sprache}.{name}: Label hat "
+                                       f"{len(label.split())} Woerter: {label!r}")
+                    if label.endswith("."):
+                        maengel.append(f"{sprache}.{name}: Label mit Punkt: {label!r}")
+                    if "(" in label:
+                        maengel.append(f"{sprache}.{name}: Label mit Klammer: {label!r}")
+                if not helper:
+                    maengel.append(f"{sprache}.{name}: kein Helper")
+                else:
+                    if not helper.endswith("."):
+                        maengel.append(f"{sprache}.{name}: Helper ohne Punkt: {helper!r}")
+                    if len(helper.split()) < 4:
+                        maengel.append(f"{sprache}.{name}: Helper ist kein Satz: {helper!r}")
+        report["regel3Maengel"] = maengel
+        check("every schema field has a label and a helper in both languages, "
+              "in the shape the spec asks for",
+              not maengel, json.dumps(maengel, ensure_ascii=False)[:600])
+
+        # The card picker reads name and description before hass exists, so
+        # they have to follow navigator.language. The page runs as de-DE.
+        check("card picker entry follows navigator.language",
+              woerter["navigatorSprache"].startswith("de")
+              and woerter["pickerEintrag"] is not None
+              and woerter["pickerEintrag"]["name"] == woerter["woerterbuchName"]["de"]
+              and woerter["pickerEintrag"]["description"]
+                  == woerter["woerterbuchBeschreibung"]["de"]
+              and woerter["pickerEintrag"]["preview"] is True,
+              json.dumps({"navigator": woerter["navigatorSprache"],
+                          "eintrag": woerter["pickerEintrag"]}, ensure_ascii=False))
+
+        # Rule 3 wants the grid columns in multiples of three.
+        go = woerter["gridOptions"]
+        check("getGridOptions gives columns in multiples of three",
+              go is not None and go.get("columns", 0) % 3 == 0
+              and go.get("min_columns", 0) % 3 == 0 and go.get("rows", 0) >= 1,
+              json.dumps(go))
+
+        # Every config key the card reads is either a schema field or a named
+        # exception WITH a reason.
+        gelesen = sorted(set(woerter["felder"]))
+        check("the only config key outside the schema is a named exception "
+              "with a reason",
+              sorted(woerter["ausnahmen"].keys()) == ["scenes", "type"]
+              and all(woerter["ausnahmen"][k] for k in woerter["ausnahmen"])
+              and "scenes" in gelesen,
+              json.dumps(woerter["ausnahmen"], ensure_ascii=False))
+
+        # The editor must hand ha-form BOTH functions, not just the label one.
+        helfer = page.evaluate(
+            f"""async () => {{
+                const CardClass = customElements.get('busch-light-card');
+                const ed = CardClass.getConfigElement();
+                document.getElementById('stack').innerHTML = '';
+                document.getElementById('stack').appendChild(ed);
+                ed.hass = {{ locale: {{ language: 'de' }}, states: {{}},
+                             callService: () => Promise.resolve() }};
+                ed.setConfig({{ type: 'custom:busch-light-card', entity: 'light.x' }});
+                await new Promise(r => setTimeout(r, 0));
+                await new Promise(r => setTimeout(r, 0));
+                const out = {{ ohneHelper: [], paare: [] }};
+                for (const f of ed.shadowRoot.querySelectorAll('ha-form')) {{
+                    if (typeof f.computeHelper !== 'function') {{
+                        out.ohneHelper.push('form ohne computeHelper');
+                        continue;
+                    }}
+                    for (const feld of f.fields()) {{
+                        const h = f.computeHelper(feld);
+                        if (!h) out.ohneHelper.push(feld.name);
+                        else out.paare.push([feld.name, f.computeLabel(feld), h]);
+                    }}
+                }}
+                return out;
+            }}""")
+        report["regel3Editor"] = helfer
+        check("the editor hands ha-form a computeHelper for every field",
+              not helfer["ohneHelper"] and len(helfer["paare"]) >= 18,
+              json.dumps({"ohne": helfer["ohneHelper"],
+                          "anzahl": len(helfer["paare"])}, ensure_ascii=False))
+
+        # ------------------------------------------------------------------
+        # 9. The four UI rules (hacs/docs/ui-regeln.md), measured
+        # ------------------------------------------------------------------
+        # Rule 1 wants 320/480/960 px in both themes; rule 4 wants the card to
+        # work in both themes and at 320 px. regeln.lauf_breiten drives both.
+        report["uiRegeln"] = {}
+        if not REGELN_DA:
+            report["uiRegeln"] = {"kein_urteil": "regeln.py nicht gefunden — "
+                                                 "/work war nicht gemountet"}
+        else:
+            def baue_karte():
+                build_card(lit_states, "regeln")
+
+            def oeffne_dialog():
+                page.evaluate(
+                    """() => {
+                        const alt = document.querySelector('busch-light-dialog');
+                        if (alt) alt.remove();
+                        const card = document.querySelector('busch-light-card');
+                        card.shadowRoot.querySelector('.tap')
+                            .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+                    }""")
+
+            def schliesse_dialog():
+                page.evaluate(
+                    """() => {
+                        const alt = document.querySelector('busch-light-dialog');
+                        if (alt) alt.remove();
+                    }""")
+
+            baue_karte()
+            schliesse_dialog()
+            report["uiRegeln"]["regel1_karte"] = lauf_breiten(
+                page,
+                messung=lambda pg: messe_text_gekuerzt(pg, "busch-light-card"),
+                vor_messung=lambda pg: (schliesse_dialog(), baue_karte()))
+
+            # The open dialog, measured against its own :host. A taller
+            # viewport on purpose: the sheet scrolls past 92vh, and content
+            # scrolled out of sight would report a rectangle below the host
+            # without a single line of text having left its box. What is
+            # measured here is containment, not scrolling.
+            report["uiRegeln"]["regel1_dialog"] = lauf_breiten(
+                page, hoehe=2000,
+                messung=lambda pg: messe_text_gekuerzt(pg, "busch-light-dialog"),
+                vor_messung=lambda pg: (baue_karte(), oeffne_dialog()))
+            schliesse_dialog()
+
+            # Rule 2: Escape, the back gesture (without leaving the page), the
+            # close button (without an orphaned history entry) and who is on
+            # top in the middle of the popup.
+            report["uiRegeln"]["regel2_dialog"] = lauf_breiten(
+                page, hoehe=2000,
+                messung=lambda pg: messe_popup(
+                    pg, oeffne_dialog, "busch-light-dialog", ".head .iconbtn"),
+                vor_messung=lambda pg: (schliesse_dialog(), baue_karte()))
+            schliesse_dialog()
+
+            report["uiRegeln"]["befund_ellipsis"] = {
+                "was": "Regel 1, Pruefung 1 (scrollWidth <= clientWidth) und die "
+                       "von Regel 1 vorgeschriebene Kuerzung (overflow: hidden + "
+                       "text-overflow: ellipsis + white-space: nowrap) schliessen "
+                       "einander in Chromium aus, sobald eine Zeile wirklich "
+                       "gekuerzt wird.",
+                "folge": "Breitenueberlauf an einem Element, das die vorgeschriebene "
+                         "Kuerzung nachweislich traegt, steht unter "
+                         "'gekuerzt_statt_ueberlauf' statt unter 'ueberlauf'. "
+                         "Hoehenueberlauf, Rechteck ausserhalb der Karte und jede "
+                         "Ueberlappung bleiben Verstoesse, auch dort.",
+                "probe": probe_ellipsis(page),
+                "verschoben": sum(
+                    len(lauf["messung"].get("gekuerzt_statt_ueberlauf", []))
+                    for teil in ("regel1_karte", "regel1_dialog")
+                    for lauf in report["uiRegeln"][teil]["laeufe"]),
+            }
+            report["uiRegeln"]["zaehlung"] = zaehle(report["uiRegeln"])
+            report["uiRegelnVerstoesse"] = bewerte(report["uiRegeln"])
+
         report["iconsAsked"] = page.evaluate("() => window.__iconsAsked")
         browser.close()
 
@@ -1544,7 +1854,9 @@ def main():
                        and not report["requestFailures"]
                        and not report["consoleErrors"]
                        and not report["pageErrors"]
-                       and not report["vendorRequests"])
+                       and not report["vendorRequests"]
+                       and report.get("uiRegelnVerstoesse", 0) == 0
+                       and REGELN_DA)
 
     (out_dir / "report.json").write_text(
         json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -1554,6 +1866,18 @@ def main():
         if not entry["pass"]:
             print("         " + entry["detail"])
     print(f"\n{report['passed']} passed, {report['failed']} failed")
+    if REGELN_DA:
+        z = report["uiRegeln"].get("zaehlung", {})
+        print("UI-Regeln: %d Verstoesse  (ueberlauf=%d ausserhalb=%d "
+              "ueberlappung=%d verletzt=%d) geprueft=%d kein_urteil=%d"
+              % (report.get("uiRegelnVerstoesse", 0), z.get("ueberlauf", 0),
+                 z.get("ausserhalb", 0), z.get("ueberlappung", 0),
+                 z.get("verletzt", 0), z.get("geprueft", 0),
+                 z.get("kein_urteil", 0)))
+        print("            davon vorschriftsmaessig gekuerzt (kein Verstoss): %d"
+              % report["uiRegeln"]["befund_ellipsis"]["verschoben"])
+    else:
+        print("UI-Regeln: NICHT gemessen — regeln.py fehlt (/work nicht gemountet)")
     print(f"requests={len(report['requests'])} bad={len(report['badResponses'])} "
           f"failures={len(report['requestFailures'])} "
           f"consoleErrors={len(report['consoleErrors'])} pageErrors={len(report['pageErrors'])}")

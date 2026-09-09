@@ -232,15 +232,19 @@ ranges, real nested membership, and a genuinely unavailable lamp. The only
 invented values are the `lit` scenario's brightness and colour, so the
 screenshots are not of an all-off card; each is marked `"_synthetic": true`.
 
+The run also measures the shared UI rules from `hacs/docs/ui-regeln.md` with
+`hacs/docs/render/regeln.py`, which has to be mounted at `/work`:
+
 ```bash
 docker run --rm \
-  -v "$PWD:/repo" \
+  -v "/mnt/user/Data/Claude Projekte/hacs/docs/render:/work" \
+  -v "$PWD:/cards" \
   --entrypoint bash mcr.microsoft.com/playwright/python:v1.62.0-noble \
   -c 'pip install --quiet --break-system-packages playwright==1.62.0 >/dev/null; \
-      python3 /repo/docs/render/render.py /repo/dist/busch-lightcards.js /repo/docs/render/ergebnis'
+      python3 /cards/docs/render/render.py /cards/dist/busch-lightcards.js /cards/docs/render/ergebnis'
 ```
 
-91 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
+96 checks, covering: the hand-derived leaf list, duplicate collapse, cycles,
 self-reference, deleted members, foreign domains, the depth limit, the
 unavailable-group memory (cold and warm), aggregation, service-call routing,
 the rendered card text, the dialog and how it stacks against a Leaflet-grade
@@ -252,7 +256,11 @@ layout, the header's master switch in both views, the temperature marker
 staying inside its bar so the sheet never scrolls sideways, Escape and the back
 gesture at both levels, and the visual editor (option coverage,
 labels, live preview, minimal output, camelCase folding, scene add/reorder/
-delete, colour round-trip).
+delete, colour round-trip) — plus the shape rule 3 asks of the dictionary: a
+label of one to four words without a full stop and a helper that is a whole
+sentence with one, for every schema field in both languages; the card picker
+entry following `navigator.language`; grid columns in multiples of three; and
+`computeHelper` really reaching `ha-form` for every field.
 
 **Two things are explicitly not proven.**
 
@@ -266,6 +274,40 @@ of the stub.
 
 *None of this has run against a live dashboard.* The logic and the rendering
 are tested; the two together in a running Home Assistant are not.
+
+### Checked — 09.09.2026, `CARD_VERSION` 0.6.0
+
+Against the four rules in `hacs/docs/ui-regeln.md`:
+
+| What | Command | Result |
+| --- | --- | --- |
+| Syntax | `node --check dist/busch-lightcards.js` | clean |
+| Namespace | `node ../busch-cards/tests/namensraum.test.js dist/busch-lightcards.js` | 0 failures |
+| Rules 3 and 4, static | `python3 ../scripts/ui-regeln-pruefen.py --repo ha-busch-lightcards` | **0 violations** |
+| Rules 1, 2 and 4, in the browser | the `docker run` above | **96 checks passed, 0 rule violations, exit 0** |
+
+The browser run measures rule 1 (overflow, rectangle inside the card, no
+overlapping text) and rule 2 (Escape, the back gesture without leaving the
+page, the close button without an orphaned history entry, and who is on top in
+the middle of the popup) at **320, 480 and 960 px in both the light and the
+dark theme** — on the card and on the open dialog. 186 text elements measured,
+**no case left without a judgement**, all 24 rule-2 measurements `bestanden`.
+
+**One finding, written into `report.json` under
+`uiRegeln.befund_ellipsis`.** Rule 1 prescribes
+`overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0`
+on a one-line text container — and its own check 1 demands
+`scrollWidth <= clientWidth`. In Chromium the two cannot both hold the moment
+a line is really shortened: the ellipsis is painted, the layout overflow
+stays. Measured in the same container: a bare `div` with exactly those four
+properties reports `scrollWidth 336` against `clientWidth 150`;
+`overflow: clip` changes nothing and `-webkit-line-clamp: 1` only moves the
+overflow into the height (`scrollHeight 54` against `clientHeight 18`). A
+width overflow on an element that provably carries the prescribed truncation
+is therefore listed under `gekuerzt_statt_ueberlauf` rather than counted as a
+violation — four cases, all of them the card title and the dialog title at
+320 px. Overflow in **height**, a rectangle outside the card and any overlap
+stay violations, on those elements too.
 
 ## Why there is no build step
 

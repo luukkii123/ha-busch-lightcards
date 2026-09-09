@@ -35,8 +35,8 @@ const WARM_COLOR = '#ffda95';
 const COLD_COLOR = '#f5f5ff';
 const OFF_COLOR = '#666666';
 const TILE_OFF_COLOR = 'rgba(102, 102, 102, 0.6)';
-const DIALOG_BG = '#171717';
-const DIALOG_TILE_OFF = '#363636';
+// The dialog's own dark palette now lives in DIALOG_STYLES, behind
+// --blc-dialog-* variables a theme can override (rule 4).
 
 // Hue puts the light/dark text breaking point unusually high.
 const LUMINANCE_BREAKING_POINT = 192;
@@ -94,161 +94,295 @@ function pick(config, camel, fallback) {
 }
 
 // ---------------------------------------------------------------------------
-// Localisation — only the handful of strings the card actually shows
+// Localisation
 // ---------------------------------------------------------------------------
 
-const STRINGS = {
-    en: {
-        allOff: 'All off',
-        someOn: '{on} of {total} on',
-        allOn: 'All on ({total})',
-        oneOn: '1 of {total} on',
-        unavailable: '{n} unavailable',
-        allUnavailable: 'No member reachable',
-        noEntities: 'No light resolved',
-        scenes: 'Scenes',
-        lights: 'Lights',
-        brightness: 'Brightness',
-        colour: 'Colour',
-        white: 'White',
-        back: 'Back',
-        close: 'Close',
-        unreachable: 'unreachable',
-        groupOf: 'Group of {n}',
-        alreadyIncluded: 'Already shown above: {list}',
-
-        edGroupDisplay: 'Lights in the dialog',
-        edGroupSections: 'Grouped by their group',
-        edGroupFlat: 'One flat list',
-
-        edEntity: 'Light, switch or group',
-        edEntities: 'Additional entities',
-        edTitle: 'Title',
-        edIcon: 'Icon',
-        edDescription: 'Description (overrides the count)',
-        edSectionResolve: 'Group resolution',
-        edResolveGroups: 'Resolve nested groups',
-        edResolveHint: 'Off behaves like the original card: the group stays one entity.',
-        edMaxDepth: 'Maximum depth',
-        edShowUnavailable: 'Badge counting unreachable members',
-        edSectionLook: 'Appearance',
-        edOffColor: 'Colour while off (empty = theme)',
-        edDefaultColor: 'Colour for a lit light that reports none',
-        edColorHint: 'Colours accept #rrggbb, rgb(…) or the names warm and cold. Text fields, not swatches, so they can be emptied — empty means the theme decides.',
-        edHueBorders: 'Hue corners and shadow',
-        edShowSwitch: 'Toggle on the card',
-        edSlider: 'Brightness slider on the card',
-        edAllowZero: 'Slider may reach 0 (turns the group off)',
-        edOffShadow: 'Inset shadow while off',
-        edSectionActions: 'Actions',
-        edTapAction: 'On tap',
-        edHoldAction: 'On hold',
-        edActDialog: 'Open dialog',
-        edActToggle: 'Toggle',
-        edActMoreInfo: 'More info',
-        edActNone: 'Nothing',
-        edSectionScenes: 'Scenes',
-        edAddScene: 'Add scene',
-        edImportScenes: 'Import every scene using these lights ({n})',
-        edImportNone: 'No scene uses these lights',
-        edImportAllThere: 'All {n} matching scenes are already listed',
-        edSceneTitle: 'Label (optional)',
-        edSceneColor: 'Tile colour',
-        edUp: 'Move up',
-        edDown: 'Move down',
-        edRemove: 'Remove',
-        edPreview: 'Resolves to',
-        edPreviewCount: '{leaves} lights out of {groups} groups, depth {depth}',
-        edPreviewFlat: '1 entity, groups not resolved',
-        edPreviewNone: 'Pick an entity first',
-        edPreviewDead: '{n} unreachable',
-        edPreviewDropped: '{n} members dropped (not a light or switch)',
-        edPreviewTruncated: 'Depth limit reached at: {list}',
-        edPreviewRecovered: 'Remembered members used for: {list}',
-        edNoForm: 'The Home Assistant form elements did not load. Please configure this card in YAML.'
-    },
+/**
+ * The card's ONE dictionary. Every string a user can ever read lives here, in
+ * both languages — nothing user-visible is written inline anywhere else in
+ * this file.
+ *
+ *   name         what the card picker calls this card.
+ *   description  one sentence in the picker saying what it shows.
+ *   labels       one per schema field of SCHEMA_BUSCH_LIGHT_CARD, keyed by
+ *                the field's own name. One to four words, sentence case,
+ *                no full stop.
+ *   helpers      one per schema field, same keys. A whole sentence saying
+ *                what happens and naming the default, with a full stop.
+ *   texte        everything else: buttons, headings, counters, error
+ *                messages, empty states, tooltips and aria labels.
+ *
+ * The shape is the one `hacs/scripts/ui-regeln-pruefen.py` prescribes in its
+ * header; see also `hacs/docs/ui-regeln.md`, rule 3.
+ */
+const TEXTE_BUSCH_LIGHT_CARD = {
     de: {
-        allOff: 'Alle aus',
-        someOn: '{on} von {total} an',
-        allOn: 'Alle an ({total})',
-        oneOn: '1 von {total} an',
-        unavailable: '{n} nicht erreichbar',
-        allUnavailable: 'Keine Lampe erreichbar',
-        noEntities: 'Keine Lampe aufgelöst',
-        scenes: 'Szenen',
-        lights: 'Lampen',
-        brightness: 'Helligkeit',
-        colour: 'Farbe',
-        white: 'Weiß',
-        back: 'Zurück',
-        close: 'Schließen',
-        unreachable: 'nicht erreichbar',
-        groupOf: 'Gruppe aus {n}',
-        alreadyIncluded: 'Oben bereits enthalten: {list}',
+        name: 'Busch Lampenkarte',
+        description: 'Hue-artige Karte für Lampen und Szenen, die verschachtelte Gruppen auf jeder Ebene auflöst und nicht erreichbare Entitäten übersteht.',
+        labels: {
+            entity: 'Lampe, Schalter oder Gruppe',
+            entities: 'Weitere Entitäten',
+            title: 'Überschrift',
+            icon: 'Symbol',
+            description: 'Beschreibung',
+            resolve_groups: 'Verschachtelte Gruppen auflösen',
+            max_depth: 'Größte Tiefe',
+            show_unavailable: 'Ausfall-Abzeichen',
+            group_display: 'Lampen im Dialog',
+            off_color: 'Farbe im Aus-Zustand',
+            default_color: 'Farbe ohne eigene Farbe',
+            hue_borders: 'Hue-Ecken und -Schatten',
+            show_switch: 'Schalter auf der Karte',
+            slider: 'Regler auf der Karte',
+            allow_zero: 'Regler darf auf 0',
+            off_shadow: 'Innenschatten im Aus-Zustand',
+            tap_action: 'Beim Tippen',
+            hold_action: 'Beim Halten',
+            scenes: 'Szenenkacheln',
+            scene_entity: 'Szene oder Skript',
+            scene_title: 'Beschriftung',
+            scene_icon: 'Symbol',
+            scene_color: 'Kachelfarbe'
+        },
+        helpers: {
+            entity: 'Die Hauptentität der Karte. Ist es eine Gruppe, steigt die Karte in jede verschachtelte Untergruppe ab und schaltet die echten Lampen dahinter; Doppelnennungen zählen einmal, Zyklen werden abgebrochen. Pflichtfeld.',
+            entities: 'Wird zusätzlich zur Hauptentität aufgelöst, Gruppen genauso tief wie dort. Vorgabe: leer.',
+            title: 'Ersetzt den Namen der Hauptentität auf der Karte und im Dialog. Vorgabe: der Name der Entität.',
+            icon: 'Ein mdi-Symbol für die Karte. Vorgabe: das Symbol der Entität.',
+            description: 'Ersetzt die Zeile unter der Überschrift, die sonst zählt, wie viele Lampen an sind. Vorgabe: die Zählung.',
+            resolve_groups: 'An steigt die Karte in jede Untergruppe ab und schaltet die Lampen einzeln. Aus bleibt die Gruppe eine einzige Entität, wie bei der Vorlage. Vorgabe an.',
+            max_depth: 'Wie viele Gruppenebenen die Karte höchstens absteigt, bevor sie abbricht. Vorgabe 10.',
+            show_unavailable: 'Zeigt auf der Karte ein Abzeichen mit der Zahl der nicht erreichbaren Mitglieder. Vorgabe an.',
+            group_display: 'Nach Gruppe geordnet gibt jeder aufgelösten Gruppe einen eigenen Block mit eigenem Schalter; eine flache Liste zeigt alle Lampen ohne Überschriften. Vorgabe: nach Gruppe geordnet.',
+            off_color: 'Hintergrund der Karte, solange keine Lampe an ist. Leer heißt: das Thema entscheidet. Vorgabe leer.',
+            default_color: 'Farbe für eine leuchtende Lampe, die selbst keine meldet. Nimmt #rrggbb, rgb(…) oder die Namen warm und cold. Vorgabe #ffda95.',
+            hue_borders: 'Rundet die Karte stärker ab und legt den Schlagschatten der Hue-Vorlage darunter. Vorgabe an.',
+            show_switch: 'Zeigt rechts oben einen Schalter für die ganze Gruppe. Vorgabe an.',
+            slider: 'Zeigt unter der Überschrift einen Regler für die Helligkeit der ganzen Gruppe. Vorgabe an.',
+            allow_zero: 'Erlaubt dem Regler den Wert 0, der die Gruppe ausschaltet; sonst ist bei 1 Prozent Schluss. Vorgabe aus.',
+            off_shadow: 'Legt einen Innenschatten über die Karte, solange keine Lampe an ist. Vorgabe an.',
+            tap_action: 'Was ein kurzer Tipp auf die Karte auslöst. Vorgabe: Dialog öffnen.',
+            hold_action: 'Was ein halbe Sekunde langes Halten auf der Karte auslöst. Vorgabe: Mehr Informationen.',
+            scenes: 'Die Kacheln oben im Dialog, eine je Szene oder Skript. Ein Knopf übernimmt in einem Zug jede Szene, die diese Lampen benutzt; entfernen lässt sich jede einzeln wieder. Vorgabe: keine.',
+            scene_entity: 'Die Szene oder das Skript, das diese Kachel im Dialog auslöst. Pflichtfeld.',
+            scene_title: 'Text auf der Kachel. Vorgabe: der Name der Szene.',
+            scene_icon: 'Symbol auf der Kachel. Vorgabe: das Symbol der Szene, sonst mdi:palette.',
+            scene_color: 'Farbe des runden Flecks auf der Kachel. Vorgabe #ffda95.'
+        },
+        texte: {
+            allOff: 'Alle aus',
+            someOn: '{on} von {total} an',
+            allOn: 'Alle an ({total})',
+            oneOn: '1 von {total} an',
+            unavailable: '{n} nicht erreichbar',
+            allUnavailable: 'Keine Lampe erreichbar',
+            noEntities: 'Keine Lampe aufgelöst',
+            scenes: 'Szenen',
+            lights: 'Lampen',
+            brightness: 'Helligkeit',
+            colour: 'Farbe',
+            white: 'Weiß',
+            back: 'Zurück',
+            close: 'Schließen',
+            toggle: 'Umschalten',
+            unreachable: 'nicht erreichbar',
+            groupOf: 'Gruppe aus {n}',
+            alreadyIncluded: 'Oben bereits enthalten: {list}',
 
-        edGroupDisplay: 'Lampen im Dialog',
-        edGroupSections: 'Nach Gruppe geordnet',
-        edGroupFlat: 'Eine flache Liste',
+            groupSections: 'Nach Gruppe geordnet',
+            groupFlat: 'Eine flache Liste',
 
-        edEntity: 'Lampe, Schalter oder Gruppe',
-        edEntities: 'Weitere Entitäten',
-        edTitle: 'Überschrift',
-        edIcon: 'Zeichen',
-        edDescription: 'Beschreibung (ersetzt die Zählung)',
-        edSectionResolve: 'Gruppenauflösung',
-        edResolveGroups: 'Verschachtelte Gruppen auflösen',
-        edResolveHint: 'Aus verhält sich wie die Vorlage: die Gruppe bleibt eine Entität.',
-        edMaxDepth: 'Größte Tiefe',
-        edShowUnavailable: 'Abzeichen mit der Zahl nicht erreichbarer Mitglieder',
-        edSectionLook: 'Darstellung',
-        edOffColor: 'Farbe im Aus-Zustand (leer = Thema)',
-        edDefaultColor: 'Farbe für eine leuchtende Lampe ohne eigene Farbe',
-        edColorHint: 'Farben nehmen #rrggbb, rgb(…) oder die Namen warm und cold. Bewusst Textfelder statt Farbtupfer, damit man sie leeren kann — leer heißt: das Thema entscheidet.',
-        edHueBorders: 'Hue-Ecken und -Schatten',
-        edShowSwitch: 'Schalter auf der Karte',
-        edSlider: 'Helligkeitsregler auf der Karte',
-        edAllowZero: 'Regler darf auf 0 (schaltet die Gruppe aus)',
-        edOffShadow: 'Innenschatten im Aus-Zustand',
-        edSectionActions: 'Aktionen',
-        edTapAction: 'Beim Tippen',
-        edHoldAction: 'Beim Halten',
-        edActDialog: 'Dialog öffnen',
-        edActToggle: 'Umschalten',
-        edActMoreInfo: 'Mehr Informationen',
-        edActNone: 'Nichts',
-        edSectionScenes: 'Szenen',
-        edAddScene: 'Szene hinzufügen',
-        edImportScenes: 'Alle Szenen mit diesen Lampen übernehmen ({n})',
-        edImportNone: 'Keine Szene benutzt diese Lampen',
-        edImportAllThere: 'Alle {n} passenden Szenen stehen schon in der Liste',
-        edSceneTitle: 'Beschriftung (freiwillig)',
-        edSceneColor: 'Kachelfarbe',
-        edUp: 'Nach oben',
-        edDown: 'Nach unten',
-        edRemove: 'Entfernen',
-        edPreview: 'Löst auf zu',
-        edPreviewCount: '{leaves} Lampen aus {groups} Gruppen, Tiefe {depth}',
-        edPreviewFlat: '1 Entität, Gruppen werden nicht aufgelöst',
-        edPreviewNone: 'Erst eine Entität wählen',
-        edPreviewDead: '{n} nicht erreichbar',
-        edPreviewDropped: '{n} Mitglieder verworfen (weder Lampe noch Schalter)',
-        edPreviewTruncated: 'Tiefenbegrenzung erreicht bei: {list}',
-        edPreviewRecovered: 'Gemerkte Mitglieder benutzt für: {list}',
-        edNoForm: 'Die Formularelemente von Home Assistant sind nicht geladen. Bitte diese Karte in YAML einrichten.'
+            sectionResolve: 'Gruppenauflösung',
+            sectionLook: 'Darstellung',
+            sectionActions: 'Aktionen',
+            sectionScenes: 'Szenen',
+
+            actDialog: 'Dialog öffnen',
+            actToggle: 'Umschalten',
+            actMoreInfo: 'Mehr Informationen',
+            actNone: 'Nichts',
+
+            addScene: 'Szene hinzufügen',
+            importScenes: 'Alle Szenen mit diesen Lampen übernehmen ({n})',
+            importNone: 'Keine Szene benutzt diese Lampen',
+            importAllThere: 'Alle {n} passenden Szenen stehen schon in der Liste',
+            up: 'Nach oben',
+            down: 'Nach unten',
+            remove: 'Entfernen',
+
+            preview: 'Löst auf zu',
+            previewCount: '{leaves} Lampen aus {groups} Gruppen, Tiefe {depth}',
+            previewFlat: '1 Entität, Gruppen werden nicht aufgelöst',
+            previewNone: 'Erst eine Entität wählen',
+            previewDead: '{n} nicht erreichbar',
+            previewDropped: '{n} Mitglieder verworfen (weder Lampe noch Schalter)',
+            previewTruncated: 'Tiefenbegrenzung erreicht bei: {list}',
+            previewRecovered: 'Gemerkte Mitglieder benutzt für: {list}',
+            noForm: 'Die Formularelemente von Home Assistant sind nicht geladen. Bitte diese Karte in YAML einrichten.'
+        }
+    },
+    en: {
+        name: 'Busch Light Card',
+        description: 'Hue-like card for lights and scenes that resolves nested groups on every level and survives unavailable entities.',
+        labels: {
+            entity: 'Light, switch or group',
+            entities: 'Additional entities',
+            title: 'Title',
+            icon: 'Icon',
+            description: 'Description',
+            resolve_groups: 'Resolve nested groups',
+            max_depth: 'Maximum depth',
+            show_unavailable: 'Unreachable badge',
+            group_display: 'Lights in the dialog',
+            off_color: 'Colour while off',
+            default_color: 'Colour without its own',
+            hue_borders: 'Hue corners and shadow',
+            show_switch: 'Toggle on the card',
+            slider: 'Slider on the card',
+            allow_zero: 'Slider may reach 0',
+            off_shadow: 'Inset shadow while off',
+            tap_action: 'On tap',
+            hold_action: 'On hold',
+            scenes: 'Scene tiles',
+            scene_entity: 'Scene or script',
+            scene_title: 'Label',
+            scene_icon: 'Icon',
+            scene_color: 'Tile colour'
+        },
+        helpers: {
+            entity: "The card's main entity. If it is a group, the card walks down into every nested sub-group and controls the real lights behind it; a light named twice counts once, and cycles are cut. Required.",
+            entities: 'Resolved on top of the main entity, groups just as deep. Default: empty.',
+            title: "Replaces the main entity's name on the card and in the dialog. Default: the entity's own name.",
+            icon: "An mdi icon for the card. Default: the entity's own icon.",
+            description: 'Replaces the line under the title that otherwise counts how many lights are on. Default: the count.',
+            resolve_groups: 'On, the card walks into every sub-group and controls the lights one by one. Off, the group stays a single entity, the way the original card does it. Default on.',
+            max_depth: 'How many group levels the card descends at most before it stops. Default 10.',
+            show_unavailable: 'Shows a badge on the card counting the members that cannot be reached. Default on.',
+            group_display: 'Grouped by their group gives every resolved group its own block with its own switch; one flat list shows every light without headings. Default: grouped by their group.',
+            off_color: "The card's background while no light is on. Empty uses the theme colour. Default empty.",
+            default_color: 'Colour for a lit light that reports none of its own. Accepts #rrggbb, rgb(…) or the names warm and cold. Default #ffda95.',
+            hue_borders: "Rounds the card more strongly and puts the Hue template's drop shadow under it. Default on.",
+            show_switch: 'Shows a switch for the whole group in the top right. Default on.',
+            slider: "Shows a slider for the whole group's brightness under the title. Default on.",
+            allow_zero: 'Lets the slider reach 0, which turns the group off; otherwise it stops at 1 per cent. Default off.',
+            off_shadow: 'Puts an inset shadow over the card while no light is on. Default on.',
+            tap_action: 'What a short tap on the card does. Default: open dialog.',
+            hold_action: 'What holding the card for half a second does. Default: more info.',
+            scenes: 'The tiles at the top of the dialog, one per scene or script. One button adds every scene using these lights at once, and each one can be removed again. Default: none.',
+            scene_entity: 'The scene or script this tile triggers in the dialog. Required.',
+            scene_title: "Text on the tile. Default: the scene's own name.",
+            scene_icon: "Icon on the tile. Default: the scene's own icon, otherwise mdi:palette.",
+            scene_color: 'Colour of the round badge on the tile. Default #ffda95.'
+        },
+        texte: {
+            allOff: 'All off',
+            someOn: '{on} of {total} on',
+            allOn: 'All on ({total})',
+            oneOn: '1 of {total} on',
+            unavailable: '{n} unavailable',
+            allUnavailable: 'No member reachable',
+            noEntities: 'No light resolved',
+            scenes: 'Scenes',
+            lights: 'Lights',
+            brightness: 'Brightness',
+            colour: 'Colour',
+            white: 'White',
+            back: 'Back',
+            close: 'Close',
+            toggle: 'Toggle',
+            unreachable: 'unreachable',
+            groupOf: 'Group of {n}',
+            alreadyIncluded: 'Already shown above: {list}',
+
+            groupSections: 'Grouped by their group',
+            groupFlat: 'One flat list',
+
+            sectionResolve: 'Group resolution',
+            sectionLook: 'Appearance',
+            sectionActions: 'Actions',
+            sectionScenes: 'Scenes',
+
+            actDialog: 'Open dialog',
+            actToggle: 'Toggle',
+            actMoreInfo: 'More info',
+            actNone: 'Nothing',
+
+            addScene: 'Add scene',
+            importScenes: 'Add every scene using these lights ({n})',
+            importNone: 'No scene uses these lights',
+            importAllThere: 'All {n} matching scenes are already listed',
+            up: 'Move up',
+            down: 'Move down',
+            remove: 'Remove',
+
+            preview: 'Resolves to',
+            previewCount: '{leaves} lights out of {groups} groups, depth {depth}',
+            previewFlat: '1 entity, groups not resolved',
+            previewNone: 'Pick an entity first',
+            previewDead: '{n} unreachable',
+            previewDropped: '{n} members dropped (not a light or switch)',
+            previewTruncated: 'Depth limit reached at: {list}',
+            previewRecovered: 'Remembered members used for: {list}',
+            noForm: 'The Home Assistant form elements did not load. Please configure this card in YAML.'
+        }
     }
 };
 
+/**
+ * Config keys the card reads that deliberately carry no `ha-form` schema
+ * field, with the reason. Named exception list for
+ * `hacs/scripts/ui-regeln-pruefen.py`, rule 3, check 3.
+ */
+const SCHEMA_EXCEPTIONS = {
+    type: 'Written by Lovelace itself. Not an option of this card.',
+    scenes: 'A list of objects, edited by the editor’s own scene rows (add, reorder, remove, import in one click). `ha-form` has no selector for that shape; every row is itself an `ha-form` whose four fields carry label and helper (scene_entity, scene_title, scene_icon, scene_color).'
+};
+
+/**
+ * Which of the two languages applies.
+ *
+ * `hass.locale.language` is what the frontend actually offers; `hass.language`
+ * is the older spelling and the test harness still sets only that one. Before
+ * `hass` exists at all — the card picker reads name and description at load
+ * time — the browser's own language decides.
+ */
+function textTable(hass) {
+    let lang = '';
+    if (hass && hass.locale && hass.locale.language) lang = hass.locale.language;
+    else if (hass && hass.language) lang = hass.language;
+    else if (typeof navigator !== 'undefined' && navigator.language) lang = navigator.language;
+    return String(lang).toLowerCase().indexOf('de') === 0 ? TEXTE_BUSCH_LIGHT_CARD.de : TEXTE_BUSCH_LIGHT_CARD.en;
+}
+
+function fillVars(text, vars) {
+    if (!vars) return text;
+    let out = text;
+    Object.keys(vars).forEach((name) => {
+        out = out.split('{' + name + '}').join(String(vars[name]));
+    });
+    return out;
+}
+
+/** One of the `ui` strings: buttons, headings, counters, errors, empty states. */
 function translate(hass, key, vars) {
-    const lang = (hass && hass.language ? String(hass.language) : 'en').slice(0, 2);
-    const table = STRINGS[lang] || STRINGS.en;
-    let text = table[key] !== undefined ? table[key] : STRINGS.en[key];
+    const table = textTable(hass);
+    const text = table.texte[key] !== undefined ? table.texte[key] : TEXTE_BUSCH_LIGHT_CARD.en.texte[key];
     if (text === undefined) return key;
-    if (vars) {
-        Object.keys(vars).forEach((name) => {
-            text = text.split('{' + name + '}').join(String(vars[name]));
-        });
-    }
-    return text;
+    return fillVars(text, vars);
+}
+
+/** The editor label of one schema field. One to four words, no full stop. */
+function fieldLabel(hass, name) {
+    const table = textTable(hass);
+    const text = table.labels[name] !== undefined ? table.labels[name] : TEXTE_BUSCH_LIGHT_CARD.en.labels[name];
+    return text === undefined ? name : text;
+}
+
+/** The editor helper of one schema field. A whole sentence, with a full stop. */
+function fieldHelper(hass, name) {
+    const table = textTable(hass);
+    const text = table.helpers[name] !== undefined ? table.helpers[name] : TEXTE_BUSCH_LIGHT_CARD.en.helpers[name];
+    return text === undefined ? '' : text;
 }
 
 // ---------------------------------------------------------------------------
@@ -796,14 +930,20 @@ class LightModel {
 // ---------------------------------------------------------------------------
 
 class GroupModel {
-    constructor(hass, config) {
+    /**
+     * `opts` is the NORMALISED option object out of `normalizeConfig`, not the
+     * raw Lovelace config — camelCase, defaults filled in, entity and entities
+     * already merged into one list. The distinction matters: only the raw
+     * config carries the snake_case keys the editor schema names.
+     */
+    constructor(hass, opts) {
         this.hass = hass;
-        this.config = config;
+        this.opts = opts;
 
-        const roots = config.entityIds;
+        const roots = opts.entityIds;
         const resolution = resolveSections(hass, roots, {
-            maxDepth: config.maxDepth,
-            resolveGroups: config.resolveGroups
+            maxDepth: opts.maxDepth,
+            resolveGroups: opts.resolveGroups
         });
 
         this.resolution = resolution;
@@ -892,15 +1032,15 @@ class GroupModel {
         });
         if (found.length) return found;
         if (this.isOn) {
-            const fallback = parseColor(this.config.defaultColor) || parseColor(WARM_COLOR);
+            const fallback = parseColor(this.opts.defaultColor) || parseColor(WARM_COLOR);
             return [fallback];
         }
         return [];
     }
 
     get icon() {
-        if (this.config.icon) return this.config.icon;
-        const rootId = this.config.entityIds[0];
+        if (this.opts.icon) return this.opts.icon;
+        const rootId = this.opts.entityIds[0];
         const rootState = this.hass && this.hass.states ? this.hass.states[rootId] : null;
         if (rootState && rootState.attributes && rootState.attributes.icon) return rootState.attributes.icon;
         if (this.lights.length === 1) return this.lights[0].icon;
@@ -908,8 +1048,8 @@ class GroupModel {
     }
 
     get title() {
-        if (this.config.title) return this.config.title;
-        const rootId = this.config.entityIds[0];
+        if (this.opts.title) return this.opts.title;
+        const rootId = this.opts.entityIds[0];
         const rootState = this.hass && this.hass.states ? this.hass.states[rootId] : null;
         if (rootState && rootState.attributes && rootState.attributes.friendly_name) {
             return rootState.attributes.friendly_name;
@@ -918,7 +1058,7 @@ class GroupModel {
     }
 
     get description() {
-        if (this.config.description) return this.config.description;
+        if (this.opts.description) return this.opts.description;
         const hass = this.hass;
         if (this.isEmpty) return translate(hass, 'noEntities');
         if (this.isAllUnavailable) return translate(hass, 'allUnavailable');
@@ -1037,7 +1177,7 @@ function parseSceneConfig(raw) {
 }
 
 function normalizeConfig(raw) {
-    const config = {};
+    const opts = {};
     const entityIds = [];
 
     const single = pick(raw, 'entity');
@@ -1055,31 +1195,31 @@ function normalizeConfig(raw) {
         throw new Error("busch-light-card: 'entity' or 'entities' is required.");
     }
 
-    config.entityIds = entityIds;
-    config.title = pick(raw, 'title', null);
-    config.icon = pick(raw, 'icon', null);
-    config.description = pick(raw, 'description', null);
+    opts.entityIds = entityIds;
+    opts.title = pick(raw, 'title', null);
+    opts.icon = pick(raw, 'icon', null);
+    opts.description = pick(raw, 'description', null);
 
-    config.resolveGroups = pick(raw, 'resolveGroups', true) !== false;
-    config.maxDepth = Number(pick(raw, 'maxDepth', DEFAULT_MAX_DEPTH)) || DEFAULT_MAX_DEPTH;
-    config.showUnavailable = pick(raw, 'showUnavailable', true) !== false;
-    config.groupDisplay = pick(raw, 'groupDisplay', 'sections') === 'flat' ? 'flat' : 'sections';
+    opts.resolveGroups = pick(raw, 'resolveGroups', true) !== false;
+    opts.maxDepth = Number(pick(raw, 'maxDepth', DEFAULT_MAX_DEPTH)) || DEFAULT_MAX_DEPTH;
+    opts.showUnavailable = pick(raw, 'showUnavailable', true) !== false;
+    opts.groupDisplay = pick(raw, 'groupDisplay', 'sections') === 'flat' ? 'flat' : 'sections';
 
-    config.offColor = pick(raw, 'offColor', null);
-    config.defaultColor = pick(raw, 'defaultColor', WARM_COLOR);
-    config.hueBorders = pick(raw, 'hueBorders', true) !== false;
-    config.showSwitch = pick(raw, 'showSwitch', true) !== false;
-    config.slider = pick(raw, 'slider', true) !== false;
-    config.allowZero = pick(raw, 'allowZero', false) === true;
-    config.offShadow = pick(raw, 'offShadow', true) !== false;
+    opts.offColor = pick(raw, 'offColor', null);
+    opts.defaultColor = pick(raw, 'defaultColor', WARM_COLOR);
+    opts.hueBorders = pick(raw, 'hueBorders', true) !== false;
+    opts.showSwitch = pick(raw, 'showSwitch', true) !== false;
+    opts.slider = pick(raw, 'slider', true) !== false;
+    opts.allowZero = pick(raw, 'allowZero', false) === true;
+    opts.offShadow = pick(raw, 'offShadow', true) !== false;
 
-    config.tapAction = pick(raw, 'tapAction', 'dialog');
-    config.holdAction = pick(raw, 'holdAction', 'more-info');
+    opts.tapAction = pick(raw, 'tapAction', 'dialog');
+    opts.holdAction = pick(raw, 'holdAction', 'more-info');
 
     const scenes = pick(raw, 'scenes', []);
-    config.scenes = Array.isArray(scenes) ? scenes.map(parseSceneConfig) : [];
+    opts.scenes = Array.isArray(scenes) ? scenes.map(parseSceneConfig) : [];
 
-    return config;
+    return opts;
 }
 
 /**
@@ -1192,6 +1332,21 @@ function onDrag(element, handler) {
 const CARD_STYLES = `
 :host {
     display: block;
+
+    /*
+     * The card's own theme hooks. The value initial is CSS's guaranteed-
+     * invalid one, so every use below falls back to the literal it carries
+     * and an untouched card looks exactly as designed — while a theme can
+     * override any one of them by name. Rule 4 wants every colour behind a
+     * variable; this is where the ones Home Assistant does not provide are
+     * declared.
+     */
+    --blc-background: initial;
+    --blc-text-color: initial;
+    --blc-shadow: initial;
+    --blc-toggle-off: initial;
+    --blc-toggle-on: initial;
+    --blc-knob-color: initial;
 }
 ha-card {
     position: relative;
@@ -1201,7 +1356,8 @@ ha-card {
     background-origin: border-box;
     box-shadow: var(--blc-shadow, none), var(--ha-default-shadow, none);
     transition: ${TRANSITION_DEFAULT};
-    --blc-margin: 14px;
+    /* HAs own .card-content spacing, with the pre-token value as fallback. */
+    --blc-margin: var(--ha-space-4, 14px);
 }
 ha-card.hue-borders {
     border-radius: 10px;
@@ -1222,7 +1378,8 @@ ha-card.hue-borders {
     display: flex;
     align-items: center;
     cursor: pointer;
-    height: calc(46px - var(--blc-margin));
+    /* min-height, not height: a text container must never cap its own text. */
+    min-height: calc(46px - var(--blc-margin));
     -webkit-tap-highlight-color: transparent;
 }
 .icon {
@@ -1242,9 +1399,10 @@ ha-card.hue-borders {
     transition: ${TRANSITION_DEFAULT};
 }
 .text h2 {
-    font-size: 18px;
-    font-weight: 500;
+    font-size: var(--ha-font-size-l, 18px);
+    font-weight: var(--ha-font-weight-medium, 500);
     margin: 0;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1254,9 +1412,18 @@ ha-card.hue-borders {
     display: flex;
     align-items: center;
     gap: 6px;
+    min-width: 0;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+}
+/* The count and the badge are two flex items, so the ellipsis has to sit on
+   the text itself — on the flex container it would never fire. */
+.desc .dtext {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .warn {
     display: inline-flex;
@@ -1264,16 +1431,27 @@ ha-card.hue-borders {
     gap: 3px;
     padding: 0 6px;
     border-radius: 9px;
-    font-size: 12px;
+    font-size: var(--ha-font-size-xs, 12px);
     line-height: 18px;
     background: rgba(0, 0, 0, 0.18);
-    flex-shrink: 0;
+    /* Shrinkable on purpose: a badge that refuses to give way pushes itself
+       out of the card instead of being cut. */
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+.warn span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .warn.light-fg {
     background: rgba(255, 255, 255, 0.22);
 }
 .warn ha-icon {
     --mdc-icon-size: 13px;
+    flex-shrink: 0;
 }
 .toggle {
     flex-shrink: 0;
@@ -1298,7 +1476,7 @@ ha-card.hue-borders {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--blc-knob-color, #fff);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     transition: transform 0.2s ease-out;
 }
@@ -1336,22 +1514,29 @@ ha-card.hue-borders {
 .slider.dragging .fill {
     transition: none;
 }
+/* A block with a matching line-height, not a flex box: only then do overflow
+   and text-overflow apply to the text itself. It sits in .slider, which is
+   overflow: hidden, so the absolute position cannot escape either. */
 .slider .label {
     position: absolute;
     inset: 0;
-    display: flex;
-    align-items: center;
+    display: block;
+    box-sizing: border-box;
+    line-height: 34px;
     padding: 0 12px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: var(--ha-font-weight-medium, 500);
     color: var(--blc-text-color, var(--secondary-text-color));
-    pointer-events: none;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .error {
     padding: 12px 16px;
     color: var(--error-color, #db4437);
-    font-size: 14px;
-    white-space: pre-wrap;
+    font-size: var(--ha-font-size-s, 14px);
+    overflow-wrap: anywhere;
 }
 `;
 
@@ -1363,7 +1548,7 @@ class BuschLightCard extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
-        this._config = null;
+        this._opts = null;
         this._hass = null;
         this._model = null;
         this._built = false;
@@ -1400,10 +1585,10 @@ class BuschLightCard extends HTMLElement {
 
     setConfig(raw) {
         try {
-            this._config = normalizeConfig(raw || {});
+            this._opts = normalizeConfig(raw || {});
             this._error = null;
         } catch (e) {
-            this._config = null;
+            this._opts = null;
             this._error = e && e.message ? e.message : String(e);
         }
         this._built = false;
@@ -1423,6 +1608,22 @@ class BuschLightCard extends HTMLElement {
 
     getCardSize() {
         return 3;
+    }
+
+    /**
+     * Sections layout. Twelve columns is the full width of a section; six is
+     * half of it and the narrowest the title, the badge and the switch still
+     * fit side by side. Both are multiples of three, as the grid demands.
+     * Two rows with the brightness slider, one without.
+     */
+    getGridOptions() {
+        const withSlider = !this._opts || this._opts.slider !== false;
+        return {
+            columns: 12,
+            rows: withSlider ? 2 : 1,
+            min_columns: 6,
+            min_rows: withSlider ? 2 : 1
+        };
     }
 
     // -- building -----------------------------------------------------------
@@ -1464,6 +1665,7 @@ class BuschLightCard extends HTMLElement {
         this._desc = document.createElement('div');
         this._desc.className = 'desc';
         this._descText = document.createElement('span');
+        this._descText.className = 'dtext';
         this._warn = document.createElement('span');
         this._warn.className = 'warn';
         this._warnIcon = document.createElement('ha-icon');
@@ -1481,7 +1683,7 @@ class BuschLightCard extends HTMLElement {
 
         this._toggle = document.createElement('button');
         this._toggle.className = 'toggle';
-        this._toggle.setAttribute('aria-label', 'toggle');
+        this._toggle.setAttribute('aria-label', translate(this._hass, 'toggle'));
         const knob = document.createElement('span');
         knob.className = 'knob';
         this._toggle.appendChild(knob);
@@ -1519,7 +1721,7 @@ class BuschLightCard extends HTMLElement {
             clearTimeout(this._holdTimer);
             this._holdTimer = setTimeout(() => {
                 this._held = true;
-                this._runAction(this._config.holdAction);
+                this._runAction(this._opts.holdAction);
             }, 500);
         });
         const cancelHold = () => clearTimeout(this._holdTimer);
@@ -1531,13 +1733,13 @@ class BuschLightCard extends HTMLElement {
                 this._held = false;
                 return;
             }
-            this._runAction(this._config.tapAction);
+            this._runAction(this._opts.tapAction);
         });
 
         onDrag(this._slider, (point, done) => {
             if (!this._model || !this._model.supportsBrightness) return;
             if (this._model.isAllUnavailable) return;
-            const min = this._config.allowZero ? 0 : 1;
+            const min = this._opts.allowZero ? 0 : 1;
             const pct = clamp(Math.round((point.x / point.width) * 100), min, 100);
             this._dragging = !done;
             this._slider.classList.toggle('dragging', !done);
@@ -1565,7 +1767,7 @@ class BuschLightCard extends HTMLElement {
     }
 
     _fireMoreInfo() {
-        const entityId = this._config.entityIds[0];
+        const entityId = this._opts.entityIds[0];
         this.dispatchEvent(
             new CustomEvent('hass-more-info', {
                 detail: { entityId },
@@ -1579,7 +1781,7 @@ class BuschLightCard extends HTMLElement {
         if (!this._model || this._model.isEmpty) return;
         const dialog = document.createElement(DIALOG_TAG);
         dialog.hass = this._hass;
-        dialog.cardConfig = this._config;
+        dialog.cardConfig = this._opts;
         document.body.appendChild(dialog);
         this._dialog = dialog;
         dialog.addEventListener('dialog-closed', () => {
@@ -1591,19 +1793,19 @@ class BuschLightCard extends HTMLElement {
 
     _render() {
         if (!this._built) this._build();
-        if (this._error || !this._config || !this._hass) return;
+        if (this._error || !this._opts || !this._hass) return;
 
-        this._model = new GroupModel(this._hass, this._config);
+        this._model = new GroupModel(this._hass, this._opts);
         const model = this._model;
 
-        this._card.className = this._config.hueBorders ? 'hue-borders' : '';
+        this._card.className = this._opts.hueBorders ? 'hue-borders' : '';
         this._icon.setAttribute('icon', model.icon);
         this._title.textContent = model.title;
         this._descText.textContent = model.description;
 
         // Unavailable members are named, not hidden: the card keeps working,
         // and the badge says how much of the group it is actually driving.
-        const showWarn = this._config.showUnavailable && model.deadCount > 0 && !model.isAllUnavailable;
+        const showWarn = this._opts.showUnavailable && model.deadCount > 0 && !model.isAllUnavailable;
         this._warn.style.display = showWarn ? '' : 'none';
         if (showWarn) this._warnText.textContent = String(model.deadCount);
         this._warn.title = showWarn
@@ -1619,12 +1821,12 @@ class BuschLightCard extends HTMLElement {
         this._toggle.classList.toggle('on', model.isOn);
         if (disabled) this._toggle.setAttribute('disabled', '');
         else this._toggle.removeAttribute('disabled');
-        this._toggle.style.display = this._config.showSwitch ? '' : 'none';
+        this._toggle.style.display = this._opts.showSwitch ? '' : 'none';
 
         // slider
-        const sliderOn = this._config.slider && model.supportsBrightness;
+        const sliderOn = this._opts.slider && model.supportsBrightness;
         this._slider.style.display = sliderOn ? '' : 'none';
-        const sliderDisabled = this._config.allowZero ? model.isAllUnavailable : !model.isOn;
+        const sliderDisabled = this._opts.allowZero ? model.isAllUnavailable : !model.isOn;
         if (sliderDisabled) this._slider.setAttribute('disabled', '');
         else this._slider.removeAttribute('disabled');
         if (!this._dragging) {
@@ -1637,7 +1839,7 @@ class BuschLightCard extends HTMLElement {
 
     /** Card background, text colour and the brightness shadow. */
     _paint(model) {
-        const offColor = parseColor(this._config.offColor);
+        const offColor = parseColor(this._opts.offColor);
         const colors = model.colors;
 
         let background = null;
@@ -1662,7 +1864,7 @@ class BuschLightCard extends HTMLElement {
     }
 
     _brightnessShadow(model) {
-        if (!model.isOn) return this._config.offShadow ? 'inset 0px 0px 10px rgba(0,0,0,0.2)' : 'none';
+        if (!model.isOn) return this._opts.offShadow ? 'inset 0px 0px 10px rgba(0,0,0,0.2)' : 'none';
         const height = this._card ? this._card.clientHeight : 0;
         if (!height) return 'none';
         const darkness = 100 - model.brightnessPct;
@@ -1704,6 +1906,27 @@ BuschLightCard.__internals = {
 
 const DIALOG_STYLES = `
 :host {
+    /*
+     * The dialog's own theme hooks. Same idea as the card's: the value
+     * initial is CSS's guaranteed-invalid one, so each use below falls back
+     * to the literal beside it. The sheet stays deliberately dark in both
+     * themes — that is the Hue look this card copies, and its text colour is
+     * chosen to match it — but every one of those colours can be overridden
+     * by name from a theme.
+     */
+    --blc-dialog-bg: initial;
+    --blc-dialog-text: initial;
+    --blc-dialog-invert: initial;
+    --blc-dialog-tile: initial;
+    --blc-dialog-muted: initial;
+    --blc-dialog-dim: initial;
+    --blc-dialog-faint: initial;
+    --blc-dialog-line: initial;
+    --blc-dialog-dead-a: initial;
+    --blc-dialog-dead-b: initial;
+    --blc-scene-badge: initial;
+    --blc-knob-color: initial;
+
     position: fixed;
     inset: 0;
     /*
@@ -1734,8 +1957,8 @@ const DIALOG_STYLES = `
        element that overhangs must be clipped, not turned into a scrollbar. */
     overflow-y: auto;
     overflow-x: hidden;
-    background: ${DIALOG_BG};
-    color: #fff;
+    background: var(--blc-dialog-bg, #171717);
+    color: var(--blc-dialog-text, #fff);
     border-radius: 16px 16px 0 0;
     padding: 16px;
     box-sizing: border-box;
@@ -1754,22 +1977,30 @@ const DIALOG_STYLES = `
 }
 .head .who { flex-grow: 1; min-width: 0; }
 .head h1 {
-    font-size: 20px;
-    font-weight: 500;
+    font-size: var(--ha-font-size-xl, 20px);
+    font-weight: var(--ha-font-weight-medium, 500);
     margin: 0;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.head .sub { font-size: 13px; color: #aaa; }
+.head .sub {
+    font-size: 13px;
+    color: var(--blc-dialog-muted, #aaa);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .iconbtn {
     flex-shrink: 0;
     width: 36px;
     height: 36px;
     border-radius: 50%;
     border: none;
-    background: ${DIALOG_TILE_OFF};
-    color: #fff;
+    background: var(--blc-dialog-tile, #363636);
+    color: var(--blc-dialog-text, #fff);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1777,11 +2008,15 @@ const DIALOG_STYLES = `
 }
 h3 {
     font-size: 13px;
-    font-weight: 500;
+    font-weight: var(--ha-font-weight-medium, 500);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #aaa;
+    color: var(--blc-dialog-muted, #aaa);
     margin: 18px 0 8px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 /* Scenes and lights share one square-tile grid, so the dialog reads as one
    surface rather than a strip above a grid. */
@@ -1795,8 +2030,8 @@ h3 {
     border-radius: 12px;
     border: none;
     cursor: pointer;
-    color: #fff;
-    background: ${DIALOG_TILE_OFF};
+    color: var(--blc-dialog-text, #fff);
+    background: var(--blc-dialog-tile, #363636);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -1804,7 +2039,7 @@ h3 {
     padding: 10px;
     box-sizing: border-box;
     text-align: left;
-    font-size: 12px;
+    font-size: var(--ha-font-size-xs, 12px);
     line-height: 1.25;
     overflow: hidden;
 }
@@ -1818,11 +2053,13 @@ h3 {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: ${WARM_COLOR};
+    background: var(--blc-scene-badge, #ffda95);
 }
 .scene .badge ha-icon { --mdc-icon-size: 22px; }
 .scene span {
     overflow: hidden;
+    overflow-wrap: anywhere;
+    min-width: 0;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -1836,8 +2073,8 @@ h3 {
     box-sizing: border-box;
     cursor: pointer;
     overflow: hidden;
-    background: ${DIALOG_TILE_OFF};
-    color: #fff;
+    background: var(--blc-dialog-tile, #363636);
+    color: var(--blc-dialog-text, #fff);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1868,19 +2105,33 @@ h3 {
 .tile .tmid { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .tile .ticon { --mdc-icon-size: 26px; }
 .tile .tname {
-    font-size: 12px;
+    font-size: var(--ha-font-size-xs, 12px);
     line-height: 1.2;
     overflow: hidden;
+    overflow-wrap: anywhere;
+    min-width: 0;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
 }
 /* currentColor, not a fixed white: a lit tile flips its text to dark. */
-.tile .tpct { font-size: 11px; color: currentColor; opacity: 0.75; }
+.tile .tpct {
+    font-size: 11px;
+    color: currentColor;
+    opacity: 0.75;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .tile .tsw { position: relative; }
 .tile.dead {
-    background: repeating-linear-gradient(45deg, #2a2a2a, #2a2a2a 6px, #222 6px, #222 12px);
-    color: #888;
+    background: repeating-linear-gradient(45deg,
+        var(--blc-dialog-dead-a, #2a2a2a),
+        var(--blc-dialog-dead-a, #2a2a2a) 6px,
+        var(--blc-dialog-dead-b, #222) 6px,
+        var(--blc-dialog-dead-b, #222) 12px);
+    color: var(--blc-dialog-faint, #888);
     cursor: default;
 }
 .detail { margin-top: 6px; }
@@ -1890,12 +2141,19 @@ h3 {
     border: none;
     border-radius: 9px;
     padding: 8px;
-    background: ${DIALOG_TILE_OFF};
-    color: #ccc;
+    background: var(--blc-dialog-tile, #363636);
+    color: var(--blc-dialog-dim, #ccc);
     cursor: pointer;
     font-size: 13px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
-.picker-tabs button.active { background: #fff; color: #111; }
+.picker-tabs button.active {
+    background: var(--blc-dialog-text, #fff);
+    color: var(--blc-dialog-invert, #111);
+}
 .wheelwrap { display: flex; justify-content: center; padding: 6px 0 2px; }
 canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-width: 100%; }
 .tempbar {
@@ -1917,7 +2175,7 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     height: 26px;
     margin: -13px 0 0 -13px;
     border-radius: 50%;
-    border: 3px solid #fff;
+    border: 3px solid var(--blc-dialog-text, #fff);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
     pointer-events: none;
 }
@@ -1925,7 +2183,7 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     position: relative;
     height: 44px;
     border-radius: 22px;
-    background: ${DIALOG_TILE_OFF};
+    background: var(--blc-dialog-tile, #363636);
     overflow: hidden;
     margin: 8px 0;
     touch-action: none;
@@ -1934,23 +2192,57 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 .dslider .fill { position: absolute; inset: 0; width: 0%; background: rgba(255,255,255,0.75); }
 /* White through mix-blend-mode difference inverts against whatever is behind
    it, so the label stays readable on both the dark track and the light fill. */
+/* A block with a matching line-height, not a flex box: only on a block do
+   overflow and text-overflow apply to the text. It sits in .dslider, which is
+   overflow: hidden, so the absolute position cannot escape either. */
 .dslider .label {
-    position: absolute; inset: 0; display: flex; align-items: center; padding: 0 14px;
-    font-size: 13px; font-weight: 500; color: #fff; mix-blend-mode: difference; pointer-events: none;
+    position: absolute;
+    inset: 0;
+    display: block;
+    box-sizing: border-box;
+    line-height: 44px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: var(--ha-font-weight-medium, 500);
+    color: var(--blc-dialog-text, #fff);
+    mix-blend-mode: difference;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
-.empty { color: #888; font-size: 13px; padding: 8px 0; }
-.deadlist { font-size: 12px; color: #888; margin-top: 10px; line-height: 1.5; }
+.empty {
+    color: var(--blc-dialog-faint, #888);
+    font-size: 13px;
+    padding: 8px 0;
+    overflow-wrap: anywhere;
+}
+.deadlist {
+    font-size: var(--ha-font-size-xs, 12px);
+    color: var(--blc-dialog-faint, #888);
+    margin-top: 10px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
 
 /* One block per resolved group, so thirty lamps behind one card stay readable. */
 .group + .group { margin-top: 14px; }
-.group.nested { border-left: 2px solid #333; padding-left: 12px; }
+.group.nested { border-left: 2px solid var(--blc-dialog-line, #333); padding-left: 12px; }
 .group-head { display: flex; align-items: center; gap: 8px; padding: 4px 0 8px; }
-.group-head ha-icon { --mdc-icon-size: 18px; color: #aaa; flex-shrink: 0; }
+.group-head ha-icon { --mdc-icon-size: 18px; color: var(--blc-dialog-muted, #aaa); flex-shrink: 0; }
 .group-head .gname {
-    flex: 1; min-width: 0; font-size: 13px; font-weight: 500;
+    flex: 1; min-width: 0; font-size: 13px; font-weight: var(--ha-font-weight-medium, 500);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.group-head .gcount { font-size: 12px; color: #aaa; flex-shrink: 0; }
+.group-head .gcount {
+    font-size: var(--ha-font-size-xs, 12px);
+    color: var(--blc-dialog-muted, #aaa);
+    flex-shrink: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .gtoggle {
     flex-shrink: 0; width: 34px; height: 20px; border-radius: 10px; border: none;
     padding: 0; position: relative; cursor: pointer;
@@ -1958,7 +2250,8 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 }
 .gtoggle .gknob {
     position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
-    border-radius: 50%; background: #fff; transition: transform 0.2s ease-out;
+    border-radius: 50%; background: var(--blc-knob-color, #fff);
+    transition: transform 0.2s ease-out;
 }
 .gtoggle.on { background: var(--primary-color, #03a9f4); }
 .gtoggle.on .gknob { transform: translateX(14px); }
@@ -1979,7 +2272,7 @@ class BuschLightDialog extends HTMLElement {
         super();
         this.attachShadow({ mode: 'open' });
         this._hass = null;
-        this._config = null;
+        this._opts = null;
         this._model = null;
         this._built = false;
         this._detailEntity = null; // null = the whole group
@@ -2012,8 +2305,8 @@ class BuschLightDialog extends HTMLElement {
         };
     }
 
-    set cardConfig(config) {
-        this._config = config;
+    set cardConfig(opts) {
+        this._opts = opts;
         this._update();
     }
 
@@ -2104,10 +2397,10 @@ class BuschLightDialog extends HTMLElement {
     }
 
     _update() {
-        if (!this._config || !this._hass) return;
+        if (!this._opts || !this._hass) return;
         if (!this._built) this._build();
         if (this._dragging) return; // never rebuild under a finger
-        this._model = new GroupModel(this._hass, this._config);
+        this._model = new GroupModel(this._hass, this._opts);
         this._renderSheet();
     }
 
@@ -2172,11 +2465,11 @@ class BuschLightDialog extends HTMLElement {
         }
 
         // ---- scenes
-        if (this._config.scenes.length) {
+        if (this._opts.scenes.length) {
             sheet.appendChild(this._heading(translate(hass, 'scenes')));
             const row = document.createElement('div');
             row.className = 'scenes';
-            this._config.scenes.forEach((scene) => row.appendChild(this._makeSceneTile(scene)));
+            this._opts.scenes.forEach((scene) => row.appendChild(this._makeSceneTile(scene)));
             sheet.appendChild(row);
         }
 
@@ -2210,12 +2503,12 @@ class BuschLightDialog extends HTMLElement {
             empty.className = 'empty';
             empty.textContent = translate(hass, 'noEntities');
             sheet.appendChild(empty);
-        } else if (this._config.groupDisplay === 'flat' || model.sections.length < 2) {
+        } else if (this._opts.groupDisplay === 'flat' || model.sections.length < 2) {
             // One group, or the user asked for a plain pile: headings would be
             // noise rather than orientation.
             sheet.appendChild(this._makeTileGrid(model.lights));
         } else {
-            const single = this._config.entityIds.length === 1 ? this._config.entityIds[0] : null;
+            const single = this._opts.entityIds.length === 1 ? this._opts.entityIds[0] : null;
             model.sections.forEach((section, index) => {
                 // The first block belongs to the card's own root, whose name is
                 // already the dialog's title. Repeating it there would put the
@@ -2231,7 +2524,7 @@ class BuschLightDialog extends HTMLElement {
         }
 
         const emptyGroups = model.resolution.emptyGroups || [];
-        if (emptyGroups.length && this._config.groupDisplay !== 'flat') {
+        if (emptyGroups.length && this._opts.groupDisplay !== 'flat') {
             // Named rather than shown: an empty heading looks like a fault,
             // and silently dropping the group hides that it exists at all.
             const note = document.createElement('div');
@@ -2313,7 +2606,7 @@ class BuschLightDialog extends HTMLElement {
     _makeHeadSwitch(isOn, disabled, onClick) {
         const toggle = document.createElement('button');
         toggle.className = 'gtoggle headsw' + (isOn ? ' on' : '');
-        toggle.setAttribute('aria-label', 'toggle');
+        toggle.setAttribute('aria-label', translate(this._hass, 'toggle'));
         const knob = document.createElement('span');
         knob.className = 'gknob';
         toggle.appendChild(knob);
@@ -2724,14 +3017,13 @@ details[open] { padding-bottom: 12px; }
 summary {
     cursor: pointer;
     padding: 12px 0;
-    font-weight: 500;
+    font-weight: var(--ha-font-weight-medium, 500);
     color: var(--primary-text-color);
     list-style-position: inside;
-}
-.hint {
-    margin: 6px 0 0;
-    font-size: 12px;
-    color: var(--secondary-text-color);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .preview {
     border: 1px solid var(--divider-color, #e0e0e0);
@@ -2739,15 +3031,21 @@ summary {
     padding: 10px 12px;
     font-size: 13px;
     color: var(--primary-text-color);
+    overflow-wrap: anywhere;
 }
 .preview .head {
-    font-weight: 500;
+    font-weight: var(--ha-font-weight-medium, 500);
     display: flex;
     align-items: baseline;
     gap: 8px;
     flex-wrap: wrap;
 }
-.preview .count { color: var(--secondary-text-color); font-weight: 400; }
+.preview .count {
+    color: var(--secondary-text-color);
+    font-weight: var(--ha-font-weight-normal, 400);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
 .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
 .chip {
     font-size: 11px;
@@ -2756,6 +3054,12 @@ summary {
     border-radius: 10px;
     background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
     color: var(--primary-text-color);
+    /* One entity name per chip, so it is cut rather than wrapped — but never
+       wider than the box it sits in. */
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 .chip.dead {
@@ -2764,7 +3068,12 @@ summary {
         transparent 5px, transparent 10px);
     color: var(--error-color, #db4437);
 }
-.note { margin-top: 8px; font-size: 12px; color: var(--secondary-text-color); }
+.note {
+    margin-top: 8px;
+    font-size: var(--ha-font-size-xs, 12px);
+    color: var(--secondary-text-color);
+    overflow-wrap: anywhere;
+}
 .note.warn { color: var(--warning-color, #ffa600); }
 .scene-row {
     border: 1px solid var(--divider-color, #e0e0e0);
@@ -2795,13 +3104,22 @@ summary {
     width: 100%;
     cursor: pointer;
     font-size: 13px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .addbtn[disabled] {
     color: var(--secondary-text-color);
     cursor: default;
     opacity: 0.7;
 }
-.fallback { color: var(--error-color, #db4437); font-size: 13px; padding: 8px 0; }
+.fallback {
+    color: var(--error-color, #db4437);
+    font-size: 13px;
+    padding: 8px 0;
+    overflow-wrap: anywhere;
+}
 `;
 
 /**
@@ -2835,6 +3153,152 @@ function ensureFormElements() {
 
 const LIGHT_FILTER = [{ domain: 'light' }, { domain: 'switch' }, { domain: 'group' }];
 const SCENE_FILTER = [{ domain: 'scene' }, { domain: 'script' }];
+
+/** The four choices behind `tap_action` and `hold_action`. */
+const ACTION_OPTIONS = [
+    { value: 'dialog', labelKey: 'actDialog' },
+    { value: 'toggle', labelKey: 'actToggle' },
+    { value: 'more-info', labelKey: 'actMoreInfo' },
+    { value: 'none', labelKey: 'actNone' }
+];
+
+/**
+ * The card's option schema — the one place a card option is declared.
+ *
+ * The editor slices this list into its four sections instead of carrying four
+ * lists of its own, so an option can never exist in the editor without a
+ * label and a helper, or the other way round. `labelKey` on a select option
+ * names a dictionary entry; `_sliceSchema` turns it into `label` in the
+ * user's language, because a schema built at load time cannot know it yet.
+ *
+ * `scenes` is not rendered by `ha-form`: a list of objects has no selector.
+ * The editor draws one row per scene, and every row is itself an `ha-form`
+ * over the four `scene_*` fields declared below it.
+ */
+const SCHEMA_BUSCH_LIGHT_CARD = [
+    { name: 'entity', required: true, selector: { entity: { filter: LIGHT_FILTER } } },
+    { name: 'entities', selector: { entity: { multiple: true, filter: LIGHT_FILTER } } },
+    {
+        name: '',
+        type: 'grid',
+        schema: [
+            { name: 'title', selector: { text: {} } },
+            { name: 'icon', selector: { icon: {} } }
+        ]
+    },
+    { name: 'description', selector: { text: {} } },
+
+    { name: 'resolve_groups', selector: { boolean: {} } },
+    { name: 'max_depth', selector: { number: { min: 1, max: 20, mode: 'box' } } },
+    { name: 'show_unavailable', selector: { boolean: {} } },
+    {
+        name: 'group_display',
+        selector: {
+            select: {
+                mode: 'dropdown',
+                options: [
+                    { value: 'sections', labelKey: 'groupSections' },
+                    { value: 'flat', labelKey: 'groupFlat' }
+                ]
+            }
+        }
+    },
+
+    {
+        name: '',
+        type: 'grid',
+        schema: [
+            { name: 'off_color', selector: { text: {} } },
+            { name: 'default_color', selector: { text: {} } }
+        ]
+    },
+    {
+        name: '',
+        type: 'grid',
+        schema: [
+            { name: 'hue_borders', selector: { boolean: {} } },
+            { name: 'show_switch', selector: { boolean: {} } },
+            { name: 'slider', selector: { boolean: {} } },
+            { name: 'allow_zero', selector: { boolean: {} } },
+            { name: 'off_shadow', selector: { boolean: {} } }
+        ]
+    },
+
+    {
+        name: '',
+        type: 'grid',
+        schema: [
+            { name: 'tap_action', selector: { select: { mode: 'dropdown', options: ACTION_OPTIONS } } },
+            { name: 'hold_action', selector: { select: { mode: 'dropdown', options: ACTION_OPTIONS } } }
+        ]
+    },
+
+    {
+        name: 'scenes',
+        type: 'expandable',
+        schema: [
+            { name: 'scene_entity', selector: { entity: { filter: SCENE_FILTER } } },
+            {
+                name: '',
+                type: 'grid',
+                schema: [
+                    { name: 'scene_title', selector: { text: {} } },
+                    { name: 'scene_icon', selector: { icon: {} } }
+                ]
+            },
+            { name: 'scene_color', selector: { color_rgb: {} } }
+        ]
+    }
+];
+
+/** The names a scene row's four fields carry inside its own little form. */
+const SCENE_FIELDS = { scene_entity: 'entity', scene_title: 'title', scene_icon: 'icon', scene_color: 'color' };
+
+/**
+ * Copies the entries named in `names` out of the schema, keeping grid
+ * wrappers whose children survive, and translates every `labelKey`.
+ */
+function sliceSchema(hass, names, source) {
+    const wanted = (list) => {
+        const out = [];
+        (list || []).forEach((item) => {
+            if (item.type === 'grid' || item.type === 'expandable') {
+                const inner = wanted(item.schema);
+                if (inner.length) out.push(Object.assign({}, item, { schema: inner }));
+                return;
+            }
+            if (names.indexOf(item.name) === -1) return;
+            const copy = JSON.parse(JSON.stringify(item));
+            const select = copy.selector && copy.selector.select;
+            if (select && Array.isArray(select.options)) {
+                select.options = select.options.map((option) => ({
+                    value: option.value,
+                    label: option.labelKey ? translate(hass, option.labelKey) : option.label
+                }));
+            }
+            out.push(copy);
+        });
+        return out;
+    };
+    return wanted(source || SCHEMA_BUSCH_LIGHT_CARD);
+}
+
+/**
+ * The little form inside one scene row: the four `scene_*` fields of the
+ * declaration, under the names a scene entry really carries (`entity`,
+ * `title`, `icon`, `color`). Labels and helpers still come from the
+ * `scene_*` keys, so the row explains itself without colliding with the
+ * card's own `entity` and `title`.
+ */
+function sceneRowSchema() {
+    const group = SCHEMA_BUSCH_LIGHT_CARD.filter((item) => item.name === 'scenes')[0];
+    const rename = (list) => list.map((item) => (
+        item.type === 'grid'
+            ? Object.assign({}, item, { schema: rename(item.schema) })
+            : Object.assign({}, item, { name: SCENE_FIELDS[item.name] || item.name })
+    ));
+    return rename(group.schema);
+}
 
 function hexToRgbArray(value) {
     const color = parseColor(value);
@@ -2917,17 +3381,9 @@ class BuschLightCardEditor extends HTMLElement {
         this._renderPreview();
     }
 
-    _label(key) {
+    /** One of the dictionary's `ui` strings. */
+    _ui(key) {
         return translate(this._hass, key);
-    }
-
-    _actionOptions() {
-        return [
-            { value: 'dialog', label: this._label('edActDialog') },
-            { value: 'toggle', label: this._label('edActToggle') },
-            { value: 'more-info', label: this._label('edActMoreInfo') },
-            { value: 'none', label: this._label('edActNone') }
-        ];
     }
 
     _data(names) {
@@ -2979,20 +3435,21 @@ class BuschLightCardEditor extends HTMLElement {
         style.textContent = EDITOR_STYLES;
         const box = document.createElement('div');
         box.className = 'fallback';
-        box.textContent = this._label('edNoForm');
+        box.textContent = this._ui('noForm');
         this.shadowRoot.appendChild(style);
         this.shadowRoot.appendChild(box);
     }
 
-    _makeForm(names, schema) {
+    /** One section's form, cut out of the card's single option schema. */
+    _makeForm(names) {
         const form = document.createElement('ha-form');
         form.hass = this._hass;
-        form.schema = schema;
+        form.schema = sliceSchema(this._hass, names);
         form.data = this._data(names);
-        form.computeLabel = (item) => {
-            if (!item.name) return ''; // grid wrappers carry no label
-            return this._label('ed' + item.name.replace(/(^|_)([a-z])/g, (m, p, c) => c.toUpperCase()));
-        };
+        // Rule 3: every field carries a label AND a helper, in both languages.
+        // Grid wrappers have no name and therefore neither.
+        form.computeLabel = (item) => (item.name ? fieldLabel(this._hass, item.name) : '');
+        form.computeHelper = (item) => (item.name ? fieldHelper(this._hass, item.name) : '');
         form.addEventListener('value-changed', (event) => {
             event.stopPropagation();
             this._emit(event.detail.value);
@@ -3005,7 +3462,7 @@ class BuschLightCardEditor extends HTMLElement {
         const details = document.createElement('details');
         if (open) details.open = true;
         const summary = document.createElement('summary');
-        summary.textContent = this._label(titleKey);
+        summary.textContent = this._ui(titleKey);
         details.appendChild(summary);
         details.appendChild(node);
         return details;
@@ -3023,20 +3480,7 @@ class BuschLightCardEditor extends HTMLElement {
 
         // --- what to control
         this._forms.basic = this._makeForm(
-            ['entity', 'entities', 'title', 'icon', 'description'],
-            [
-                { name: 'entity', required: true, selector: { entity: { filter: LIGHT_FILTER } } },
-                { name: 'entities', selector: { entity: { multiple: true, filter: LIGHT_FILTER } } },
-                {
-                    name: '',
-                    type: 'grid',
-                    schema: [
-                        { name: 'title', selector: { text: {} } },
-                        { name: 'icon', selector: { icon: {} } }
-                    ]
-                },
-                { name: 'description', selector: { text: {} } }
-            ]
+            ['entity', 'entities', 'title', 'icon', 'description']
         );
         wrap.appendChild(this._forms.basic);
 
@@ -3048,81 +3492,24 @@ class BuschLightCardEditor extends HTMLElement {
         // --- group resolution
         const resolveBox = document.createElement('div');
         this._forms.resolve = this._makeForm(
-            ['resolve_groups', 'max_depth', 'show_unavailable', 'group_display'],
-            [
-                { name: 'resolve_groups', selector: { boolean: {} } },
-                { name: 'max_depth', selector: { number: { min: 1, max: 20, mode: 'box' } } },
-                { name: 'show_unavailable', selector: { boolean: {} } },
-                {
-                    name: 'group_display',
-                    selector: {
-                        select: {
-                            mode: 'dropdown',
-                            options: [
-                                { value: 'sections', label: this._label('edGroupSections') },
-                                { value: 'flat', label: this._label('edGroupFlat') }
-                            ]
-                        }
-                    }
-                }
-            ]
+            ['resolve_groups', 'max_depth', 'show_unavailable', 'group_display']
         );
+        // No loose hint paragraph any more: what it said is now the helper of
+        // the field it was about (rule 3 — every field explains itself).
         resolveBox.appendChild(this._forms.resolve);
-        const hint = document.createElement('p');
-        hint.className = 'hint';
-        hint.textContent = this._label('edResolveHint');
-        resolveBox.appendChild(hint);
-        wrap.appendChild(this._section('edSectionResolve', resolveBox, true));
+        wrap.appendChild(this._section('sectionResolve', resolveBox, true));
 
         // --- appearance
         this._forms.look = this._makeForm(
-            ['off_color', 'default_color', 'hue_borders', 'show_switch', 'slider', 'allow_zero', 'off_shadow'],
-            [
-                {
-                    name: '',
-                    type: 'grid',
-                    schema: [
-                        { name: 'off_color', selector: { text: {} } },
-                        { name: 'default_color', selector: { text: {} } }
-                    ]
-                },
-                {
-                    name: '',
-                    type: 'grid',
-                    schema: [
-                        { name: 'hue_borders', selector: { boolean: {} } },
-                        { name: 'show_switch', selector: { boolean: {} } },
-                        { name: 'slider', selector: { boolean: {} } },
-                        { name: 'allow_zero', selector: { boolean: {} } },
-                        { name: 'off_shadow', selector: { boolean: {} } }
-                    ]
-                }
-            ]
+            ['off_color', 'default_color', 'hue_borders', 'show_switch', 'slider', 'allow_zero', 'off_shadow']
         );
         const lookBox = document.createElement('div');
         lookBox.appendChild(this._forms.look);
-        const colorHint = document.createElement('p');
-        colorHint.className = 'hint';
-        colorHint.textContent = this._label('edColorHint');
-        lookBox.appendChild(colorHint);
-        wrap.appendChild(this._section('edSectionLook', lookBox, false));
+        wrap.appendChild(this._section('sectionLook', lookBox, false));
 
         // --- actions
-        const actions = this._actionOptions();
-        this._forms.actions = this._makeForm(
-            ['tap_action', 'hold_action'],
-            [
-                {
-                    name: '',
-                    type: 'grid',
-                    schema: [
-                        { name: 'tap_action', selector: { select: { mode: 'dropdown', options: actions } } },
-                        { name: 'hold_action', selector: { select: { mode: 'dropdown', options: actions } } }
-                    ]
-                }
-            ]
-        );
-        wrap.appendChild(this._section('edSectionActions', this._forms.actions, false));
+        this._forms.actions = this._makeForm(['tap_action', 'hold_action']);
+        wrap.appendChild(this._section('sectionActions', this._forms.actions, false));
 
         // --- scenes
         const sceneBox = document.createElement('div');
@@ -3130,7 +3517,7 @@ class BuschLightCardEditor extends HTMLElement {
         sceneBox.appendChild(this._sceneList);
         const add = document.createElement('button');
         add.className = 'addbtn';
-        add.textContent = '+  ' + this._label('edAddScene');
+        add.textContent = '+  ' + this._ui('addScene');
         add.addEventListener('click', () => {
             const scenes = (this._config.scenes || []).slice();
             scenes.push({ entity: '' });
@@ -3147,7 +3534,7 @@ class BuschLightCardEditor extends HTMLElement {
         this._importBtn.style.marginTop = '6px';
         this._importBtn.addEventListener('click', () => this._importScenes());
         sceneBox.appendChild(this._importBtn);
-        wrap.appendChild(this._section('edSectionScenes', sceneBox, true));
+        wrap.appendChild(this._section('sectionScenes', sceneBox, true));
 
         root.appendChild(wrap);
         this._built = true;
@@ -3211,25 +3598,13 @@ class BuschLightCardEditor extends HTMLElement {
         const form = document.createElement('ha-form');
         form.hass = this._hass;
         form.data = this._sceneData(scene);
-        form.schema = [
-            { name: 'entity', selector: { entity: { filter: SCENE_FILTER } } },
-            {
-                name: '',
-                type: 'grid',
-                schema: [
-                    { name: 'title', selector: { text: {} } },
-                    { name: 'icon', selector: { icon: {} } }
-                ]
-            },
-            { name: 'color', selector: { color_rgb: {} } }
-        ];
-        form.computeLabel = (item) => {
-            if (item.name === 'entity') return this._label('edSectionScenes');
-            if (item.name === 'title') return this._label('edSceneTitle');
-            if (item.name === 'icon') return this._label('edIcon');
-            if (item.name === 'color') return this._label('edSceneColor');
-            return item.name;
-        };
+        form.schema = sceneRowSchema();
+        // A scene row's four fields share their names with the card's own
+        // options, so they get their own dictionary keys instead of borrowing
+        // the wrong helper.
+        const sceneKey = (item) => 'scene_' + item.name;
+        form.computeLabel = (item) => (item.name ? fieldLabel(this._hass, sceneKey(item)) : '');
+        form.computeHelper = (item) => (item.name ? fieldHelper(this._hass, sceneKey(item)) : '');
         form.addEventListener('value-changed', (event) => {
             event.stopPropagation();
             const value = event.detail.value;
@@ -3248,11 +3623,11 @@ class BuschLightCardEditor extends HTMLElement {
         const spacer = document.createElement('span');
         spacer.className = 'spacer';
         bar.appendChild(spacer);
-        bar.appendChild(this._sceneButton('mdi:arrow-up', 'edUp', index === 0, () => this._moveScene(index, -1)));
+        bar.appendChild(this._sceneButton('mdi:arrow-up', 'up', index === 0, () => this._moveScene(index, -1)));
         bar.appendChild(
-            this._sceneButton('mdi:arrow-down', 'edDown', index === total - 1, () => this._moveScene(index, 1))
+            this._sceneButton('mdi:arrow-down', 'down', index === total - 1, () => this._moveScene(index, 1))
         );
-        bar.appendChild(this._sceneButton('mdi:delete', 'edRemove', false, () => this._removeScene(index), true));
+        bar.appendChild(this._sceneButton('mdi:delete', 'remove', false, () => this._removeScene(index), true));
         row.appendChild(bar);
 
         return row;
@@ -3261,7 +3636,7 @@ class BuschLightCardEditor extends HTMLElement {
     _sceneButton(icon, labelKey, disabled, onClick, danger) {
         const button = document.createElement('button');
         button.className = 'iconbtn' + (danger ? ' danger' : '');
-        button.title = this._label(labelKey);
+        button.title = this._ui(labelKey);
         if (disabled) button.setAttribute('disabled', '');
         else button.addEventListener('click', onClick);
         const haIcon = document.createElement('ha-icon');
@@ -3311,17 +3686,17 @@ class BuschLightCardEditor extends HTMLElement {
         const fresh = matching.filter((id) => existing.indexOf(id) === -1);
 
         if (!matching.length) {
-            this._importBtn.textContent = this._label('edImportNone');
+            this._importBtn.textContent = this._ui('importNone');
             this._importBtn.setAttribute('disabled', '');
             return;
         }
         if (!fresh.length) {
-            this._importBtn.textContent = translate(this._hass, 'edImportAllThere', { n: matching.length });
+            this._importBtn.textContent = translate(this._hass, 'importAllThere', { n: matching.length });
             this._importBtn.setAttribute('disabled', '');
             return;
         }
         this._importBtn.removeAttribute('disabled');
-        this._importBtn.textContent = '↧  ' + translate(this._hass, 'edImportScenes', { n: fresh.length });
+        this._importBtn.textContent = '↧  ' + translate(this._hass, 'importScenes', { n: fresh.length });
     }
 
     _replaceScene(index, value) {
@@ -3369,14 +3744,14 @@ class BuschLightCardEditor extends HTMLElement {
         const head = document.createElement('div');
         head.className = 'head';
         const label = document.createElement('span');
-        label.textContent = this._label('edPreview') + ':';
+        label.textContent = this._ui('preview') + ':';
         head.appendChild(label);
         box.appendChild(head);
 
         if (!this._hass || !roots.length) {
             const none = document.createElement('span');
             none.className = 'count';
-            none.textContent = this._label('edPreviewNone');
+            none.textContent = this._ui('previewNone');
             head.appendChild(none);
             return;
         }
@@ -3393,11 +3768,11 @@ class BuschLightCardEditor extends HTMLElement {
         const count = document.createElement('span');
         count.className = 'count';
         count.textContent = follow
-            ? this._label('edPreviewCount')
+            ? this._ui('previewCount')
                   .split('{leaves}').join(result.leaves.length)
                   .split('{groups}').join(result.groups.length)
                   .split('{depth}').join(result.maxDepth)
-            : this._label('edPreviewFlat');
+            : this._ui('previewFlat');
         head.appendChild(count);
 
         const chips = document.createElement('div');
@@ -3420,22 +3795,22 @@ class BuschLightCardEditor extends HTMLElement {
         if (dead.length) {
             notes.push({
                 warn: true,
-                text: translate(this._hass, 'edPreviewDead', { n: dead.length })
+                text: translate(this._hass, 'previewDead', { n: dead.length })
             });
         }
         if (result.dropped.length) {
-            notes.push({ text: translate(this._hass, 'edPreviewDropped', { n: result.dropped.length }) });
+            notes.push({ text: translate(this._hass, 'previewDropped', { n: result.dropped.length }) });
         }
         if (result.truncated.length) {
             notes.push({
                 warn: true,
-                text: translate(this._hass, 'edPreviewTruncated', { list: result.truncated.join(', ') })
+                text: translate(this._hass, 'previewTruncated', { list: result.truncated.join(', ') })
             });
         }
         if (result.recovered.length) {
             notes.push({
                 warn: true,
-                text: translate(this._hass, 'edPreviewRecovered', { list: result.recovered.join(', ') })
+                text: translate(this._hass, 'previewRecovered', { list: result.recovered.join(', ') })
             });
         }
         notes.forEach((note) => {
@@ -3462,13 +3837,24 @@ BuschLightCard.__internals.toSnakeConfig = toSnakeConfig;
 BuschLightCard.__internals.CONFIG_DEFAULTS = CONFIG_DEFAULTS;
 BuschLightCard.__internals.hexToRgbArray = hexToRgbArray;
 BuschLightCard.__internals.rgbArrayToHex = rgbArrayToHex;
+BuschLightCard.__internals.SCHEMA = SCHEMA_BUSCH_LIGHT_CARD;
+BuschLightCard.__internals.TEXTE = TEXTE_BUSCH_LIGHT_CARD;
+BuschLightCard.__internals.SCHEMA_EXCEPTIONS = SCHEMA_EXCEPTIONS;
+BuschLightCard.__internals.sliceSchema = sliceSchema;
+BuschLightCard.__internals.fieldLabel = fieldLabel;
+BuschLightCard.__internals.fieldHelper = fieldHelper;
 
 window.customCards = window.customCards || [];
 if (!window.customCards.some((c) => c.type === CARD_TAG)) {
+    // The picker reads this at load time, long before `hass` exists — so the
+    // language cannot come from `hass.locale.language` here. `textTable(null)`
+    // falls through to `navigator.language`, which is what the frontend
+    // itself uses at this point.
+    const picker = textTable(null);
     window.customCards.push({
         type: CARD_TAG,
-        name: 'Busch Light Card',
-        description: 'Hue-like light and scene control. Resolves nested groups on every level and survives unavailable entities.',
+        name: picker.name,
+        description: picker.description,
         preview: true,
         documentationURL: 'https://github.com/luukkii123/ha-busch-lightcards'
     });
