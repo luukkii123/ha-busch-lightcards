@@ -3353,10 +3353,42 @@ function rgbArrayToHex(rgb) {
     );
 }
 
+function sameEditorValue(a, b) {
+    if (a === b) return true;
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+    if (Array.isArray(a) !== Array.isArray(b)) return false;
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    return keysA.length === keysB.length && keysA.every(
+        (key) => Object.prototype.hasOwnProperty.call(b, key) && sameEditorValue(a[key], b[key])
+    );
+}
+
+function copyEditorValue(value) {
+    if (Array.isArray(value)) return value.map(copyEditorValue);
+    if (value && typeof value === 'object') {
+        const copy = {};
+        Object.keys(value).forEach((key) => (copy[key] = copyEditorValue(value[key])));
+        return copy;
+    }
+    return value;
+}
+
+function changedEditorFields(previous, value) {
+    const patch = {};
+    new Set(Object.keys(previous || {}).concat(Object.keys(value || {}))).forEach((key) => {
+        if (!sameEditorValue(previous && previous[key], value && value[key])) patch[key] = value && value[key];
+    });
+    return patch;
+}
+
 class BuschLightCardEditor extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
+        ['keydown', 'keyup'].forEach((type) => {
+            this.shadowRoot.addEventListener(type, (event) => event.stopPropagation());
+        });
         this._config = {};
         this._hass = null;
         this._built = false;
@@ -3365,7 +3397,9 @@ class BuschLightCardEditor extends HTMLElement {
     }
 
     setConfig(config) {
-        this._config = toSnakeConfig(config || {});
+        const next = toSnakeConfig(config || {});
+        if (sameEditorValue(this._config, next)) return;
+        this._config = next;
         this._render();
     }
 
@@ -3483,13 +3517,17 @@ class BuschLightCardEditor extends HTMLElement {
         form.hass = this._hass;
         form.schema = sliceSchema(this._hass, names);
         form.data = this._data(names);
+        form.__lastValue = copyEditorValue(form.data);
         // Rule 3: every field carries a label AND a helper, in both languages.
         // Grid wrappers have no name and therefore neither.
         form.computeLabel = (item) => (item.name ? fieldLabel(this._hass, item.name) : '');
         form.computeHelper = (item) => (item.name ? fieldHelper(this._hass, item.name) : '');
         form.addEventListener('value-changed', (event) => {
             event.stopPropagation();
-            this._emit(event.detail.value);
+            const value = event.detail.value || {};
+            const patch = changedEditorFields(form.__lastValue, value);
+            form.__lastValue = copyEditorValue(value);
+            if (Object.keys(patch).length) this._emit(patch);
         });
         form.__names = names;
         return form;
@@ -3590,6 +3628,7 @@ class BuschLightCardEditor extends HTMLElement {
             if (!form || !form.__names) return;
             if (focused && (focused === form || form.contains(focused))) return;
             form.data = this._data(form.__names);
+            form.__lastValue = copyEditorValue(form.data);
         });
     }
 
@@ -3604,8 +3643,11 @@ class BuschLightCardEditor extends HTMLElement {
         const scenes = Array.isArray(this._config.scenes) ? this._config.scenes : [];
         if (!force && scenes.length === this._sceneCount) {
             if (this._sceneForms) {
+                const focused = this.shadowRoot.activeElement;
                 this._sceneForms.forEach((form, index) => {
+                    if (focused === form || form.contains(focused)) return;
                     form.data = this._sceneData(scenes[index]);
+                    form.__lastValue = copyEditorValue(form.data);
                 });
             }
             return;
@@ -3635,6 +3677,7 @@ class BuschLightCardEditor extends HTMLElement {
         const form = document.createElement('ha-form');
         form.hass = this._hass;
         form.data = this._sceneData(scene);
+        form.__lastValue = copyEditorValue(form.data);
         form.schema = sceneRowSchema();
         // A scene row's four fields share their names with the card's own
         // options, so they get their own dictionary keys instead of borrowing
@@ -3644,12 +3687,17 @@ class BuschLightCardEditor extends HTMLElement {
         form.computeHelper = (item) => (item.name ? fieldHelper(this._hass, sceneKey(item)) : '');
         form.addEventListener('value-changed', (event) => {
             event.stopPropagation();
-            const value = event.detail.value;
-            const next = { entity: value.entity || '' };
-            if (value.title) next.title = value.title;
-            if (value.icon) next.icon = value.icon;
-            const hex = rgbArrayToHex(value.color);
-            if (hex) next.color = hex;
+            const value = event.detail.value || {};
+            const patch = changedEditorFields(form.__lastValue, value);
+            form.__lastValue = copyEditorValue(value);
+            if (!Object.keys(patch).length) return;
+            const current = (this._config.scenes || [])[index];
+            const next = typeof current === 'string' ? { entity: current } : Object.assign({}, current);
+            Object.keys(patch).forEach((key) => {
+                const updated = key === 'color' ? rgbArrayToHex(patch[key]) : patch[key];
+                if (updated === '' || updated === null || updated === undefined) delete next[key];
+                else next[key] = updated;
+            });
             this._replaceScene(index, next);
         });
         row.appendChild(form);

@@ -112,7 +112,7 @@ PAGE = """<!doctype html>
     get hass() { return this._hass; }
     set schema(v) { this._schema = v; this._paint(); }
     get schema() { return this._schema; }
-    set data(v) { this._data = v; this._paint(); }
+    set data(v) { this.dataWrites = (this.dataWrites || 0) + 1; this._data = v; this._paint(); }
     get data() { return this._data; }
     set computeLabel(fn) { this._computeLabel = fn; this._paint(); }
     get computeLabel() { return this._computeLabel; }
@@ -134,8 +134,9 @@ PAGE = """<!doctype html>
     }
     /** Simulates the user changing one field. */
     change(patch) {
+      this._data = Object.assign({}, this._data, patch);
       this.dispatchEvent(new CustomEvent('value-changed', {
-        detail: { value: Object.assign({}, this._data, patch) },
+        detail: { value: this._data },
         bubbles: true, composed: true
       }));
     }
@@ -1668,6 +1669,142 @@ def main():
               not helfer["ohneHelper"] and len(helfer["paare"]) >= 18,
               json.dumps({"ohne": helfer["ohneHelper"],
                           "anzahl": len(helfer["paare"])}, ensure_ascii=False))
+
+        # HA hands emitted configs straight back to setConfig. A focused
+        # ha-form can still hold an older snapshot of neighboring fields.
+        editor_vertrag = page.evaluate(
+            """async () => {
+                const settle = () => new Promise(r => setTimeout(r, 0));
+                const ed = customElements.get('busch-light-card').getConfigElement();
+                document.getElementById('stack').replaceChildren(ed);
+                ed.hass = window.makeHass({});
+                const original = { type: 'custom:busch-light-card', entity: 'light.one',
+                    title: 'Original', scenes: [{ entity: 'scene.one', title: 'Old',
+                        color: '#112233', transition: 5 }, { entity: 'scene.two' }] };
+                ed.setConfig(original);
+                await settle(); await settle();
+                const sr = ed.shadowRoot;
+                const scene = sr.querySelector('.scene-row ha-form');
+                const basic = Array.from(sr.querySelectorAll('ha-form'))
+                    .find(f => f.fields().some(x => x.name === 'title'));
+                let emitted;
+                let events = 0;
+                ed.addEventListener('config-changed', e => {
+                    events++;
+                    emitted = structuredClone(e.detail.config);
+                    ed.setConfig(e.detail.config);
+                });
+                scene.tabIndex = 0;
+                scene.focus();
+                const initialSceneWrites = scene.dataWrites || 0;
+                let escaped = 0;
+                const shortcut = () => escaped++;
+                document.addEventListener('keydown', shortcut);
+                document.addEventListener('keyup', shortcut);
+                const down = new KeyboardEvent('keydown', {key:'z', ctrlKey:true,
+                    bubbles:true, composed:true, cancelable:true});
+                const up = new KeyboardEvent('keyup', {key:'z', ctrlKey:true,
+                    bubbles:true, composed:true, cancelable:true});
+                scene.dispatchEvent(down);
+                scene.dispatchEvent(up);
+                document.removeEventListener('keydown', shortcut);
+                document.removeEventListener('keyup', shortcut);
+                const focusBefore = sr.activeElement === scene;
+                scene.change({ title: 'New' });
+                await settle();
+                const first = structuredClone(emitted);
+                const focusAfter = sr.activeElement === scene;
+                const sceneWritesAfter = scene.dataWrites || 0;
+                ed.setConfig({ ...first, slider: false, title: 'External' });
+                await settle();
+                scene.change({ icon: 'mdi:star' });
+                await settle();
+                const second = structuredClone(emitted);
+                basic.tabIndex = 0;
+                basic.focus();
+                ed.setConfig({ ...second, title: 'Elsewhere' });
+                await settle();
+                basic.change({ entity: 'light.changed' });
+                await settle();
+                const third = structuredClone(emitted);
+                const beforeSet = events;
+                ed.setConfig(third);
+                await settle();
+                return { original, first, second, third, eventsAfterSet: events,
+                    beforeSet, focusBefore, focusAfter, initialSceneWrites,
+                    sceneWritesAfter, escaped, prevented: down.defaultPrevented || up.defaultPrevented };
+            }""")
+        report["editorVertrag"] = editor_vertrag
+        check("editor preserves scene fields and neighboring edits through HA config echo",
+              editor_vertrag["first"]["scenes"][0].get("transition") == 5
+              and editor_vertrag["first"]["scenes"][0].get("color") == "#112233"
+              and editor_vertrag["second"].get("slider") is False
+              and editor_vertrag["second"].get("title") == "External"
+              and editor_vertrag["second"]["scenes"][0].get("title") == "New"
+              and editor_vertrag["third"].get("title") == "Elsewhere"
+              and editor_vertrag["third"].get("entity") == "light.changed"
+              and editor_vertrag["original"]["scenes"][0]["title"] == "Old",
+              json.dumps(editor_vertrag, ensure_ascii=False)[:900])
+        check("editor keeps scene focus and blocks only shortcut propagation",
+              editor_vertrag["focusBefore"] and editor_vertrag["focusAfter"]
+              and editor_vertrag["sceneWritesAfter"] == editor_vertrag["initialSceneWrites"]
+              and editor_vertrag["escaped"] == 0 and not editor_vertrag["prevented"]
+              and editor_vertrag["eventsAfterSet"] == editor_vertrag["beforeSet"],
+              json.dumps(editor_vertrag, ensure_ascii=False)[:900])
+
+        # The browser stub cannot judge HA's native selectors, but it can
+        # catch our own editor/scene-row overflow at the required widths.
+        editor_layout = []
+        for breite in (320, 480, 960):
+            for thema in ("hell", "dunkel"):
+                page.set_viewport_size({"width": breite, "height": 1200})
+                page.evaluate("""(dark) => {
+                    document.body.style.padding = '0';
+                    document.body.style.background = dark ? '#121212' : '#f2f4f7';
+                    document.body.style.color = dark ? '#eee' : '#222';
+                    const stack = document.getElementById('stack');
+                    stack.style.maxWidth = 'none';
+                    stack.style.width = '100%';
+                    const vars = dark
+                        ? { '--card-background-color': '#1c1c1c', '--primary-text-color': '#eee',
+                            '--secondary-text-color': '#aaa', '--divider-color': '#555',
+                            '--primary-color': '#7ac8ff' }
+                        : { '--card-background-color': '#fff', '--primary-text-color': '#222',
+                            '--secondary-text-color': '#666', '--divider-color': '#ddd',
+                            '--primary-color': '#03a9f4' };
+                    for (const [name, value] of Object.entries(vars))
+                        document.documentElement.style.setProperty(name, value);
+                }""", thema == "dunkel")
+                page.locator('busch-light-card-editor').screenshot(
+                    path=str(out_dir / f"editor-{breite}-{thema}.png"))
+                messung = page.evaluate("""() => {
+                    const host = document.querySelector('busch-light-card-editor');
+                    const root = host.shadowRoot;
+                    const width = host.getBoundingClientRect().width;
+                    const bad = Array.from(root.querySelectorAll(
+                        '.ed, details, .preview, .scene-row, .scene-bar, .addbtn, .iconbtn'))
+                        .filter(el => {
+                            const box = el.getBoundingClientRect();
+                            return box.right > width + 1 || box.left < -1;
+                        }).map(el => el.className || el.tagName);
+                    return { width, scrollWidth: host.scrollWidth, bad };
+                }""")
+                editor_layout.append({"breite": breite, "thema": thema, **messung})
+        report["editorLayout"] = editor_layout
+        check("editor and scene rows fit 320, 480 and 960 px in both themes",
+              all(x["scrollWidth"] <= x["width"] + 1 and not x["bad"]
+                  for x in editor_layout), json.dumps(editor_layout, ensure_ascii=False))
+        page.evaluate("""() => {
+            document.body.style.padding = '';
+            document.body.style.background = '';
+            document.body.style.color = '';
+            const stack = document.getElementById('stack');
+            stack.style.maxWidth = '';
+            stack.style.width = '';
+            for (const name of ['--card-background-color', '--primary-text-color',
+                    '--secondary-text-color', '--divider-color', '--primary-color'])
+                document.documentElement.style.removeProperty(name);
+        }""")
 
         # ------------------------------------------------------------------
         # 8c. The three things fix round 1 was about
