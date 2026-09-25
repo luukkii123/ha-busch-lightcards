@@ -1,5 +1,6 @@
 {
   "name": "Busch Light Cards",
   "filename": "busch-lightcards.js",
+  "homeassistant": "2026.9.3",
   "render_readme": true
 }

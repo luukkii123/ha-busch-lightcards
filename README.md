@@ -3,6 +3,10 @@
 A Hue-like light and scene card for Home Assistant. One card:
 **`busch-light-card`**.
 
+Version 0.8.0 requires Home Assistant **2026.9.3** or newer. Its card and
+editor were tested natively on 2026.9.3; compatibility with earlier HA
+versions has not been established for this release.
+
 ![The card driving a nested light group](docs/images/card-on.png)
 
 The looks follow [lovelace-hue-like-light-card][upstream] by Gh61 — a big tile
@@ -279,6 +283,10 @@ of the stub.
 native-editor result is recorded below.
 
 ### Geprüft / Checked — 25.09.2026, `CARD_VERSION` 0.8.0
+
+HACS declares Home Assistant 2026.9.3 as the minimum for this candidate.
+The native check below ran on that version; it does not establish behavior
+on later HA releases.
 
 | Check | Command or method | Result |
 | --- | --- | --- |
