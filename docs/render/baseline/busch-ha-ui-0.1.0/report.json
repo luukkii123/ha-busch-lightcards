@@ -1,0 +1,2388 @@
+{
+  "contract": "Busch HA UI 0.1.0",
+  "cases": [
+    {
+      "width": 320,
+      "theme": "light",
+      "state": "on",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "4 von 5 an1",
+        "statusCenter": 86,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": {
+          "width": 288,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-on-320-light.png"
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "state": "off",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus1",
+        "statusCenter": 86,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": {
+          "width": 288,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-off-320-light.png"
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "state": "success",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "4 von 6 an",
+        "statusCenter": 86,
+        "tone": "success",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": {
+          "width": 288,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-success-320-light.png"
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "state": "neutral",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus",
+        "statusCenter": 86,
+        "tone": "neutral",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": {
+          "width": 288,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-neutral-320-light.png"
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "state": "custom_color",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgba(255, 255, 255, 0.85)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus",
+        "statusCenter": 86,
+        "tone": "neutral",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": {
+          "width": 288,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(17, 34, 51)",
+        "accent": "rgb(17, 34, 51)"
+      },
+      "screenshot": "card-custom_color-320-light.png"
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "state": "long",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Sehr lange Demo-Lichtgruppe mit vielen Räumen Sehr lange Demo-Lichtgruppe mit vielen Räumen Sehr lange Demo-Lichtgruppe mit vielen Räumen ",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Vier Testlampen leuchten; dieser künstliche Status ist sehr lang Vier Testlampen leuchten; dieser künstliche Status ist sehr lang Vier Testlampen leuchten; dieser künstliche Status ist sehr lang 1",
+        "statusCenter": 86,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": {
+          "width": 288,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-long-320-light.png"
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "state": "unavailable",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Keine Lampe erreichbar",
+        "statusCenter": 86,
+        "tone": "unavailable",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-unavailable-320-light.png"
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "state": "empty",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "group.empty",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Keine Lampe aufgelöst",
+        "statusCenter": 86,
+        "tone": "unknown",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-empty-320-light.png"
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "state": "loading",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "light.demo_group",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Lampen werden geladen",
+        "statusCenter": 86,
+        "tone": "unknown",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-loading-320-light.png"
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "state": "error",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": null,
+        "titleColor": null,
+        "titleEllipsis": null,
+        "status": null,
+        "statusCenter": null,
+        "tone": null,
+        "warnTextWidth": null,
+        "toggle": null,
+        "slider": null,
+        "tapRole": null,
+        "tapTabIndex": null,
+        "error": "Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\" eine Entität wählen.",
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-error-320-light.png"
+    },
+    {
+      "width": 320,
+      "theme": "light",
+      "state": "editor-long",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "rows": 1,
+        "actions": [
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 294,
+            "height": 44
+          },
+          {
+            "width": 294,
+            "height": 44
+          }
+        ]
+      },
+      "screenshot": "editor-long-320-light.png"
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "state": "on",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "4 von 5 an1",
+        "statusCenter": 86,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": {
+          "width": 288,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-on-320-dark.png"
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "state": "off",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus1",
+        "statusCenter": 86,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": {
+          "width": 288,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-off-320-dark.png"
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "state": "success",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "4 von 6 an",
+        "statusCenter": 86,
+        "tone": "success",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": {
+          "width": 288,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-success-320-dark.png"
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "state": "neutral",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus",
+        "statusCenter": 86,
+        "tone": "neutral",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": {
+          "width": 288,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-neutral-320-dark.png"
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "state": "custom_color",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgba(255, 255, 255, 0.85)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus",
+        "statusCenter": 86,
+        "tone": "neutral",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": {
+          "width": 288,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(17, 34, 51)",
+        "accent": "rgb(17, 34, 51)"
+      },
+      "screenshot": "card-custom_color-320-dark.png"
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "state": "long",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Sehr lange Demo-Lichtgruppe mit vielen Räumen Sehr lange Demo-Lichtgruppe mit vielen Räumen Sehr lange Demo-Lichtgruppe mit vielen Räumen ",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Vier Testlampen leuchten; dieser künstliche Status ist sehr lang Vier Testlampen leuchten; dieser künstliche Status ist sehr lang Vier Testlampen leuchten; dieser künstliche Status ist sehr lang 1",
+        "statusCenter": 86,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": {
+          "width": 288,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-long-320-dark.png"
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "state": "unavailable",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Keine Lampe erreichbar",
+        "statusCenter": 86,
+        "tone": "unavailable",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-unavailable-320-dark.png"
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "state": "empty",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "group.empty",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Keine Lampe aufgelöst",
+        "statusCenter": 86,
+        "tone": "unknown",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-empty-320-dark.png"
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "state": "loading",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "light.demo_group",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Lampen werden geladen",
+        "statusCenter": 86,
+        "tone": "unknown",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 86
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-loading-320-dark.png"
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "state": "error",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "pageScroll": 320,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": null,
+        "titleColor": null,
+        "titleEllipsis": null,
+        "status": null,
+        "statusCenter": null,
+        "tone": null,
+        "warnTextWidth": null,
+        "toggle": null,
+        "slider": null,
+        "tapRole": null,
+        "tapTabIndex": null,
+        "error": "Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\" eine Entität wählen.",
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-error-320-dark.png"
+    },
+    {
+      "width": 320,
+      "theme": "dark",
+      "state": "editor-long",
+      "ok": true,
+      "metrics": {
+        "width": 320,
+        "scrollWidth": 320,
+        "rows": 1,
+        "actions": [
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 294,
+            "height": 44
+          },
+          {
+            "width": 294,
+            "height": 44
+          }
+        ]
+      },
+      "screenshot": "editor-long-320-dark.png"
+    },
+    {
+      "width": 480,
+      "theme": "light",
+      "state": "on",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "4 von 5 an1",
+        "statusCenter": 73,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 49
+        },
+        "slider": {
+          "width": 448,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-on-480-light.png"
+    },
+    {
+      "width": 480,
+      "theme": "light",
+      "state": "off",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus1",
+        "statusCenter": 73,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 49
+        },
+        "slider": {
+          "width": 448,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-off-480-light.png"
+    },
+    {
+      "width": 480,
+      "theme": "light",
+      "state": "success",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "4 von 6 an",
+        "statusCenter": 72,
+        "tone": "success",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": {
+          "width": 448,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-success-480-light.png"
+    },
+    {
+      "width": 480,
+      "theme": "light",
+      "state": "neutral",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus",
+        "statusCenter": 72,
+        "tone": "neutral",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": {
+          "width": 448,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-neutral-480-light.png"
+    },
+    {
+      "width": 480,
+      "theme": "light",
+      "state": "custom_color",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgba(255, 255, 255, 0.85)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus",
+        "statusCenter": 72,
+        "tone": "neutral",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": {
+          "width": 448,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(17, 34, 51)",
+        "accent": "rgb(17, 34, 51)"
+      },
+      "screenshot": "card-custom_color-480-light.png"
+    },
+    {
+      "width": 480,
+      "theme": "light",
+      "state": "long",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Sehr lange Demo-Lichtgruppe mit vielen Räumen Sehr lange Demo-Lichtgruppe mit vielen Räumen Sehr lange Demo-Lichtgruppe mit vielen Räumen ",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Vier Testlampen leuchten; dieser künstliche Status ist sehr lang Vier Testlampen leuchten; dieser künstliche Status ist sehr lang Vier Testlampen leuchten; dieser künstliche Status ist sehr lang 1",
+        "statusCenter": 73,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 49
+        },
+        "slider": {
+          "width": 448,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-long-480-light.png"
+    },
+    {
+      "width": 480,
+      "theme": "light",
+      "state": "unavailable",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Keine Lampe erreichbar",
+        "statusCenter": 72,
+        "tone": "unavailable",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-unavailable-480-light.png"
+    },
+    {
+      "width": 480,
+      "theme": "light",
+      "state": "empty",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "group.empty",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Keine Lampe aufgelöst",
+        "statusCenter": 72,
+        "tone": "unknown",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-empty-480-light.png"
+    },
+    {
+      "width": 480,
+      "theme": "light",
+      "state": "loading",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "light.demo_group",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Lampen werden geladen",
+        "statusCenter": 72,
+        "tone": "unknown",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-loading-480-light.png"
+    },
+    {
+      "width": 480,
+      "theme": "light",
+      "state": "error",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": null,
+        "titleColor": null,
+        "titleEllipsis": null,
+        "status": null,
+        "statusCenter": null,
+        "tone": null,
+        "warnTextWidth": null,
+        "toggle": null,
+        "slider": null,
+        "tapRole": null,
+        "tapTabIndex": null,
+        "error": "Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\" eine Entität wählen.",
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-error-480-light.png"
+    },
+    {
+      "width": 480,
+      "theme": "light",
+      "state": "editor-long",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "rows": 1,
+        "actions": [
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 454,
+            "height": 44
+          },
+          {
+            "width": 454,
+            "height": 44
+          }
+        ]
+      },
+      "screenshot": "editor-long-480-light.png"
+    },
+    {
+      "width": 480,
+      "theme": "dark",
+      "state": "on",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "4 von 5 an1",
+        "statusCenter": 73,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 49
+        },
+        "slider": {
+          "width": 448,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-on-480-dark.png"
+    },
+    {
+      "width": 480,
+      "theme": "dark",
+      "state": "off",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus1",
+        "statusCenter": 73,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 49
+        },
+        "slider": {
+          "width": 448,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-off-480-dark.png"
+    },
+    {
+      "width": 480,
+      "theme": "dark",
+      "state": "success",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "4 von 6 an",
+        "statusCenter": 72,
+        "tone": "success",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": {
+          "width": 448,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-success-480-dark.png"
+    },
+    {
+      "width": 480,
+      "theme": "dark",
+      "state": "neutral",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus",
+        "statusCenter": 72,
+        "tone": "neutral",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": {
+          "width": 448,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-neutral-480-dark.png"
+    },
+    {
+      "width": 480,
+      "theme": "dark",
+      "state": "custom_color",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgba(255, 255, 255, 0.85)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus",
+        "statusCenter": 72,
+        "tone": "neutral",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": {
+          "width": 448,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(17, 34, 51)",
+        "accent": "rgb(17, 34, 51)"
+      },
+      "screenshot": "card-custom_color-480-dark.png"
+    },
+    {
+      "width": 480,
+      "theme": "dark",
+      "state": "long",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Sehr lange Demo-Lichtgruppe mit vielen Räumen Sehr lange Demo-Lichtgruppe mit vielen Räumen Sehr lange Demo-Lichtgruppe mit vielen Räumen ",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Vier Testlampen leuchten; dieser künstliche Status ist sehr lang Vier Testlampen leuchten; dieser künstliche Status ist sehr lang Vier Testlampen leuchten; dieser künstliche Status ist sehr lang 1",
+        "statusCenter": 73,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 49
+        },
+        "slider": {
+          "width": 448,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-long-480-dark.png"
+    },
+    {
+      "width": 480,
+      "theme": "dark",
+      "state": "unavailable",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Keine Lampe erreichbar",
+        "statusCenter": 72,
+        "tone": "unavailable",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-unavailable-480-dark.png"
+    },
+    {
+      "width": 480,
+      "theme": "dark",
+      "state": "empty",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "group.empty",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Keine Lampe aufgelöst",
+        "statusCenter": 72,
+        "tone": "unknown",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-empty-480-dark.png"
+    },
+    {
+      "width": 480,
+      "theme": "dark",
+      "state": "loading",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "light.demo_group",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Lampen werden geladen",
+        "statusCenter": 72,
+        "tone": "unknown",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-loading-480-dark.png"
+    },
+    {
+      "width": 480,
+      "theme": "dark",
+      "state": "error",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "pageScroll": 480,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": null,
+        "titleColor": null,
+        "titleEllipsis": null,
+        "status": null,
+        "statusCenter": null,
+        "tone": null,
+        "warnTextWidth": null,
+        "toggle": null,
+        "slider": null,
+        "tapRole": null,
+        "tapTabIndex": null,
+        "error": "Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\" eine Entität wählen.",
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-error-480-dark.png"
+    },
+    {
+      "width": 480,
+      "theme": "dark",
+      "state": "editor-long",
+      "ok": true,
+      "metrics": {
+        "width": 480,
+        "scrollWidth": 480,
+        "rows": 1,
+        "actions": [
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 454,
+            "height": 44
+          },
+          {
+            "width": 454,
+            "height": 44
+          }
+        ]
+      },
+      "screenshot": "editor-long-480-dark.png"
+    },
+    {
+      "width": 960,
+      "theme": "light",
+      "state": "on",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "4 von 5 an1",
+        "statusCenter": 73,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 49
+        },
+        "slider": {
+          "width": 928,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-on-960-light.png"
+    },
+    {
+      "width": 960,
+      "theme": "light",
+      "state": "off",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus1",
+        "statusCenter": 73,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 49
+        },
+        "slider": {
+          "width": 928,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-off-960-light.png"
+    },
+    {
+      "width": 960,
+      "theme": "light",
+      "state": "success",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "4 von 6 an",
+        "statusCenter": 72,
+        "tone": "success",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": {
+          "width": 928,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-success-960-light.png"
+    },
+    {
+      "width": 960,
+      "theme": "light",
+      "state": "neutral",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus",
+        "statusCenter": 72,
+        "tone": "neutral",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": {
+          "width": 928,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-neutral-960-light.png"
+    },
+    {
+      "width": 960,
+      "theme": "light",
+      "state": "custom_color",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgba(255, 255, 255, 0.85)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus",
+        "statusCenter": 72,
+        "tone": "neutral",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": {
+          "width": 928,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(17, 34, 51)",
+        "accent": "rgb(17, 34, 51)"
+      },
+      "screenshot": "card-custom_color-960-light.png"
+    },
+    {
+      "width": 960,
+      "theme": "light",
+      "state": "long",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Sehr lange Demo-Lichtgruppe mit vielen Räumen Sehr lange Demo-Lichtgruppe mit vielen Räumen Sehr lange Demo-Lichtgruppe mit vielen Räumen ",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Vier Testlampen leuchten; dieser künstliche Status ist sehr lang Vier Testlampen leuchten; dieser künstliche Status ist sehr lang Vier Testlampen leuchten; dieser künstliche Status ist sehr lang 1",
+        "statusCenter": 73,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 49
+        },
+        "slider": {
+          "width": 928,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-long-960-light.png"
+    },
+    {
+      "width": 960,
+      "theme": "light",
+      "state": "unavailable",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Keine Lampe erreichbar",
+        "statusCenter": 72,
+        "tone": "unavailable",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-unavailable-960-light.png"
+    },
+    {
+      "width": 960,
+      "theme": "light",
+      "state": "empty",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "group.empty",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Keine Lampe aufgelöst",
+        "statusCenter": 72,
+        "tone": "unknown",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-empty-960-light.png"
+    },
+    {
+      "width": 960,
+      "theme": "light",
+      "state": "loading",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "light.demo_group",
+        "titleColor": "rgb(23, 33, 43)",
+        "titleEllipsis": "ellipsis",
+        "status": "Lampen werden geladen",
+        "statusCenter": 72,
+        "tone": "unknown",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-loading-960-light.png"
+    },
+    {
+      "width": 960,
+      "theme": "light",
+      "state": "error",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": null,
+        "titleColor": null,
+        "titleEllipsis": null,
+        "status": null,
+        "statusCenter": null,
+        "tone": null,
+        "warnTextWidth": null,
+        "toggle": null,
+        "slider": null,
+        "tapRole": null,
+        "tapTabIndex": null,
+        "error": "Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\" eine Entität wählen.",
+        "background": "rgb(255, 255, 255)",
+        "accent": "#087bc1"
+      },
+      "screenshot": "card-error-960-light.png"
+    },
+    {
+      "width": 960,
+      "theme": "light",
+      "state": "editor-long",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "rows": 1,
+        "actions": [
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 934,
+            "height": 44
+          },
+          {
+            "width": 934,
+            "height": 44
+          }
+        ]
+      },
+      "screenshot": "editor-long-960-light.png"
+    },
+    {
+      "width": 960,
+      "theme": "dark",
+      "state": "on",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "4 von 5 an1",
+        "statusCenter": 73,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 49
+        },
+        "slider": {
+          "width": 928,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-on-960-dark.png"
+    },
+    {
+      "width": 960,
+      "theme": "dark",
+      "state": "off",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus1",
+        "statusCenter": 73,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 49
+        },
+        "slider": {
+          "width": 928,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-off-960-dark.png"
+    },
+    {
+      "width": 960,
+      "theme": "dark",
+      "state": "success",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "4 von 6 an",
+        "statusCenter": 72,
+        "tone": "success",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": {
+          "width": 928,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-success-960-dark.png"
+    },
+    {
+      "width": 960,
+      "theme": "dark",
+      "state": "neutral",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus",
+        "statusCenter": 72,
+        "tone": "neutral",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": {
+          "width": 928,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-neutral-960-dark.png"
+    },
+    {
+      "width": 960,
+      "theme": "dark",
+      "state": "custom_color",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgba(255, 255, 255, 0.85)",
+        "titleEllipsis": "ellipsis",
+        "status": "Alle aus",
+        "statusCenter": 72,
+        "tone": "neutral",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": {
+          "width": 928,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": -1,
+          "label": "Helligkeit"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(17, 34, 51)",
+        "accent": "rgb(17, 34, 51)"
+      },
+      "screenshot": "card-custom_color-960-dark.png"
+    },
+    {
+      "width": 960,
+      "theme": "dark",
+      "state": "long",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Sehr lange Demo-Lichtgruppe mit vielen Räumen Sehr lange Demo-Lichtgruppe mit vielen Räumen Sehr lange Demo-Lichtgruppe mit vielen Räumen ",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Vier Testlampen leuchten; dieser künstliche Status ist sehr lang Vier Testlampen leuchten; dieser künstliche Status ist sehr lang Vier Testlampen leuchten; dieser künstliche Status ist sehr lang 1",
+        "statusCenter": 73,
+        "tone": "warning",
+        "warnTextWidth": 6.6875,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 49
+        },
+        "slider": {
+          "width": 928,
+          "height": 44,
+          "role": "slider",
+          "tabIndex": 0,
+          "label": "68 %"
+        },
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 240, 220) 67%, rgb(255, 180, 55) 93%, rgb(255, 180, 55) 100%)"
+      },
+      "screenshot": "card-long-960-dark.png"
+    },
+    {
+      "width": 960,
+      "theme": "dark",
+      "state": "unavailable",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "Demo-Lichtgruppe",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Keine Lampe erreichbar",
+        "statusCenter": 72,
+        "tone": "unavailable",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-unavailable-960-dark.png"
+    },
+    {
+      "width": 960,
+      "theme": "dark",
+      "state": "empty",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "group.empty",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Keine Lampe aufgelöst",
+        "statusCenter": 72,
+        "tone": "unknown",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-empty-960-dark.png"
+    },
+    {
+      "width": 960,
+      "theme": "dark",
+      "state": "loading",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": "light.demo_group",
+        "titleColor": "rgb(243, 245, 247)",
+        "titleEllipsis": "ellipsis",
+        "status": "Lampen werden geladen",
+        "statusCenter": 72,
+        "tone": "unknown",
+        "warnTextWidth": 0,
+        "toggle": {
+          "width": 44,
+          "height": 44,
+          "center": 48
+        },
+        "slider": null,
+        "tapRole": "button",
+        "tapTabIndex": 0,
+        "error": null,
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-loading-960-dark.png"
+    },
+    {
+      "width": 960,
+      "theme": "dark",
+      "state": "error",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "pageScroll": 960,
+        "hasCard": true,
+        "contract": "Busch HA UI 0.1.0",
+        "title": null,
+        "titleColor": null,
+        "titleEllipsis": null,
+        "status": null,
+        "statusCenter": null,
+        "tone": null,
+        "warnTextWidth": null,
+        "toggle": null,
+        "slider": null,
+        "tapRole": null,
+        "tapTabIndex": null,
+        "error": "Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\" eine Entität wählen.",
+        "background": "rgb(32, 43, 53)",
+        "accent": "#75b8ee"
+      },
+      "screenshot": "card-error-960-dark.png"
+    },
+    {
+      "width": 960,
+      "theme": "dark",
+      "state": "editor-long",
+      "ok": true,
+      "metrics": {
+        "width": 960,
+        "scrollWidth": 960,
+        "rows": 1,
+        "actions": [
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 44,
+            "height": 44
+          },
+          {
+            "width": 934,
+            "height": 44
+          },
+          {
+            "width": 934,
+            "height": 44
+          }
+        ]
+      },
+      "screenshot": "editor-long-960-dark.png"
+    }
+  ],
+  "errors": [],
+  "keyboard": {
+    "tapCalls": 1,
+    "statusCalls": 2,
+    "slider": {
+      "calls": 4,
+      "value": "78",
+      "services": [
+        {
+          "domain": "light",
+          "service": "turn_off",
+          "data": {
+            "entity_id": [
+              "light.demo_1",
+              "light.demo_2",
+              "light.demo_3",
+              "light.demo_4",
+              "light.demo_5"
+            ]
+          }
+        },
+        {
+          "domain": "light",
+          "service": "turn_off",
+          "data": {
+            "entity_id": [
+              "light.demo_1",
+              "light.demo_2",
+              "light.demo_3",
+              "light.demo_4",
+              "light.demo_5"
+            ]
+          }
+        },
+        {
+          "domain": "light",
+          "service": "turn_on",
+          "data": {
+            "entity_id": [
+              "light.demo_2",
+              "light.demo_3",
+              "light.demo_4",
+              "light.demo_5"
+            ],
+            "brightness_pct": 73
+          }
+        },
+        {
+          "domain": "light",
+          "service": "turn_on",
+          "data": {
+            "entity_id": [
+              "light.demo_2",
+              "light.demo_3",
+              "light.demo_4",
+              "light.demo_5"
+            ],
+            "brightness_pct": 78
+          }
+        }
+      ]
+    },
+    "toggleCalls": 5,
+    "ok": true
+  },
+  "passed": 66,
+  "failed": 0
+}

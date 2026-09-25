@@ -572,6 +572,9 @@ def main():
                         fill: sr.querySelector('.slider .fill').style.width,
                         sliderLabel: sr.querySelector('.slider .label').textContent,
                         background: getComputedStyle(card).getPropertyValue('--blc-background').trim(),
+                        themeBackground: getComputedStyle(document.documentElement)
+                            .getPropertyValue('--card-background-color').trim(),
+                        accent: getComputedStyle(card).getPropertyValue('--blc-accent').trim(),
                         toggleOn: sr.querySelector('.toggle').classList.contains('on')
                     };
                 }""",
@@ -598,9 +601,10 @@ def main():
 
         card_lit = build_card(lit_states, "lit")
         report["cardLit"] = card_lit
-        check("lit card shows the mixed count and a colour gradient",
+        check("lit card shows the mixed count and a colour accent on the theme shell",
               card_lit["desc"] == "4 von 5 an"
-              and card_lit["background"].startswith("linear-gradient")
+              and card_lit["background"] == card_lit["themeBackground"]
+              and card_lit["accent"].startswith("linear-gradient")
               and card_lit["toggleOn"] is True,
               json.dumps(card_lit))
         check("slider fill matches the reported brightness",

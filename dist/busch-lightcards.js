@@ -177,6 +177,7 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             unavailable: '{n} nicht erreichbar',
             allUnavailable: 'Keine Lampe erreichbar',
             noEntities: 'Keine Lampe aufgelöst',
+            loading: 'Lampen werden geladen',
             scenes: 'Szenen',
             lights: 'Lampen',
             brightness: 'Helligkeit',
@@ -284,6 +285,7 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             unavailable: '{n} unavailable',
             allUnavailable: 'No member reachable',
             noEntities: 'No light resolved',
+            loading: 'Loading lights',
             scenes: 'Scenes',
             lights: 'Lights',
             brightness: 'Brightness',
@@ -1350,9 +1352,12 @@ function onDrag(element, handler) {
 // Shared styles
 // ---------------------------------------------------------------------------
 
+// Embedded Busch HA UI 0.1.0 primitives: Shell, Header, Media,
+// Status Badge and Action Bar. This shipped file has no runtime dependency.
 const CARD_STYLES = `
 :host {
     display: block;
+    container-type: inline-size;
 
     /*
      * The card's own theme hooks. The value initial is CSS's guaranteed-
@@ -1368,60 +1373,77 @@ const CARD_STYLES = `
     --blc-toggle-off: initial;
     --blc-toggle-on: initial;
     --blc-knob-color: initial;
+    --blc-accent: var(--primary-color);
 }
 ha-card {
     position: relative;
-    min-height: 80px;
+    display: block;
     overflow: hidden;
     background: var(--blc-background, var(--card-background-color));
     background-origin: border-box;
-    box-shadow: var(--blc-shadow, none), var(--ha-default-shadow, none);
+    color: var(--blc-text-color, var(--primary-text-color));
+    box-shadow: var(--blc-shadow, none), var(--ha-card-box-shadow, var(--ha-default-shadow, none));
     transition: ${TRANSITION_DEFAULT};
-    /* HAs own .card-content spacing, with the pre-token value as fallback. */
-    --blc-margin: var(--ha-space-4, 14px);
+    --blc-margin: var(--ha-space-4, 16px);
 }
 ha-card.hue-borders {
-    border-radius: 10px;
-    box-shadow: var(--blc-shadow, none), 0px 2px 3px rgba(0, 0, 0, 0.4);
-    border: none;
+    border-radius: var(--ha-card-border-radius, 12px);
 }
 .main {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    grid-template-areas: 'identity action' 'status action';
     align-items: center;
     padding: var(--blc-margin);
-    padding-bottom: 0;
-    gap: 6px;
+    column-gap: var(--ha-space-2, 8px);
+    row-gap: var(--ha-space-1, 4px);
 }
 .tap {
-    flex-grow: 1;
+    grid-area: identity;
     min-width: 0;
     display: flex;
     align-items: center;
+    gap: var(--ha-space-3, 12px);
+    min-height: 44px;
     cursor: pointer;
-    /* min-height, not height: a text container must never cap its own text. */
-    min-height: calc(46px - var(--blc-margin));
     -webkit-tap-highlight-color: transparent;
 }
+.tap:focus-visible, .desc:focus-visible, .toggle:focus-visible, .slider:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+.media {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    box-sizing: border-box;
+    position: relative;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: var(--ha-card-border-radius, 12px);
+    background: var(--blc-background, var(--card-background-color));
+}
+.media::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 4px;
+    background: var(--blc-accent);
+}
 .icon {
-    flex-shrink: 0;
-    width: 56px;
-    margin-left: calc(-1 * var(--blc-margin));
-    text-align: center;
-    color: var(--blc-text-color, var(--secondary-text-color));
+    color: var(--blc-text-color, var(--primary-text-color));
     transition: ${TRANSITION_DEFAULT};
-    --mdc-icon-size: 34px;
+    --mdc-icon-size: 24px;
 }
 .text {
-    flex-grow: 1;
     min-width: 0;
     line-height: normal;
-    color: var(--blc-text-color, var(--secondary-text-color));
-    transition: ${TRANSITION_DEFAULT};
+    color: var(--blc-text-color, var(--primary-text-color));
 }
 .text h2 {
-    font-size: var(--ha-font-size-l, 18px);
-    font-weight: var(--ha-font-weight-medium, 500);
+    font-size: var(--ha-font-size-m, 16px);
+    font-weight: var(--ha-font-weight-semibold, 600);
     margin: 0;
     min-width: 0;
     overflow: hidden;
@@ -1429,14 +1451,38 @@ ha-card.hue-borders {
     white-space: nowrap;
 }
 .desc {
-    font-size: 13px;
+    grid-area: status;
+    margin-left: calc(44px + var(--ha-space-3, 12px));
+    font-size: var(--ha-font-size-s, 14px);
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--ha-space-2, 8px);
     min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    color: var(--blc-text-color, var(--secondary-text-color));
+}
+.desc::before {
+    content: '';
+    flex: 0 0 7px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--secondary-text-color);
+}
+.desc[data-tone='success']::before { background: var(--success-color, var(--primary-color)); }
+.desc[data-tone='warning']::before { background: var(--warning-color, var(--primary-color)); }
+.desc[data-tone='error']::before { background: var(--error-color, var(--primary-color)); }
+.desc[data-tone='unavailable']::before { background: var(--error-color, var(--secondary-text-color)); }
+.desc[data-tone='unknown']::before { background: var(--secondary-text-color); }
+.desc[data-tone='neutral']::before { background: var(--secondary-text-color); }
+.desc[data-tone='success'] .dtext { color: var(--success-color, var(--primary-text-color)); }
+.desc[data-tone='warning'] .dtext { color: var(--warning-color, var(--primary-text-color)); }
+.desc[data-tone='unavailable'] .dtext { color: var(--error-color, var(--primary-text-color)); }
+.desc[data-tone='error'] .dtext { color: var(--error-color, var(--primary-text-color)); }
+.desc[data-tone='neutral'] .dtext { color: var(--blc-text-color, var(--secondary-text-color)); }
+.desc[data-tone='unknown'] .dtext { color: var(--secondary-text-color); }
+.desc[data-tone='unavailable'] .warn { display: none; }
+.desc .dtext {
+    flex: 1 1 0;
 }
 /* The count and the badge are two flex items, so the ellipsis has to sit on
    the text itself — on the flex container it would never fire. */
@@ -1454,10 +1500,10 @@ ha-card.hue-borders {
     border-radius: 9px;
     font-size: var(--ha-font-size-xs, 12px);
     line-height: 18px;
-    background: rgba(0, 0, 0, 0.18);
-    /* Shrinkable on purpose: a badge that refuses to give way pushes itself
-       out of the card instead of being cut. */
-    flex-shrink: 1;
+    background: var(--secondary-background-color, var(--card-background-color));
+    color: var(--warning-color, var(--primary-text-color));
+    /* The count stays visible while the neighboring long description yields. */
+    flex-shrink: 0;
     min-width: 0;
     overflow: hidden;
 }
@@ -1467,23 +1513,31 @@ ha-card.hue-borders {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.warn.light-fg {
-    background: rgba(255, 255, 255, 0.22);
-}
 .warn ha-icon {
     --mdc-icon-size: 13px;
     flex-shrink: 0;
 }
 .toggle {
+    grid-area: action;
     flex-shrink: 0;
-    width: 42px;
-    height: 24px;
-    border-radius: 12px;
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
     border: none;
     padding: 0;
     position: relative;
     cursor: pointer;
-    background: var(--blc-toggle-off, rgba(120, 120, 128, 0.32));
+    background: transparent;
+}
+.toggle::before {
+    content: '';
+    position: absolute;
+    left: 1px;
+    top: 10px;
+    width: 42px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--blc-toggle-off, var(--divider-color));
     transition: background 0.2s ease-out;
 }
 .toggle[disabled] {
@@ -1492,44 +1546,40 @@ ha-card.hue-borders {
 }
 .toggle .knob {
     position: absolute;
-    top: 2px;
-    left: 2px;
+    top: 12px;
+    left: 3px;
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: var(--blc-knob-color, #fff);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    background: var(--blc-knob-color, var(--card-background-color));
+    box-shadow: var(--ha-card-box-shadow, none);
     transition: transform 0.2s ease-out;
 }
-.toggle.on {
-    background: var(--blc-toggle-on, var(--primary-color, #03a9f4));
+.toggle.on::before {
+    background: var(--blc-toggle-on, var(--primary-color));
 }
 .toggle.on .knob {
     transform: translateX(18px);
 }
 .slider {
     position: relative;
-    height: 34px;
-    margin: 8px var(--blc-margin) var(--blc-margin);
-    border-radius: 17px;
-    background: rgba(0, 0, 0, 0.18);
+    height: 44px;
+    margin: 0 var(--blc-margin) var(--blc-margin);
+    border-radius: var(--ha-card-border-radius, 12px);
+    background: var(--secondary-background-color, var(--divider-color));
     overflow: hidden;
     cursor: pointer;
     touch-action: none;
 }
-.slider.light-fg {
-    background: rgba(255, 255, 255, 0.22);
-}
 .slider[disabled] {
-    opacity: 0.45;
     cursor: default;
 }
 .slider .fill {
     position: absolute;
     inset: 0;
     width: 0%;
-    background: var(--blc-text-color, var(--secondary-text-color));
-    opacity: 0.55;
+    background: var(--primary-color);
+    opacity: 0.35;
     transition: width 0.2s ease-out;
 }
 .slider.dragging .fill {
@@ -1543,21 +1593,32 @@ ha-card.hue-borders {
     inset: 0;
     display: block;
     box-sizing: border-box;
-    line-height: 34px;
+    line-height: 44px;
     padding: 0 12px;
-    font-size: 13px;
+    font-size: var(--ha-font-size-s, 14px);
     font-weight: var(--ha-font-weight-medium, 500);
-    color: var(--blc-text-color, var(--secondary-text-color));
+    color: var(--primary-text-color);
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 .error {
-    padding: 12px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ha-space-3, 12px);
+    padding: var(--ha-space-4, 16px);
     color: var(--error-color, #db4437);
     font-size: var(--ha-font-size-s, 14px);
     overflow-wrap: anywhere;
+}
+.error ha-icon { flex: 0 0 24px; }
+@container (max-width: 440px) {
+    .main {
+        grid-template-columns: minmax(0, 1fr) 44px;
+        grid-template-areas: 'identity identity' 'status action';
+    }
+    .desc { margin-left: 0; }
 }
 `;
 
@@ -1671,15 +1732,24 @@ class BuschLightCard extends HTMLElement {
             if (this._errorKey) {
                 this._error = translate(this._hass, this._errorKey, this._errorVars);
             }
+            const card = document.createElement('ha-card');
+            card.dataset.uiContract = 'Busch HA UI 0.1.0';
             const box = document.createElement('div');
             box.className = 'error';
-            box.textContent = this._error;
-            root.appendChild(box);
+            const icon = document.createElement('ha-icon');
+            icon.setAttribute('icon', 'mdi:alert-circle-outline');
+            const message = document.createElement('span');
+            message.textContent = this._error;
+            box.appendChild(icon);
+            box.appendChild(message);
+            card.appendChild(box);
+            root.appendChild(card);
             this._built = true;
             return;
         }
 
         const card = document.createElement('ha-card');
+        card.dataset.uiContract = 'Busch HA UI 0.1.0';
         this._card = card;
 
         const main = document.createElement('div');
@@ -1687,17 +1757,24 @@ class BuschLightCard extends HTMLElement {
 
         const tap = document.createElement('div');
         tap.className = 'tap';
+        tap.setAttribute('role', 'button');
+        tap.tabIndex = 0;
         this._tap = tap;
 
+        const media = document.createElement('div');
+        media.className = 'media';
         this._icon = document.createElement('ha-icon');
         this._icon.className = 'icon';
-        tap.appendChild(this._icon);
+        media.appendChild(this._icon);
+        tap.appendChild(media);
 
         const text = document.createElement('div');
         text.className = 'text';
         this._title = document.createElement('h2');
         this._desc = document.createElement('div');
         this._desc.className = 'desc';
+        this._desc.setAttribute('role', 'button');
+        this._desc.tabIndex = 0;
         this._descText = document.createElement('span');
         this._descText.className = 'dtext';
         this._warn = document.createElement('span');
@@ -1710,13 +1787,14 @@ class BuschLightCard extends HTMLElement {
         this._desc.appendChild(this._descText);
         this._desc.appendChild(this._warn);
         text.appendChild(this._title);
-        text.appendChild(this._desc);
         tap.appendChild(text);
 
         main.appendChild(tap);
+        main.appendChild(this._desc);
 
         this._toggle = document.createElement('button');
         this._toggle.className = 'toggle';
+        this._toggle.setAttribute('role', 'switch');
         this._toggle.setAttribute('aria-label', translate(this._hass, 'toggle'));
         const knob = document.createElement('span');
         knob.className = 'knob';
@@ -1728,6 +1806,11 @@ class BuschLightCard extends HTMLElement {
         // brightness slider
         this._slider = document.createElement('div');
         this._slider.className = 'slider';
+        this._slider.setAttribute('role', 'slider');
+        this._slider.setAttribute('aria-label', translate(this._hass, 'brightness'));
+        this._slider.setAttribute('aria-valuemin', '0');
+        this._slider.setAttribute('aria-valuemax', '100');
+        this._slider.tabIndex = 0;
         this._sliderFill = document.createElement('div');
         this._sliderFill.className = 'fill';
         this._sliderLabel = document.createElement('div');
@@ -1749,25 +1832,57 @@ class BuschLightCard extends HTMLElement {
             this._model.toggle();
         });
 
-        // tap opens the dialog, hold falls back to more-info
-        this._tap.addEventListener('pointerdown', () => {
-            this._held = false;
-            clearTimeout(this._holdTimer);
-            this._holdTimer = setTimeout(() => {
-                this._held = true;
-                this._runAction(this._opts.holdAction);
-            }, 500);
-        });
+        // Both lines of the header retain the card's tap and hold actions.
         const cancelHold = () => clearTimeout(this._holdTimer);
-        this._tap.addEventListener('pointerup', cancelHold);
-        this._tap.addEventListener('pointercancel', cancelHold);
-        this._tap.addEventListener('pointerleave', cancelHold);
-        this._tap.addEventListener('click', () => {
-            if (this._held) {
+        [this._tap, this._desc].forEach((target) => {
+            target.addEventListener('pointerdown', () => {
                 this._held = false;
-                return;
-            }
-            this._runAction(this._opts.tapAction);
+                clearTimeout(this._holdTimer);
+                this._holdTimer = setTimeout(() => {
+                    this._held = true;
+                    this._runAction(this._opts.holdAction);
+                }, 500);
+            });
+            target.addEventListener('pointerup', cancelHold);
+            target.addEventListener('pointercancel', cancelHold);
+            target.addEventListener('pointerleave', cancelHold);
+            target.addEventListener('click', () => {
+                if (this._held) {
+                    this._held = false;
+                    return;
+                }
+                this._runAction(this._opts.tapAction);
+            });
+            target.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                event.stopPropagation();
+                this._runAction(this._opts.tapAction);
+            });
+        });
+
+        this._slider.addEventListener('keydown', (event) => {
+            if (!this._model || !this._model.supportsBrightness ||
+                this._model.isAllUnavailable || !this._model.isOn) return;
+            const shown = Number(this._slider.getAttribute('aria-valuenow'));
+            const current = Number.isFinite(shown) ? shown : this._model.brightnessPct;
+            const min = this._opts.allowZero ? 0 : 1;
+            const changes = {
+                ArrowLeft: -5, ArrowDown: -5, ArrowRight: 5, ArrowUp: 5,
+                PageDown: -10, PageUp: 10
+            };
+            let pct;
+            if (event.key === 'Home') pct = min;
+            else if (event.key === 'End') pct = 100;
+            else if (Object.prototype.hasOwnProperty.call(changes, event.key)) {
+                pct = clamp(current + changes[event.key], min, 100);
+            } else return;
+            event.preventDefault();
+            event.stopPropagation();
+            this._sliderFill.style.width = pct + '%';
+            this._sliderLabel.textContent = pct + ' %';
+            this._slider.setAttribute('aria-valuenow', String(pct));
+            this._model.setBrightness(pct);
         });
 
         onDrag(this._slider, (point, done) => {
@@ -1779,6 +1894,7 @@ class BuschLightCard extends HTMLElement {
             this._slider.classList.toggle('dragging', !done);
             this._sliderFill.style.width = pct + '%';
             this._sliderLabel.textContent = pct + ' %';
+            this._slider.setAttribute('aria-valuenow', String(pct));
             if (done) this._model.setBrightness(pct);
         });
     }
@@ -1827,7 +1943,16 @@ class BuschLightCard extends HTMLElement {
 
     _render() {
         if (!this._built) this._build();
-        if (this._error || !this._opts || !this._hass) return;
+        if (this._error || !this._opts) return;
+        if (!this._hass) {
+            this._title.textContent = this._opts.title || this._opts.entityIds[0];
+            this._descText.textContent = translate(null, 'loading');
+            this._desc.dataset.tone = 'unknown';
+            this._warn.style.display = 'none';
+            this._toggle.setAttribute('disabled', '');
+            this._slider.style.display = 'none';
+            return;
+        }
 
         this._model = new GroupModel(this._hass, this._opts);
         const model = this._model;
@@ -1836,6 +1961,11 @@ class BuschLightCard extends HTMLElement {
         this._icon.setAttribute('icon', model.icon);
         this._title.textContent = model.title;
         this._descText.textContent = model.description;
+        this._tap.setAttribute('aria-label', model.title);
+        this._desc.dataset.tone = model.isEmpty ? 'unknown'
+            : model.isAllUnavailable ? 'unavailable'
+                : model.deadCount > 0 ? 'warning'
+                    : model.isOn ? 'success' : 'neutral';
 
         // Unavailable members are named, not hidden: the card keeps working,
         // and the badge says how much of the group it is actually driving.
@@ -1853,6 +1983,7 @@ class BuschLightCard extends HTMLElement {
         // toggle
         const disabled = model.isAllUnavailable || model.isEmpty;
         this._toggle.classList.toggle('on', model.isOn);
+        this._toggle.setAttribute('aria-checked', String(model.isOn));
         if (disabled) this._toggle.setAttribute('disabled', '');
         else this._toggle.removeAttribute('disabled');
         this._toggle.style.display = this._opts.showSwitch ? '' : 'none';
@@ -1863,38 +1994,29 @@ class BuschLightCard extends HTMLElement {
         const sliderDisabled = this._opts.allowZero ? model.isAllUnavailable : !model.isOn;
         if (sliderDisabled) this._slider.setAttribute('disabled', '');
         else this._slider.removeAttribute('disabled');
+        this._slider.tabIndex = sliderDisabled ? -1 : 0;
+        this._slider.setAttribute('aria-valuemin', this._opts.allowZero ? '0' : '1');
+        this._slider.setAttribute('aria-valuenow', String(model.brightnessPct));
         if (!this._dragging) {
             const pct = model.brightnessPct;
             this._sliderFill.style.width = pct + '%';
-            // Left blank when off — the description above already says so.
-            this._sliderLabel.textContent = model.isOn ? pct + ' %' : '';
+            this._sliderLabel.textContent = model.isOn
+                ? pct + ' %' : translate(this._hass, 'brightness');
         }
     }
 
-    /** Card background, text colour and the brightness shadow. */
+    /** Theme shell with a data-derived light accent in the 44 px media tile. */
     _paint(model) {
         const offColor = parseColor(this._opts.offColor);
         const colors = model.colors;
-
-        let background = null;
-        let foreground = null;
-
-        if (model.isOn && colors.length) {
-            background = backgroundCss(colors);
-            const kind = foregroundForBackground(colors, model.brightnessPct > 50 ? -(10 - (model.brightnessPct - 50) / 5) : 0);
-            foreground = model.brightnessPct <= 50 ? '#ffffff' : kind === 'light' ? '#ffffff' : 'rgba(0, 0, 0, 0.7)';
-        } else if (offColor) {
-            background = colorToCss(offColor);
-            foreground = foregroundFor(offColor, 'rgba(255, 255, 255, 0.85)', 'rgba(0, 0, 0, 0.5)', 0);
-        }
-
-        this.style.setProperty('--blc-background', background || 'var(--card-background-color)');
-        this.style.setProperty('--blc-text-color', foreground || 'var(--primary-text-color)');
-        this.style.setProperty('--blc-shadow', this._brightnessShadow(model));
-
-        const lightFg = foreground === '#ffffff' || (foreground || '').indexOf('255, 255, 255') !== -1;
-        this._slider.classList.toggle('light-fg', lightFg);
-        this._warn.classList.toggle('light-fg', lightFg);
+        this.style.setProperty('--blc-background', !model.isOn && offColor
+            ? colorToCss(offColor) : 'var(--card-background-color)');
+        this.style.setProperty('--blc-text-color', !model.isOn && offColor
+            ? foregroundFor(offColor, 'rgba(255, 255, 255, 0.85)', 'rgba(0, 0, 0, 0.5)', 0)
+            : 'var(--primary-text-color)');
+        this.style.setProperty('--blc-accent', model.isOn && colors.length
+            ? backgroundCss(colors) : offColor ? colorToCss(offColor) : 'var(--primary-color)');
+        this.style.setProperty('--blc-shadow', !model.isOn ? this._brightnessShadow(model) : 'none');
     }
 
     _brightnessShadow(model) {
@@ -3043,6 +3165,7 @@ class BuschLightDialog extends HTMLElement {
 // Visual editor
 // ---------------------------------------------------------------------------
 
+// Busch HA UI 0.1.0 editor actions: responsive scene rows and 44 px targets.
 const EDITOR_STYLES = `
 :host { display: block; }
 .ed { display: flex; flex-direction: column; gap: 12px; }
@@ -3126,9 +3249,14 @@ summary {
     background: none;
     color: var(--secondary-text-color);
     cursor: pointer;
-    padding: 4px;
+    width: 44px;
+    height: 44px;
+    box-sizing: border-box;
+    padding: 8px;
     border-radius: 50%;
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 .iconbtn:hover { background: var(--secondary-background-color, rgba(0, 0, 0, 0.06)); }
 .iconbtn[disabled] { opacity: 0.35; cursor: default; }
@@ -3138,6 +3266,8 @@ summary {
     color: var(--primary-color, #03a9f4);
     border-radius: 10px;
     padding: 10px;
+    min-height: 44px;
+    box-sizing: border-box;
     width: 100%;
     cursor: pointer;
     font-size: 13px;
