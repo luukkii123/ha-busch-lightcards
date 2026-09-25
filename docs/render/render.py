@@ -1830,6 +1830,38 @@ def main():
               and reference_isolation["second"]["scenes"][0]["extra"]["duration"] == 11,
               json.dumps(reference_isolation, ensure_ascii=False)[:900])
 
+        # HA loads ha-form lazily. A transient failure must not make our
+        # fallback permanent when the same editor is rendered again.
+        retry_page = browser.new_page()
+        retry_page.goto("about:blank")
+        retry_page.add_script_tag(content=card_file.read_text(encoding="utf-8"))
+        form_retry = retry_page.evaluate("""async () => {
+            const settle = () => new Promise(resolve => setTimeout(resolve, 0));
+            window.loadCardHelpers = () => Promise.reject(new Error('transient'));
+            const editor = document.createElement('busch-light-card-editor');
+            editor.setConfig({type:'custom:busch-light-card', entity:'light.test'});
+            editor.hass = {states:{}, locale:{language:'de'}};
+            document.body.appendChild(editor);
+            await settle(); await settle();
+            const fallback = !!editor.shadowRoot.querySelector('.fallback');
+            window.loadCardHelpers = async () => ({createCardElement: async () => ({
+                constructor: {getConfigElement: async () => {
+                    customElements.define('ha-form', class extends HTMLElement {
+                        set data(value) { this._data = value; }
+                        get data() { return this._data; }
+                    });
+                }}
+            })});
+            editor._render();
+            await settle(); await settle();
+            return {fallback, recovered:!!editor.shadowRoot.querySelector('ha-form')};
+        }""")
+        retry_page.close()
+        report["haFormRetry"] = form_retry
+        check("editor retries HA form loading after a transient failure",
+              form_retry["fallback"] and form_retry["recovered"],
+              json.dumps(form_retry))
+
         # The browser stub cannot judge HA's native selectors, but it can
         # catch our own editor/scene-row overflow at the required widths.
         editor_layout = []
@@ -1972,7 +2004,7 @@ def main():
                 return {{ symbol: weg.querySelector('ha-icon').getAttribute('icon'),
                           klassen: weg.className,
                           beschriftung: weg.title,
-                          rotImStilblatt: /iconbtn\.danger/.test(
+                          rotImStilblatt: /iconbtn\\.danger/.test(
                               ed.shadowRoot.querySelector('style').textContent) }};
             }}""",
             {"root": fixture["root"], "states": lit_states})

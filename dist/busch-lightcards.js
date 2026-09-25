@@ -18,7 +18,7 @@
  * README for why.
  */
 
-const CARD_VERSION = '0.7.0';
+const CARD_VERSION = '0.8.0';
 
 const CARD_TAG = 'busch-light-card';
 const DIALOG_TAG = 'busch-light-dialog';
@@ -3297,7 +3297,7 @@ summary {
  * editor once pulls it in — the established way to do this from a custom card.
  */
 let formElementsPromise = null;
-function ensureFormElements() {
+async function ensureFormElements() {
     if (customElements.get('ha-form')) return Promise.resolve(true);
     if (!formElementsPromise) {
         formElementsPromise = (async () => {
@@ -3310,12 +3310,16 @@ function ensureFormElements() {
                     }
                 }
             } catch (e) {
-                /* nothing else to try — the fallback notice covers it */
+                /* this render uses the fallback; a later render may retry */
             }
             return !!customElements.get('ha-form');
         })();
     }
-    return formElementsPromise;
+    const available = await formElementsPromise;
+    // A failed dynamic import can be temporary (network or frontend load
+    // order). Allow the next render to try HA's card helpers again.
+    if (!available) formElementsPromise = null;
+    return available;
 }
 
 const LIGHT_FILTER = [{ domain: 'light' }, { domain: 'switch' }, { domain: 'group' }];

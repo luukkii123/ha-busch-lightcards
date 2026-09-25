@@ -265,7 +265,7 @@ points of fix round 1 — both configuration errors coming out of the dictionary
 in the user's language, the close X sitting first in the dialog header, and the
 scene row's remove button being `mdi:close` and not red.
 
-**Two things are explicitly not proven.**
+**Limits of the historical 09.09.2026 check.**
 
 *The editor's checks use a stubbed `ha-form`.* The stub honours the contract
 the editor relies on — `hass`/`schema`/`data`/`computeLabel` in, a
@@ -275,8 +275,27 @@ prove that Home Assistant's own `ha-form` renders those selectors as intended.
 For the same reason there is no editor screenshot here: it would be a picture
 of the stub.
 
-*None of this has run against a live dashboard.* The logic and the rendering
-are tested; the two together in a running Home Assistant are not.
+*At that time, none of this had run against a live dashboard.* The current
+native-editor result is recorded below.
+
+### Geprüft / Checked — 25.09.2026, `CARD_VERSION` 0.8.0
+
+| Check | Command or method | Result |
+| --- | --- | --- |
+| Syntax | `node --check dist/busch-lightcards.js` | clean |
+| Namespace | `node ../busch-cards/tests/namensraum.test.js dist/busch-lightcards.js` | 5/5 passed |
+| Static UI rules | `python3 ../scripts/ui-regeln-pruefen.py --repo ha-busch-lightcards` | 0 violations |
+| Browser logic, editor contract and UI rules | `docs/render/render.py` in the Playwright container shown above | 105/105 passed; 0 UI violations |
+| Synthetic visual matrix | `docs/render/visual_contract.py` in Playwright | 66/66 passed; keyboard check passed, 0 page errors |
+| Native Home Assistant editor | Temporary hidden dashboard, local card script injected into authenticated Chromium | Visual → code → visual, Save, reload and reopen passed; the HA API returned the edited title and scene title with the scene icon and colour intact |
+
+The native card and editor were viewed at 320, 480 and 960 px in light and
+dark mode with synthetic names. Neither had horizontal overflow. The 320 px
+scene row remained reachable and readable. The temporary dashboard was deleted
+and its removal verified. No real light or scene was activated, and this local
+card version was not installed through HACS. The versioned synthetic browser
+baseline is in `docs/render/baseline/busch-ha-ui-0.1.0/`; the native test images
+stay in the ignored test output.
 
 ### Checked — 09.09.2026, `CARD_VERSION` 0.6.0
 
