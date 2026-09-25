@@ -1752,6 +1752,80 @@ def main():
               and editor_vertrag["eventsAfterSet"] == editor_vertrag["beforeSet"],
               json.dumps(editor_vertrag, ensure_ascii=False)[:900])
 
+        reference_isolation = page.evaluate("""async () => {
+            const settle = () => new Promise(r => setTimeout(r, 0));
+            const newEditor = async (config) => {
+                const ed = customElements.get('busch-light-card').getConfigElement();
+                document.getElementById('stack').replaceChildren(ed);
+                ed.hass = window.makeHass({});
+                ed.setConfig(config);
+                await settle(); await settle();
+                return ed;
+            };
+            const getForm = (ed, field) => Array.from(ed.shadowRoot.querySelectorAll('ha-form'))
+                .find(f => f.fields().some(x => x.name === field));
+            const mutable = { type: 'custom:busch-light-card', entity: 'light.one',
+                entities: ['light.two'], scenes: [{ entity: 'scene.one',
+                    title: 'Original', extra: { duration: 5 } }] };
+            const ed = await newEditor(mutable);
+            mutable.entities.push('light.outside');
+            mutable.scenes[0].extra.duration = 99;
+            mutable.scenes.push({ entity: 'scene.outside' });
+            let first;
+            ed.addEventListener('config-changed', e => { first = structuredClone(e.detail.config); });
+            getForm(ed, 'slider').change({ slider: false });
+            const inputResult = first;
+
+            const frozen = { type: 'custom:busch-light-card', entity: 'light.frozen',
+                entities: ['light.member'], scenes: [{ entity: 'scene.frozen',
+                    title: 'Before', extra: { duration: 7 } }] };
+            Object.freeze(frozen.scenes[0].extra);
+            Object.freeze(frozen.scenes[0]);
+            Object.freeze(frozen.scenes);
+            Object.freeze(frozen.entities);
+            Object.freeze(frozen);
+            const frozenEditor = await newEditor(frozen);
+            let frozenResult;
+            frozenEditor.addEventListener('config-changed', e => {
+                frozenResult = structuredClone(e.detail.config);
+            });
+            frozenEditor.shadowRoot.querySelector('.scene-row ha-form').change({ title: 'After' });
+
+            const eventEditor = await newEditor({ type: 'custom:busch-light-card',
+                entity: 'light.event', entities: ['light.keep'],
+                scenes: [{ entity: 'scene.event', title: 'Keep', extra: { duration: 11 } }] });
+            let eventCount = 0;
+            let second;
+            eventEditor.addEventListener('config-changed', e => {
+                eventCount++;
+                if (eventCount === 1) {
+                    e.detail.config.entities.push('light.injected');
+                    e.detail.config.scenes[0].title = 'Injected';
+                    e.detail.config.scenes[0].extra.duration = 88;
+                } else second = structuredClone(e.detail.config);
+            });
+            getForm(eventEditor, 'slider').change({ slider: false });
+            getForm(eventEditor, 'entity').change({ entity: 'light.next' });
+            return { inputResult, frozenResult, frozenTitle: frozen.scenes[0].title,
+                frozenDuration: frozen.scenes[0].extra.duration, second, eventCount };
+        }""")
+        report["editorReferenzen"] = reference_isolation
+        check("editor isolates nested caller config and accepts frozen config",
+              reference_isolation["inputResult"]["entities"] == ["light.two"]
+              and reference_isolation["inputResult"]["scenes"] == [
+                  {"entity": "scene.one", "title": "Original", "extra": {"duration": 5}}]
+              and reference_isolation["frozenResult"]["scenes"][0]["title"] == "After"
+              and reference_isolation["frozenResult"]["scenes"][0]["extra"]["duration"] == 7
+              and reference_isolation["frozenTitle"] == "Before"
+              and reference_isolation["frozenDuration"] == 7,
+              json.dumps(reference_isolation, ensure_ascii=False)[:900])
+        check("mutating first config-changed payload cannot affect next edit",
+              reference_isolation["eventCount"] == 2
+              and reference_isolation["second"]["entities"] == ["light.keep"]
+              and reference_isolation["second"]["scenes"][0]["title"] == "Keep"
+              and reference_isolation["second"]["scenes"][0]["extra"]["duration"] == 11,
+              json.dumps(reference_isolation, ensure_ascii=False)[:900])
+
         # The browser stub cannot judge HA's native selectors, but it can
         # catch our own editor/scene-row overflow at the required widths.
         editor_layout = []

@@ -3397,7 +3397,7 @@ class BuschLightCardEditor extends HTMLElement {
     }
 
     setConfig(config) {
-        const next = toSnakeConfig(config || {});
+        const next = copyEditorValue(toSnakeConfig(config || {}));
         if (sameEditorValue(this._config, next)) return;
         this._config = next;
         this._render();
@@ -3439,11 +3439,11 @@ class BuschLightCardEditor extends HTMLElement {
         if (Array.isArray(next.scenes) && !next.scenes.length) delete next.scenes;
 
         next.type = 'custom:' + CARD_TAG;
-        this._config = next;
+        this._config = copyEditorValue(next);
 
         this.dispatchEvent(
             new CustomEvent('config-changed', {
-                detail: { config: next },
+                detail: { config: copyEditorValue(next) },
                 bubbles: true,
                 composed: true
             })
