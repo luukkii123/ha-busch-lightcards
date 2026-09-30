@@ -222,7 +222,7 @@ const BuschUI = (() => {
  * README for why.
  */
 
-const CARD_VERSION = '0.8.0';
+const CARD_VERSION = '0.8.1';
 
 const CARD_TAG = 'busch-light-card';
 const DIALOG_TAG = 'busch-light-dialog';

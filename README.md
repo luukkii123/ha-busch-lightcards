@@ -399,3 +399,12 @@ konflikt auf; vollständige fehlerfreie Portal-/IME-Abnahme wird deshalb nicht
 behauptet. Neue Backendrollen müssen nach regulärem Backendupdate geprüft werden.
 
 Prüfbundle SHA256: `9d063ea4aec31161543b7ede4c4dcbd2d8281e1b352d9d07f83eadd9bd1714cb`.
+
+### Geprüft: Release 0.8.1, 30.09.2026
+
+Diese Fassung enthält den oben geprüften UPDATED-Kandidaten mit gemeinsamer
+UI-Quelle 0.3.2. Gegenüber den geprüften Bundlebytes wurde ausschließlich
+`CARD_VERSION` erhöht. Die native Familienabnahme umfasst 17 Editoren mit
+Speichern und Wiederöffnen; lokale Suiten und Darstellungsmatrizen sind oben
+dokumentiert. Der vorhandene native Pickerkonflikt bleibt eine benannte Grenze.
+Keine produktiven Geräteaktionen wurden für die Abnahme ausgeführt.
