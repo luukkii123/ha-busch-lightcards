@@ -1,7 +1,7 @@
-/* BEGIN BUSCH SHARED UI 0.2.0 sha256:31637c8f3ea97a0a56d0de9264e5991aedd7ea0d7c3c747d08afff93fcc4e492 */
-/** Busch UI 0.2.0 — standalone Vanilla source. Synchronized verbatim, never imported at runtime. */
+/* BEGIN BUSCH SHARED UI 0.3.0 sha256:0bd2486252eeba30468ee5e6dd5ac30594562f69457f8bf89a4ebf7b25cfd297 */
+/** Busch UI 0.3.0 — standalone Vanilla source. Synchronized verbatim, never imported at runtime. */
 const BuschUI = (() => {
-  const sourceVersion = '0.2.0';
+  const sourceVersion = '0.3.0';
   const cloneConfig = value => Array.isArray(value) ? value.map(cloneConfig)
     : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([key,item]) => [key,cloneConfig(item)])) : value;
   function configsEqual(a,b) {
@@ -40,7 +40,9 @@ const BuschUI = (() => {
   class EditorBase extends (typeof HTMLElement==='undefined'?class{}:HTMLElement) {
     constructor() {super();guardEditorKeys(this);}
     _acceptConfig(config,normalize=cloneConfig) {
-      const next=cloneConfig(normalize(config));
+      const result=validateConfig(config,{normalize});
+      if(!result.ok)throw result.error;
+      const next=result.value;
       if (configsEqual(next,this._config)) return false;
       this._config=next;return true;
     }
@@ -114,16 +116,82 @@ const BuschUI = (() => {
     },
     input({native=false}={}) {return document.createElement(!native&&typeof customElements!=='undefined'&&customElements.get?.('ha-input')?'ha-input':'input');},
     icon(name) {const icon=document.createElement('ha-icon');icon.setAttribute('icon',name);return icon;},
-    async cardHelpers() {
-      if (helperPromise) return helperPromise;
+    async cardHelpers({requireRow=false}={}) {
+      if (!helperPromise) {
       if (typeof window==='undefined'||typeof window.loadCardHelpers!=='function') return null;
       helperPromise=Promise.resolve().then(()=>window.loadCardHelpers()).then(helpers=>helpers&&typeof helpers.createCardElement==='function'?helpers:null).catch(()=>null);
-      const helpers=await helperPromise;if (!helpers) helperPromise=null;return helpers;
+      }
+      const helpers=await helperPromise;
+      if(!helpers||(requireRow&&typeof helpers.createRowElement!=='function')){helperPromise=null;return null;}
+      return helpers;
     },
   };
   const tokens=Object.freeze({space1:'var(--ha-space-1, 4px)',space2:'var(--ha-space-2, 8px)',space3:'var(--ha-space-3, 12px)',space4:'var(--ha-space-4, 16px)',mediaRadius:'var(--ha-card-border-radius, 12px)',controlMinHeight:'44px'});
-  const language=hass=>String(hass?.locale?.language||(typeof navigator!=='undefined'?navigator.language:'en')).startsWith('de')?'de':'en';
-  return Object.freeze({sourceVersion,EditorBase,cloneConfig,configsEqual,updateConfig,updateConfigPath,deleteConfigPath,emitConfigChanged,guardEditorKeys,createEchoState,queueEcho,acceptEcho,resolveMedia,media,statusSemantic,statusBadge,metric,formatNumber,ha,tokens,language});
+  function language(hass,{legacy=false,browser=true}={}) {
+    const code=hass?.locale?.language||(legacy&&hass?.language)||(browser&&typeof navigator!=='undefined'&&navigator.language)||'en';
+    return String(code).toLowerCase().startsWith('de')?'de':'en';
+  }
+  const dictionary=(table,hass,options)=>table[language(hass,options)]||table.en;
+  function fieldText(table,hass,name,options) {
+    const words=dictionary(table,hass,options),fallback=table.en||{};
+    return {label:words?.labels?.[name]??fallback.labels?.[name]??name,helper:words?.helpers?.[name]??fallback.helpers?.[name]??''};
+  }
+  function validateConfig(input,{parse=false,normalize=cloneConfig,validate}={}) {
+    try {
+      const copied=cloneConfig(parse?JSON.parse(input):input);
+      const error=validate?.(copied);
+      if(error) return {ok:false,error:error instanceof Error?error:new Error(String(error))};
+      return {ok:true,value:cloneConfig(normalize(copied))};
+    } catch(error) {return {ok:false,error};}
+  }
+  const addClass=(node,name)=>{if(!String(node.className||'').split(/\s+/).includes(name))node.className=((node.className||'')+' '+name).trim();};
+  function header({node=document.createElement('div'),titleNode,label}={}) {
+    addClass(node,'busch-ui-header');node.setAttribute('role','group');
+    const name=label??titleNode?.textContent;if(name)node.setAttribute('aria-label',name);
+    if(titleNode){if(!/^H[1-6]$/.test(titleNode.tagName||'')){titleNode.setAttribute('role','heading');titleNode.setAttribute('aria-level','2');}addClass(titleNode,'busch-ui-title');}
+    return node;
+  }
+  const actionBindings=new WeakMap();
+  function action({node=document.createElement('button'),label,text,icon,disabled,variant='secondary',onClick}={}) {
+    if(!label)throw new Error('Action requires an accessible label');
+    addClass(node,'busch-ui-action');node.type='button';node.setAttribute('aria-label',label);node.setAttribute('data-variant',variant);
+    if(disabled!==undefined)node.disabled=disabled;
+    let binding=actionBindings.get(node);
+    if(!binding){
+      binding={};actionBindings.set(node,binding);
+      // Keep native keyboard activation and owning tablist arrow navigation.
+      for(const type of ['keydown','keyup'])node.addEventListener(type,event=>{if(event.key==='Enter'||event.key===' ')event.stopPropagation();});
+      node.addEventListener('click',event=>{event.stopPropagation();if(!node.disabled)binding.onClick?.(event);});
+    }
+    binding.onClick=onClick;
+    if(text!==undefined){node.textContent=text;binding.icon=null;}
+    if(icon){if(!binding.icon){binding.icon=ha.icon(icon);binding.icon.setAttribute('aria-hidden','true');node.appendChild(binding.icon);}else binding.icon.setAttribute('icon',icon);}
+    if(icon||text===undefined){if(!node.title||node.title===binding.tooltip){node.title=label;binding.tooltip=label;}}
+    return node;
+  }
+
+  function section({title,content,open=false}={}) {
+    const node=document.createElement('details');
+    addClass(node,'busch-ui-section');node.open=open;
+    const summary=document.createElement('summary');summary.textContent=title;node.appendChild(summary);
+    if(content)node.appendChild(content);return node;
+  }
+  // Scoped bases: family layout/grid/padding and domain presentation override
+  // these fundamentals. No global selectors or services in shared primitives.
+  const cardStyles=`
+.busch-ui-header{min-width:0}.busch-ui-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+:where(.busch-ui-action){box-sizing:border-box;min-height:44px;min-width:44px;max-width:100%;font:inherit;cursor:pointer}
+:where(.busch-ui-action):focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px}
+:where(.busch-ui-action):disabled{cursor:default}:where(.busch-ui-action[data-variant=danger]){color:var(--error-color,#db4437)}
+`;
+  const editorStyles=cardStyles+`
+:host(.busch-ui-editor),.busch-ui-editor{display:block;min-width:0;color:var(--primary-text-color,#212121);font:inherit}
+:host(.busch-ui-editor) ha-form,.busch-ui-editor ha-form{display:block;min-width:0}.busch-ui-section{min-width:0}
+.busch-ui-section>summary{cursor:pointer;min-height:44px;box-sizing:border-box;overflow-wrap:anywhere;font-weight:var(--ha-font-weight-medium,500)}
+.busch-ui-section>summary:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:2px}
+.busch-ui-validation{color:var(--error-color,#db4437);overflow-wrap:anywhere;font-size:var(--ha-font-size-s,12px)}
+`;
+  return Object.freeze({sourceVersion,EditorBase,cloneConfig,configsEqual,updateConfig,updateConfigPath,deleteConfigPath,emitConfigChanged,guardEditorKeys,createEchoState,queueEcho,acceptEcho,resolveMedia,media,statusSemantic,statusBadge,metric,formatNumber,ha,tokens,language,dictionary,fieldText,validateConfig,header,action,section,cardStyles,editorStyles});
 })();
 /* END BUSCH SHARED UI */
 
@@ -482,11 +550,8 @@ const SCHEMA_EXCEPTIONS = {
  * time — the browser's own language decides.
  */
 function textTable(hass) {
-    let lang = '';
-    if (hass && hass.locale && hass.locale.language) lang = hass.locale.language;
-    else if (hass && hass.language) lang = hass.language;
-    else if (typeof navigator !== 'undefined' && navigator.language) lang = navigator.language;
-    return String(lang).toLowerCase().indexOf('de') === 0 ? TEXTE_BUSCH_LIGHT_CARD.de : TEXTE_BUSCH_LIGHT_CARD.en;
+    const language=BuschUI.language(hass,{legacy:true});
+    return TEXTE_BUSCH_LIGHT_CARD[language];
 }
 
 function fillVars(text, vars) {
@@ -508,9 +573,7 @@ function translate(hass, key, vars) {
 
 /** The editor label of one schema field. One to four words, no full stop. */
 function fieldLabel(hass, name) {
-    const table = textTable(hass);
-    const text = table.labels[name] !== undefined ? table.labels[name] : TEXTE_BUSCH_LIGHT_CARD.en.labels[name];
-    return text === undefined ? name : text;
+    return BuschUI.fieldText(TEXTE_BUSCH_LIGHT_CARD,hass,name,{legacy:true}).label;
 }
 
 /**
@@ -532,9 +595,7 @@ class ConfigError extends Error {
 
 /** The editor helper of one schema field. A whole sentence, with a full stop. */
 function fieldHelper(hass, name) {
-    const table = textTable(hass);
-    const text = table.helpers[name] !== undefined ? table.helpers[name] : TEXTE_BUSCH_LIGHT_CARD.en.helpers[name];
-    return text === undefined ? '' : text;
+    return BuschUI.fieldText(TEXTE_BUSCH_LIGHT_CARD,hass,name,{legacy:true}).helper;
 }
 
 // ---------------------------------------------------------------------------
@@ -1483,7 +1544,7 @@ function onDrag(element, handler) {
 
 // Embedded Busch HA UI 0.1.0 primitives: Shell, Header, Media,
 // Status Badge and Action Bar. This shipped file has no runtime dependency.
-const CARD_STYLES = `
+const CARD_STYLES = BuschUI.cardStyles + `
 :host {
     display: block;
     container-type: inline-size;
@@ -1796,7 +1857,9 @@ class BuschLightCard extends HTMLElement {
 
     setConfig(raw) {
         try {
-            this._opts = normalizeConfig(raw || {});
+            const validated=BuschUI.validateConfig(raw||{},{normalize:normalizeConfig});
+            if(!validated.ok)throw validated.error;
+            this._opts=validated.value;
             this._error = null;
             this._errorKey = null;
             this._errorVars = null;
@@ -2189,7 +2252,7 @@ BuschLightCard.__internals = {
 // Dialog styles
 // ---------------------------------------------------------------------------
 
-const DIALOG_STYLES = `
+const DIALOG_STYLES = BuschUI.cardStyles + `
 :host {
     /*
      * The dialog's own theme hooks. Same idea as the card's: the value
@@ -2731,6 +2794,7 @@ class BuschLightDialog extends HTMLElement {
         who.appendChild(h1);
         who.appendChild(sub);
         head.appendChild(who);
+        BuschUI.header({node:head,titleNode:h1});
 
         // The master switch, always in the header: it belongs to whatever the
         // header names — the whole group, or the single light in detail view.
@@ -3295,7 +3359,7 @@ class BuschLightDialog extends HTMLElement {
 // ---------------------------------------------------------------------------
 
 // Busch HA UI 0.1.0 editor actions: responsive scene rows and 44 px targets.
-const EDITOR_STYLES = `
+const EDITOR_STYLES = BuschUI.editorStyles + `
 :host { display: block; }
 .ed { display: flex; flex-direction: column; gap: 12px; }
 details {
@@ -3641,7 +3705,9 @@ class BuschLightCardEditor extends BuschUI.EditorBase {
     }
 
     setConfig(config) {
-        const next = copyEditorValue(toSnakeConfig(config || {}));
+        const result=BuschUI.validateConfig(config||{},{normalize:toSnakeConfig});
+        if(!result.ok)throw result.error;
+        const next=result.value;
         if (sameEditorValue(this._config, next)) return;
         this._config = next;
         this._render();
@@ -3772,13 +3838,7 @@ class BuschLightCardEditor extends BuschUI.EditorBase {
     }
 
     _section(titleKey, node, open) {
-        const details = document.createElement('details');
-        if (open) details.open = true;
-        const summary = document.createElement('summary');
-        summary.textContent = this._ui(titleKey);
-        details.appendChild(summary);
-        details.appendChild(node);
-        return details;
+        return BuschUI.section({title:this._ui(titleKey),content:node,open:!!open});
     }
 
     _build() {
@@ -3789,7 +3849,7 @@ class BuschLightCardEditor extends BuschUI.EditorBase {
         root.appendChild(style);
 
         const wrap = document.createElement('div');
-        wrap.className = 'ed';
+        wrap.className = 'ed busch-ui-editor';
 
         // --- what to control
         this._forms.basic = this._makeForm(
@@ -3960,15 +4020,8 @@ class BuschLightCardEditor extends BuschUI.EditorBase {
     }
 
     _sceneButton(icon, labelKey, disabled, onClick) {
-        const button = document.createElement('button');
-        button.className = 'iconbtn';
-        button.title = this._ui(labelKey);
-        if (disabled) button.setAttribute('disabled', '');
-        else button.addEventListener('click', onClick);
-        const haIcon = document.createElement('ha-icon');
-        haIcon.setAttribute('icon', icon);
-        button.appendChild(haIcon);
-        return button;
+        const button=BuschUI.action({label:this._ui(labelKey),icon,disabled,onClick});
+        button.className+=' iconbtn';button.title=this._ui(labelKey);return button;
     }
 
     /**
