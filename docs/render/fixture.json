@@ -1,0 +1,449 @@
+{
+  "_source": "Captured from a live Home Assistant 2026.8.3 on 2026-08-25 via the entity state API. Names, colour capabilities, kelvin ranges, icons and group membership are verbatim. Only the `lit` scenario changes some `state`/`brightness`/`rgb_color` values so the screenshots show a lit card; every such change is marked with \"_synthetic\": true.",
+
+  "root": "light.magic_areas_light_groups_ld_room_a_all_lights",
+
+  "expected": {
+    "comment": "Hand-derived from the captured membership below. The root lists 7 members; 3 of them are groups. Depth-first, first-seen order, duplicates collapsed.",
+    "leaves": [
+      "light.room_a_spot_1",
+      "light.lamp_heli",
+      "light.curtain",
+      "light.led_strip_a",
+      "light.room_a_spot_2",
+      "light.room_a_spot_3"
+    ],
+    "groups": [
+      "light.magic_areas_light_groups_ld_room_a_all_lights",
+      "light.spots_a",
+      "light.light_group_room_a",
+      "light.leds_room_a"
+    ],
+    "maxDepth": 2,
+    "deadLeaves": ["light.lamp_heli"]
+  },
+
+  "states": {
+    "light.magic_areas_light_groups_ld_room_a_all_lights": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "LD Room A All Lights",
+        "icon": "mdi:lightbulb-group",
+        "supported_color_modes": ["color_temp", "hs", "rgb", "xy"],
+        "color_mode": null,
+        "brightness": null,
+        "color_temp_kelvin": null,
+        "rgb_color": null,
+        "min_color_temp_kelvin": 2000,
+        "max_color_temp_kelvin": 9009,
+        "entity_id": [
+          "light.room_a_spot_1",
+          "light.lamp_heli",
+          "light.curtain",
+          "light.led_strip_a",
+          "light.spots_a",
+          "light.light_group_room_a",
+          "light.leds_room_a"
+        ]
+      }
+    },
+    "light.spots_a": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Spots",
+        "icon": "hue:bulb-group-recessed-ceiling",
+        "supported_color_modes": ["color_temp", "hs"],
+        "color_mode": null,
+        "brightness": null,
+        "color_temp_kelvin": null,
+        "min_color_temp_kelvin": 2200,
+        "max_color_temp_kelvin": 6500,
+        "entity_id": [
+          "light.room_a_spot_1",
+          "light.room_a_spot_2",
+          "light.room_a_spot_3"
+        ]
+      }
+    },
+    "light.light_group_room_a": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Light Group Room A",
+        "supported_color_modes": ["color_temp", "hs", "rgb", "xy"],
+        "color_mode": null,
+        "brightness": null,
+        "min_color_temp_kelvin": 2000,
+        "max_color_temp_kelvin": 9009,
+        "entity_id": [
+          "light.spots_a",
+          "light.lamp_heli",
+          "light.curtain",
+          "light.led_strip_a"
+        ]
+      }
+    },
+    "light.leds_room_a": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "LEDs Room A",
+        "icon": "mdi:led-strip-variant",
+        "supported_color_modes": ["color_temp", "hs", "rgb"],
+        "color_mode": null,
+        "brightness": null,
+        "min_color_temp_kelvin": 2000,
+        "max_color_temp_kelvin": 9009,
+        "entity_id": [
+          "light.spots_a",
+          "light.curtain",
+          "light.led_strip_a"
+        ]
+      }
+    },
+    "light.room_a_spot_1": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Room A Spot 1",
+        "supported_color_modes": ["color_temp", "hs"],
+        "color_mode": null,
+        "brightness": null,
+        "min_color_temp_kelvin": 2200,
+        "max_color_temp_kelvin": 6500
+      }
+    },
+    "light.room_a_spot_2": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Room A Spot 2",
+        "supported_color_modes": ["color_temp", "hs"],
+        "color_mode": null,
+        "brightness": null,
+        "min_color_temp_kelvin": 2200,
+        "max_color_temp_kelvin": 6500
+      }
+    },
+    "light.room_a_spot_3": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Room A Spot 3",
+        "supported_color_modes": ["color_temp", "hs"],
+        "color_mode": null,
+        "brightness": null,
+        "min_color_temp_kelvin": 2200,
+        "max_color_temp_kelvin": 6500
+      }
+    },
+    "light.lamp_heli": {
+      "state": "unavailable",
+      "attributes": {
+        "friendly_name": "Helicopter Lamp",
+        "icon": "mdi:helicopter",
+        "supported_color_modes": ["color_temp", "xy"],
+        "min_color_temp_kelvin": 2000,
+        "max_color_temp_kelvin": 6535
+      }
+    },
+    "light.curtain": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Cosy Corner",
+        "icon": "mdi:teddy-bear",
+        "supported_color_modes": ["color_temp", "rgb"],
+        "color_mode": null,
+        "brightness": null,
+        "min_color_temp_kelvin": 2000,
+        "max_color_temp_kelvin": 9009
+      }
+    },
+    "light.led_strip_a": {
+      "state": "off",
+      "attributes": {
+        "friendly_name": "Ledstreifen",
+        "icon": "mdi:led-strip-variant",
+        "supported_color_modes": ["color_temp", "rgb"],
+        "color_mode": null,
+        "brightness": null,
+        "min_color_temp_kelvin": 2000,
+        "max_color_temp_kelvin": 9009
+      }
+    },
+
+    "scene.neue_szene": {
+      "state": "2026-08-25T18:11:43.348857+00:00",
+      "attributes": {
+        "friendly_name": "Nachtlicht",
+        "icon": "mdi:power-sleep",
+        "entity_id": [
+          "light.lamp_heli",
+          "light.spots_a",
+          "light.curtain",
+          "light.led_strip_a",
+          "light.zigbee_hall_lamps"
+        ]
+      }
+    },
+    "scene.taglicht_2": {
+      "_comment": "Names the GROUP light.spots_a, never the three spots behind it — the case that breaks a leaf-only scene match.",
+      "state": "2026-08-02T05:00:00.597903+00:00",
+      "attributes": {
+        "friendly_name": "Taglicht",
+        "icon": "mdi:white-balance-sunny",
+        "entity_id": [
+          "light.lamp_heli",
+          "light.spots_a",
+          "light.magic_areas_light_groups_ld_room_a_accent_lights"
+        ]
+      }
+    },
+    "scene.nur_gruppe": {
+      "_synthetic": true,
+      "_comment": "Invented: names ONLY the group, no leaf. Matching scenes against resolved leaves alone would miss it — this is the case that forces the match to include the traversed groups.",
+      "state": "2026-08-25T10:00:00.000000+00:00",
+      "attributes": {
+        "friendly_name": "Nur Gruppe",
+        "icon": "mdi:lightbulb-group",
+        "entity_id": ["light.spots_a"]
+      }
+    },
+    "scene.herbst": {
+      "_comment": "Bedroom lights only — must NOT be imported for the nursery card.",
+      "state": "2025-10-11T18:31:41.952326+00:00",
+      "attributes": {
+        "friendly_name": "Herbst",
+        "icon": "mdi:leaf-maple",
+        "entity_id": ["light.led_bed", "light.led_room_c_fairy"]
+      }
+    },
+    "scene.scene_watch_tv": {
+      "_comment": "Living-room lights only — also must NOT be imported. Carries no icon, so the tile has to fall back.",
+      "state": "2026-04-16T17:18:02.620203+00:00",
+      "attributes": {
+        "friendly_name": "Lila",
+        "entity_id": [
+          "light.led_globe",
+          "light.tv_cabinet",
+          "light.shelf_left",
+          "light.shelf_right"
+        ]
+      }
+    }
+  },
+
+  "zigbee": {
+    "_comment": "Second scenario, captured verbatim on 2026-08-25. A Magic Areas group holding two Zigbee2MQTT groups, which publish their members under `group_entities` — not `entity_id`. Before v0.4.0 the card stopped at the Z2M groups and reported 7 entities; it should report 5 lights.",
+    "root": "light.magic_areas_light_groups_k_room_b_all_lights",
+    "expected": {
+      "leaves": [
+        "light.room_b_spot_1",
+        "light.room_b_spot_2",
+        "light.room_b_spot_3",
+        "light.room_b_ceiling",
+        "light.bulb_x1"
+      ],
+      "leavesWithoutGroupEntities": [
+        "light.room_b_spot_1",
+        "light.room_b_spot_2",
+        "light.room_b_spot_3",
+        "light.zigbee_room_b_lamps",
+        "light.zigbee_room_b_spots",
+        "light.bulb_x1",
+        "light.room_b_ceiling"
+      ],
+      "sectionNames": ["K Room B All Lights", "Zigbee Room B Lampen"],
+      "emptyGroups": ["light.zigbee_room_b_spots"],
+      "maxDepth": 2
+    },
+    "states": {
+      "light.magic_areas_light_groups_k_room_b_all_lights": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "K Room B All Lights",
+          "icon": "mdi:lightbulb-group",
+          "supported_color_modes": ["color_temp", "rgb", "xy"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 9009,
+          "entity_id": [
+            "light.room_b_spot_1",
+            "light.room_b_spot_2",
+            "light.room_b_spot_3",
+            "light.zigbee_room_b_lamps",
+            "light.zigbee_room_b_spots",
+            "light.bulb_x1",
+            "light.room_b_ceiling"
+          ],
+          "lights": [
+            "light.room_b_spot_1",
+            "light.room_b_spot_2",
+            "light.room_b_spot_3",
+            "light.zigbee_room_b_lamps",
+            "light.zigbee_room_b_spots",
+            "light.bulb_x1",
+            "light.room_b_ceiling"
+          ],
+          "child_ids": [
+            "light.magic_areas_light_groups_k_room_b_lights_overhead_lights",
+            "light.magic_areas_light_groups_k_room_b_lights_accent_lights"
+          ]
+        }
+      },
+      "light.zigbee_room_b_lamps": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Zigbee Room B Lampen",
+          "supported_color_modes": ["color_temp", "xy"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 6535,
+          "group_entities": [
+            "light.room_b_ceiling",
+            "light.room_b_spot_1",
+            "light.room_b_spot_2",
+            "light.room_b_spot_3"
+          ]
+        }
+      },
+      "light.zigbee_room_b_spots": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Zigbee Room B Spots",
+          "icon": "phu:wall-spot",
+          "supported_color_modes": ["color_temp", "xy"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 6535,
+          "group_entities": [
+            "light.room_b_spot_1",
+            "light.room_b_spot_2",
+            "light.room_b_spot_3"
+          ]
+        }
+      },
+      "light.room_b_spot_1": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Room B Spot 1",
+          "supported_color_modes": ["color_temp", "xy"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 6535
+        }
+      },
+      "light.room_b_spot_2": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Room B Spot 2",
+          "supported_color_modes": ["color_temp", "xy"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 6535
+        }
+      },
+      "light.room_b_spot_3": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Room B Spot 3",
+          "supported_color_modes": ["color_temp", "xy"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 6535
+        }
+      },
+      "light.room_b_ceiling": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Room B Ceiling Lamp ",
+          "icon": "phu:ceiling-lamp-round",
+          "supported_color_modes": ["color_temp"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 6666
+        }
+      },
+      "light.bulb_x1": {
+        "state": "off",
+        "attributes": {
+          "friendly_name": "LED Ceiling Strip Room B",
+          "icon": "mdi:led-strip-variant",
+          "supported_color_modes": ["color_temp", "rgb"],
+          "color_mode": null,
+          "brightness": null,
+          "min_color_temp_kelvin": 2000,
+          "max_color_temp_kelvin": 9009
+        }
+      },
+      "switch.schedule_tv_off": {
+        "_comment": "A schedule helper, not a group. Its `entities` attribute points at media players — proof that treating any list of entity ids as membership is wrong.",
+        "state": "on",
+        "attributes": {
+          "friendly_name": "TV off",
+          "entities": [
+            "media_player.tv_a",
+            "media_player.projector_b"
+          ]
+        }
+      }
+    }
+  },
+
+  "overrides": {
+    "_comment": "Applied on top of `states` per scenario. `lit` is the only one that invents values, so the screenshots are not of an all-off card.",
+
+    "lit": {
+      "light.room_a_spot_2": {
+        "_synthetic": true,
+        "state": "on",
+        "attributes": { "color_mode": "color_temp", "brightness": 214, "color_temp_kelvin": 2700 }
+      },
+      "light.room_a_spot_3": {
+        "_synthetic": true,
+        "state": "on",
+        "attributes": { "color_mode": "color_temp", "brightness": 168, "color_temp_kelvin": 4000 }
+      },
+      "light.curtain": {
+        "_synthetic": true,
+        "state": "on",
+        "attributes": { "color_mode": "rgb", "brightness": 190, "rgb_color": [255, 92, 168] }
+      },
+      "light.led_strip_a": {
+        "_synthetic": true,
+        "state": "on",
+        "attributes": { "color_mode": "rgb", "brightness": 120, "rgb_color": [88, 120, 255] }
+      }
+    },
+
+    "group_down": {
+      "_comment": "Verbatim shape of an unavailable light group as measured on the live install: state 'unavailable', friendly_name and colour capabilities still present, `entity_id` GONE. Reproduced from light.ceiling_lamps_floor1 and light.light_group_room_c, both unavailable at capture time.",
+      "light.spots_a": {
+        "state": "unavailable",
+        "attributes": {
+          "friendly_name": "Spots",
+          "icon": "hue:bulb-group-recessed-ceiling",
+          "supported_color_modes": ["color_temp", "hs"],
+          "min_color_temp_kelvin": 2200,
+          "max_color_temp_kelvin": 6500
+        }
+      }
+    }
+  },
+
+  "scenesConfig": [
+    { "entity": "scene.taglicht_2", "color": "#ffe0a3" },
+    { "entity": "scene.neue_szene", "color": "#2b3a67" },
+    { "entity": "scene.herbst", "color": "#c2622a" },
+    { "entity": "scene.scene_watch_tv", "title": "Lila", "color": "#7b2ff7" },
+    { "entity": "scene.gibt_es_nicht", "title": "Fehlt absichtlich" }
+  ],
+
+  "expectedSceneImport": {
+    "_comment": "Sorted by friendly name: Nachtlicht, Nur Gruppe, Taglicht. Herbst and Lila touch other rooms and must stay out.",
+    "forNurseryRoot": ["scene.neue_szene", "scene.nur_gruppe", "scene.taglicht_2"],
+    "leavesOnlyWouldMiss": ["scene.nur_gruppe"]
+  }
+}

@@ -1,0 +1,3669 @@
+{
+  "cardFile": "/cards/dist/busch-lightcards.js",
+  "servedFrom": "http://127.0.0.1:53403/dist/busch-lightcards.js",
+  "requests": [
+    "http://127.0.0.1:53403/docs/render/ergebnis/harness.html",
+    "http://127.0.0.1:53403/dist/busch-lightcards.js"
+  ],
+  "badResponses": [],
+  "requestFailures": [],
+  "consoleErrors": [],
+  "pageErrors": [],
+  "checks": [
+    {
+      "name": "leaves match hand-derived expectation",
+      "pass": true,
+      "detail": "got ['light.room_a_spot_1', 'light.lamp_heli', 'light.curtain', 'light.led_strip_a', 'light.room_a_spot_2', 'light.room_a_spot_3']"
+    },
+    {
+      "name": "groups match hand-derived expectation",
+      "pass": true,
+      "detail": "got ['light.magic_areas_light_groups_ld_room_a_all_lights', 'light.spots_a', 'light.light_group_room_a', 'light.leds_room_a']"
+    },
+    {
+      "name": "walked to the expected depth",
+      "pass": true,
+      "detail": "maxDepth=2"
+    },
+    {
+      "name": "duplicates across branches collapsed",
+      "pass": true,
+      "detail": "17 raw member entries -> 6 leaves"
+    },
+    {
+      "name": "resolve_groups:false keeps the group as a single entity",
+      "pass": true,
+      "detail": "got ['light.magic_areas_light_groups_ld_room_a_all_lights']"
+    },
+    {
+      "name": "cycle terminates and yields both leaves",
+      "pass": true,
+      "detail": "got ['light.leaf2', 'light.leaf']"
+    },
+    {
+      "name": "self-referencing group becomes a leaf",
+      "pass": true,
+      "detail": "got ['light.selfie']"
+    },
+    {
+      "name": "member missing from states is kept as an unavailable leaf",
+      "pass": true,
+      "detail": "{\"lights\": 2, \"alive\": 1, \"dead\": 1, \"isOn\": true, \"description\": \"Alle an (1)\"}"
+    },
+    {
+      "name": "non-switchable domains dropped from a group.*",
+      "pass": true,
+      "detail": "leaves=['light.ok', 'switch.plug'] dropped=['device_tracker.phone', 'person.someone']"
+    },
+    {
+      "name": "deep chain fully resolved by default",
+      "pass": true,
+      "detail": "got ['light.l6'] depth=6"
+    },
+    {
+      "name": "max_depth stops and reports instead of silently truncating",
+      "pass": true,
+      "detail": "{\"leaves\": [\"light.l3\"], \"groups\": [\"light.l0\", \"light.l1\", \"light.l2\"], \"recovered\": [], \"dropped\": [], \"truncated\": [\"light.l3\"], \"maxDepth\": 3}"
+    },
+    {
+      "name": "unavailable group without memory degrades to a single leaf",
+      "pass": true,
+      "detail": "got ['light.room_a_spot_1', 'light.lamp_heli', 'light.curtain', 'light.led_strip_a', 'light.spots_a']"
+    },
+    {
+      "name": "remembered membership survives the group going unavailable",
+      "pass": true,
+      "detail": "before=['light.room_a_spot_1', 'light.lamp_heli', 'light.curtain', 'light.led_strip_a', 'light.room_a_spot_2', 'light.room_a_spot_3'] after=['light.room_a_spot_1', 'light.lamp_heli', 'light.curtain', 'light.led_strip_a', 'light.room_a_spot_2', 'light.room_a_spot_3']"
+    },
+    {
+      "name": "recovered groups are named, not hidden",
+      "pass": true,
+      "detail": "got ['light.spots_a']"
+    },
+    {
+      "name": "unavailable leaf counted separately, not as off",
+      "pass": true,
+      "detail": "{\"lights\": 6, \"alive\": 5, \"dead\": 1, \"on\": 4, \"brightness\": 68, \"isOn\": true, \"description\": \"4 von 5 an\", \"deadNames\": [\"light.lamp_heli\"]}"
+    },
+    {
+      "name": "brightness is the average of the lit, reachable members",
+      "pass": true,
+      "detail": "brightness=68, expected mean of 84/66/75/47 = 68"
+    },
+    {
+      "name": "description counts reachable members only",
+      "pass": true,
+      "detail": "got '4 von 5 an'"
+    },
+    {
+      "name": "no service call ever targets the unavailable entity",
+      "pass": true,
+      "detail": "targets=['light.curtain', 'light.led_strip_a', 'light.room_a_spot_1', 'light.room_a_spot_2', 'light.room_a_spot_3']"
+    },
+    {
+      "name": "brightness goes to the lit members only, as the Hue app does",
+      "pass": true,
+      "detail": "[{\"domain\": \"light\", \"service\": \"turn_on\", \"data\": {\"entity_id\": [\"light.curtain\", \"light.led_strip_a\", \"light.room_a_spot_2\", \"light.room_a_spot_3\"], \"brightness_pct\": 40}}]"
+    },
+    {
+      "name": "all members unreachable is a state, not an exception",
+      "pass": true,
+      "detail": "{\"allDead\": true, \"empty\": false, \"desc\": \"Keine Lampe erreichbar\", \"total\": 0, \"lights\": 6}"
+    },
+    {
+      "name": "card names the group and its own icon",
+      "pass": true,
+      "detail": "{\"title\": \"LD Room A All Lights\", \"desc\": \"Alle aus\", \"warnVisible\": true, \"warnText\": \"1\", \"warnTitle\": \"1 nicht erreichbar: Helicopter Lamp\", \"icon\": \"mdi:lightbulb-group\", \"fill\": \"0%\", \"sliderLabel\": \"Helligkeit\", \"background\": \"#ffffff\", \"themeBackground\": \"#ffffff\", \"accent\": \"#03a9f4\", \"toggleOn\": false}"
+    },
+    {
+      "name": "off card says all off over the reachable members",
+      "pass": true,
+      "detail": "got 'Alle aus'"
+    },
+    {
+      "name": "badge names the unreachable member by name",
+      "pass": true,
+      "detail": "{\"text\": \"1\", \"title\": \"1 nicht erreichbar: Helicopter Lamp\"}"
+    },
+    {
+      "name": "lit card shows the mixed count and a colour accent on the theme shell",
+      "pass": true,
+      "detail": "{\"title\": \"LD Room A All Lights\", \"desc\": \"4 von 5 an\", \"warnVisible\": true, \"warnText\": \"1\", \"warnTitle\": \"1 nicht erreichbar: Helicopter Lamp\", \"icon\": \"mdi:lightbulb-group\", \"fill\": \"68%\", \"sliderLabel\": \"68 %\", \"background\": \"#ffffff\", \"themeBackground\": \"#ffffff\", \"accent\": \"linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 248, 237) 67%, rgb(255, 204, 119) 93%, rgb(255, 204, 119) 100%)\", \"toggleOn\": true}"
+    },
+    {
+      "name": "slider fill matches the reported brightness",
+      "pass": true,
+      "detail": "{\"fill\": \"68%\", \"label\": \"68 %\"}"
+    },
+    {
+      "name": "dialog opens on tap",
+      "pass": true,
+      "detail": "{\"opened\": true, \"title\": \"LD Room A All Lights\", \"sub\": \"4 von 5 an\", \"tileCount\": 6, \"tileNames\": [\"Room A Spot 1\", \"Helicopter Lamp\", \"Cosy Corner\", \"Ledstreifen\", \"Room A Spot 2\", \"Room A Spot 3\"], \"deadTiles\": [\"Helicopter Lamp\"], \"sceneCount\": 5, \"disabledScenes\": [\"Fehlt absichtlich\"], \"headings\": [\"Szenen\", \"Helligkeit\", \"Lampen (6)\"], \"hasWheel\": true, \"hasTempBar\": false, \"tabs\": [\"colou"
+    },
+    {
+      "name": "dialog lists every resolved light, not the seven raw members",
+      "pass": true,
+      "detail": "[\"Room A Spot 1\", \"Helicopter Lamp\", \"Cosy Corner\", \"Ledstreifen\", \"Room A Spot 2\", \"Room A Spot 3\"]"
+    },
+    {
+      "name": "unreachable light is shown and marked, not dropped",
+      "pass": true,
+      "detail": "{\"dead\": [\"Helicopter Lamp\"], \"note\": \"Oben bereits enthalten: Light Group Room A, LEDs Room A | 1 nicht erreichbar: Helicopter Lamp\"}"
+    },
+    {
+      "name": "scene row renders, missing scene disabled rather than broken",
+      "pass": true,
+      "detail": "[\"Fehlt absichtlich\"]"
+    },
+    {
+      "name": "dialog covers a Leaflet-grade z-index instead of being drawn through",
+      "pass": true,
+      "detail": "{\"zIndex\": \"100000\", \"intruderZ\": \"1000\", \"topmost\": \"busch-light-dialog\"}"
+    },
+    {
+      "name": "dialog header carries a master switch, reflecting the group",
+      "pass": true,
+      "detail": "{\"present\": true, \"on\": true}"
+    },
+    {
+      "name": "the master switch drives the whole group, skipping the dead one",
+      "pass": true,
+      "detail": "{\"calls\": [{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": [\"light.room_a_spot_1\", \"light.curtain\", \"light.led_strip_a\", \"light.room_a_spot_2\", \"light.room_a_spot_3\"]}}], \"targets\": [\"light.curtain\", \"light.led_strip_a\", \"light.room_a_spot_1\", \"light.room_a_spot_2\", \"light.room_a_spot_3\"]}"
+    },
+    {
+      "name": "the master switch is disabled when nothing is reachable",
+      "pass": true,
+      "detail": "True"
+    },
+    {
+      "name": "brightness label on a light tile follows the tile's text colour",
+      "pass": true,
+      "detail": "{\"name\": \"Room A Spot 2\", \"tileColor\": \"rgb(17, 17, 17)\", \"pctColor\": \"rgb(17, 17, 17)\"}"
+    },
+    {
+      "name": "colour tab active by default, both tabs offered",
+      "pass": true,
+      "detail": "{\"tabs\": [\"colour\", \"white\"], \"wheel\": true, \"temp\": false}"
+    },
+    {
+      "name": "group temperature range is the intersection of its members'",
+      "pass": true,
+      "detail": "{\"min\": 2200, \"max\": 6500, \"startRgb\": [255, 187, 73], \"endRgb\": [190, 228, 243]}"
+    },
+    {
+      "name": "white tab swaps in a temperature bar spanning that range",
+      "pass": true,
+      "detail": "expected rgb(255, 187, 73) .. rgb(190, 228, 243) in linear-gradient(90deg, rgb(255, 187, 73) 0%, rgb(255, 199, 106) 8%, rgb(255, 211, 138) 17%, rgb(255, 223, 171) 25%, rgb(255, 236, 203) 33%, rgb(255, 248, 236) 4"
+    },
+    {
+      "name": "temperature marker stays inside its bar at both ends",
+      "pass": true,
+      "detail": "{\"atMax\": {\"markerLeft\": 572, \"markerRight\": 598, \"barLeft\": 70, \"barRight\": 598, \"scrollWidth\": 560, \"clientWidth\": 560, \"bodyScroll\": 668, \"bodyClient\": 668}, \"atMin\": {\"markerLeft\": 70, \"markerRight\": 96, \"barLeft\": 70, \"barRight\": 598, \"scrollWidth\": 560, \"clientWidth\": 560, \"bodyScroll\": 668, \"bodyClient\": 668}}"
+    },
+    {
+      "name": "the dialog never scrolls sideways",
+      "pass": true,
+      "detail": "{\"max\": {\"markerLeft\": 572, \"markerRight\": 598, \"barLeft\": 70, \"barRight\": 598, \"scrollWidth\": 560, \"clientWidth\": 560, \"bodyScroll\": 668, \"bodyClient\": 668}, \"min\": {\"markerLeft\": 70, \"markerRight\": 96, \"barLeft\": 70, \"barRight\": 598, \"scrollWidth\": 560, \"clientWidth\": 560, \"bodyScroll\": 668, \"bodyClient\": 668}}"
+    },
+    {
+      "name": "resolution keeps the group structure, not just the leaves",
+      "pass": true,
+      "detail": "[[\"LD Room A All Lights\", 0], [\"Spots\", 1]]"
+    },
+    {
+      "name": "each light sits in exactly one section, under the group it was first met in",
+      "pass": true,
+      "detail": "[[\"light.room_a_spot_1\", \"light.lamp_heli\", \"light.curtain\", \"light.led_strip_a\"], [\"light.room_a_spot_2\", \"light.room_a_spot_3\"]]"
+    },
+    {
+      "name": "groups that add nothing new are named, not rendered as empty headings",
+      "pass": true,
+      "detail": "[\"light.light_group_room_a\", \"light.leds_room_a\"]"
+    },
+    {
+      "name": "dialog gives the nested group its own block instead of one flat pile",
+      "pass": true,
+      "detail": "{\"blockCount\": 1, \"names\": [\"Spots\"], \"counts\": [\"2/2\"], \"depths\": [\"1\"], \"nested\": [true], \"tilesPerBlock\": [2], \"totalTiles\": 6, \"gridCount\": 2, \"bareTiles\": 4, \"alreadyNote\": \"Oben bereits enthalten: Light Group Room A, LEDs Room A\"}"
+    },
+    {
+      "name": "the root's own lights stand bare, not under a heading repeating the title",
+      "pass": true,
+      "detail": "{\"names\": [\"Spots\"], \"bare\": 4}"
+    },
+    {
+      "name": "a nested group is indented and marked as nested",
+      "pass": true,
+      "detail": "{\"depths\": [\"1\"], \"nested\": [true]}"
+    },
+    {
+      "name": "the group header counts only its own reachable lights",
+      "pass": true,
+      "detail": "[\"2/2\"]"
+    },
+    {
+      "name": "groups that added nothing are named under the tiles",
+      "pass": true,
+      "detail": "Oben bereits enthalten: Light Group Room A, LEDs Room A"
+    },
+    {
+      "name": "group header switches that group alone",
+      "pass": true,
+      "detail": "[{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": [\"light.room_a_spot_2\", \"light.room_a_spot_3\"]}}]"
+    },
+    {
+      "name": "switching a section skips its unreachable member",
+      "pass": true,
+      "detail": "[{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": [\"light.room_a_spot_1\", \"light.curtain\", \"light.led_strip_a\"]}}]"
+    },
+    {
+      "name": "group_display: flat returns to a single pile of tiles",
+      "pass": true,
+      "detail": "{\"blocks\": 0, \"grids\": 1, \"tiles\": 6, \"alreadyNote\": false}"
+    },
+    {
+      "name": "Zigbee2MQTT groups resolve through their `group_entities`",
+      "pass": true,
+      "detail": "got ['light.room_b_spot_1', 'light.room_b_spot_2', 'light.room_b_spot_3', 'light.room_b_ceiling', 'light.bulb_x1']"
+    },
+    {
+      "name": "without that attribute the same tree stops at the Zigbee groups",
+      "pass": true,
+      "detail": "blind=['light.room_b_spot_1', 'light.room_b_spot_2', 'light.room_b_spot_3', 'light.zigbee_room_b_lamps', 'light.zigbee_room_b_spots', 'light.bulb_x1', 'light.room_b_ceiling']"
+    },
+    {
+      "name": "the Zigbee group becomes its own block in the dialog",
+      "pass": true,
+      "detail": "{\"sections\": [\"K Room B All Lights\", \"Zigbee Room B Lampen\"], \"empty\": [\"light.zigbee_room_b_spots\"]}"
+    },
+    {
+      "name": "only the three proven member attributes are followed",
+      "pass": true,
+      "detail": "[\"entity_id\", \"group_entities\", \"lights\"]"
+    },
+    {
+      "name": "child_ids is ignored — those ids resolve to nothing",
+      "pass": true,
+      "detail": "[\"light.magic_areas_light_groups_k_room_b_lights_overhead_lights\", \"light.magic_areas_light_groups_k_room_b_lights_accent_lights\"]"
+    },
+    {
+      "name": "a schedule helper's `entities` is not mistaken for membership",
+      "pass": true,
+      "detail": "[\"switch.schedule_tv_off\"]"
+    },
+    {
+      "name": "scene import finds every scene touching these lights, sorted by name",
+      "pass": true,
+      "detail": "[\"scene.neue_szene\", \"scene.nur_gruppe\", \"scene.taglicht_2\"]"
+    },
+    {
+      "name": "scenes for other rooms are left out",
+      "pass": true,
+      "detail": "[\"scene.neue_szene\", \"scene.nur_gruppe\", \"scene.taglicht_2\"]"
+    },
+    {
+      "name": "matching includes the traversed groups, not just the leaves",
+      "pass": true,
+      "detail": "{\"all\": [\"scene.neue_szene\", \"scene.nur_gruppe\", \"scene.taglicht_2\"], \"leavesOnly\": [\"scene.neue_szene\", \"scene.taglicht_2\"]}"
+    },
+    {
+      "name": "an empty light list imports nothing",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "scene tiles carry a round icon badge instead of a flooded colour",
+      "pass": true,
+      "detail": "[\"mdi:white-balance-sunny\", \"mdi:power-sleep\", \"mdi:leaf-maple\", \"mdi:palette\", \"mdi:palette\"]"
+    },
+    {
+      "name": "a scene without its own icon still gets one",
+      "pass": true,
+      "detail": "[\"mdi:white-balance-sunny\", \"mdi:power-sleep\", \"mdi:leaf-maple\", \"mdi:palette\", \"mdi:palette\"]"
+    },
+    {
+      "name": "every reachable light tile has its own switch, the dead one none",
+      "pass": true,
+      "detail": "{\"sceneBadges\": true, \"sceneIcons\": [\"mdi:white-balance-sunny\", \"mdi:power-sleep\", \"mdi:leaf-maple\", \"mdi:palette\", \"mdi:palette\"], \"sceneBadgeColors\": [\"rgb(255, 224, 163)\", \"rgb(43, 58, 103)\", \"rgb(194, 98, 42)\", \"rgb(123, 47, 247)\", \"rgb(255, 218, 149)\"], \"tilesWithSwitch\": 5, \"deadWithSwitch\": 0, \"totalTiles\": 6, \"nestedButtons\": 0, \"switchCalls\": [{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": \"light.curtain\"}}], \"detailTitle\": \"Cosy Corner\", \"hasBackButton\": true, \"detailSwitchPresent\": true, \"detailSwitchOn\": true, \"detailSwitchCalls\": [{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": \"light.curtain\"}}]}"
+    },
+    {
+      "name": "tiles are not nested buttons",
+      "pass": true,
+      "detail": "0"
+    },
+    {
+      "name": "the tile switch acts on that light alone",
+      "pass": true,
+      "detail": "[{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": \"light.curtain\"}}]"
+    },
+    {
+      "name": "tapping the tile body opens that light's detail view",
+      "pass": true,
+      "detail": "{\"title\": \"Cosy Corner\", \"back\": true}"
+    },
+    {
+      "name": "the master switch follows into the detail view and drives that light",
+      "pass": true,
+      "detail": "[{\"domain\": \"light\", \"service\": \"turn_off\", \"data\": {\"entity_id\": \"light.curtain\"}}]"
+    },
+    {
+      "name": "the dialog takes a history entry of its own when it opens",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "Escape closes the dialog",
+      "pass": true,
+      "detail": "True"
+    },
+    {
+      "name": "the phone's back gesture closes the dialog",
+      "pass": true,
+      "detail": "True"
+    },
+    {
+      "name": "back from a light's detail view returns to the group first",
+      "pass": true,
+      "detail": "{\"stateAfterOpen\": 1, \"closedByEscape\": true, \"closedByBack\": true, \"stateInDetail\": 2, \"detailTitle\": \"Cosy Corner\", \"stillOpenAfterFirstBack\": true, \"titleAfterFirstBack\": \"LD Room A All Lights\", \"closedBySecondBack\": true, \"escFromDetailKeepsDialog\": true, \"titleAfterEsc\": \"LD Room A All Lights\", \"escTwiceCloses\": true, \"closedByButton\": true, \"stateRestored\": true, \"lengthUnchangedByClose\": true}"
+    },
+    {
+      "name": "Escape steps back the same way, one level at a time",
+      "pass": true,
+      "detail": "{\"kept\": true, \"title\": \"LD Room A All Lights\", \"closed\": true}"
+    },
+    {
+      "name": "closing puts the history back where it was before opening",
+      "pass": true,
+      "detail": "{\"closed\": true, \"restored\": true, \"lengthKept\": true}"
+    },
+    {
+      "name": "card offers a visual editor",
+      "pass": true,
+      "detail": "{\"tag\": \"busch-light-card-editor\"}"
+    },
+    {
+      "name": "picker's starting card prefers a real group",
+      "pass": true,
+      "detail": "{\"type\": \"custom:busch-light-card\", \"entity\": \"light.magic_areas_light_groups_ld_room_a_all_lights\"}"
+    },
+    {
+      "name": "editor exposes every documented option",
+      "pass": true,
+      "detail": "missing=[] extra=[]"
+    },
+    {
+      "name": "every field has a selector and a translated label",
+      "pass": true,
+      "detail": "{\"noSelector\": [], \"untranslated\": []}"
+    },
+    {
+      "name": "editor is grouped into sections",
+      "pass": true,
+      "detail": "[\"Gruppenauflösung\", \"Darstellung\", \"Aktionen\", \"Szenen\"]"
+    },
+    {
+      "name": "editor previews the resolution live",
+      "pass": true,
+      "detail": "{\"head\": \"Löst auf zu:6 Lampen aus 4 Gruppen, Tiefe 2\", \"chips\": [\"Room A Spot 1\", \"Helicopter Lamp\", \"Cosy Corner\", \"Ledstreifen\", \"Room A Spot 2\", \"Room A Spot 3\"], \"dead\": [\"Helicopter Lamp\"]}"
+    },
+    {
+      "name": "preview names the unreachable member count",
+      "pass": true,
+      "detail": "[\"1 nicht erreichbar\"]"
+    },
+    {
+      "name": "preview reflects resolve_groups: false",
+      "pass": true,
+      "detail": "Löst auf zu:1 Entität, Gruppen werden nicht aufgelöst"
+    },
+    {
+      "name": "editor writes only what differs from the default",
+      "pass": true,
+      "detail": "{\"type\": \"custom:busch-light-card\", \"entity\": \"light.magic_areas_light_groups_ld_room_a_all_lights\", \"slider\": false}"
+    },
+    {
+      "name": "returning an option to its default removes the key again",
+      "pass": true,
+      "detail": "{\"type\": \"custom:busch-light-card\", \"entity\": \"light.magic_areas_light_groups_ld_room_a_all_lights\"}"
+    },
+    {
+      "name": "camelCase from the upstream card is folded into snake_case",
+      "pass": true,
+      "detail": "{\"type\": \"custom:busch-light-card\", \"entity\": \"light.magic_areas_light_groups_ld_room_a_all_lights\", \"resolve_groups\": false, \"off_color\": \"#123456\", \"max_depth\": 4}"
+    },
+    {
+      "name": "scene rows add and write hex colour, not an rgb triple",
+      "pass": true,
+      "detail": "{\"type\": \"custom:busch-light-card\", \"entity\": \"light.magic_areas_light_groups_ld_room_a_all_lights\", \"scenes\": [{\"entity\": \"scene.taglicht\", \"color\": \"#ffe0a3\"}, {\"entity\": \"scene.nachtlicht\", \"title\": \"Nacht\"}]}"
+    },
+    {
+      "name": "scene rows reorder and delete",
+      "pass": true,
+      "detail": "{\"move\": [{\"entity\": \"scene.nachtlicht\", \"title\": \"Nacht\"}, {\"entity\": \"scene.taglicht\", \"color\": \"#ffe0a3\"}], \"delete\": [{\"entity\": \"scene.taglicht\", \"color\": \"#ffe0a3\"}], \"rows\": 1}"
+    },
+    {
+      "name": "colour survives the hex/rgb round trip the picker needs",
+      "pass": true,
+      "detail": "#ffe0a3"
+    },
+    {
+      "name": "import button offers exactly the matching scenes",
+      "pass": true,
+      "detail": "{\"label\": \"↧  Alle Szenen mit diesen Lampen übernehmen (3)\", \"disabled\": false}"
+    },
+    {
+      "name": "importing writes those scenes into the config",
+      "pass": true,
+      "detail": "[{\"entity\": \"scene.neue_szene\"}, {\"entity\": \"scene.nur_gruppe\"}, {\"entity\": \"scene.taglicht_2\"}]"
+    },
+    {
+      "name": "a second import has nothing left to add",
+      "pass": true,
+      "detail": "{\"label\": \"Alle 3 passenden Szenen stehen schon in der Liste\", \"disabled\": true}"
+    },
+    {
+      "name": "a removed scene is offered again, so the import is reversible",
+      "pass": true,
+      "detail": "{\"scenes\": [{\"entity\": \"scene.nur_gruppe\"}, {\"entity\": \"scene.taglicht_2\"}], \"label\": \"↧  Alle Szenen mit diesen Lampen übernehmen (1)\"}"
+    },
+    {
+      "name": "every schema field has a label and a helper in both languages, in the shape the spec asks for",
+      "pass": true,
+      "detail": "[]"
+    },
+    {
+      "name": "card picker entry follows navigator.language",
+      "pass": true,
+      "detail": "{\"navigator\": \"de-DE\", \"eintrag\": {\"type\": \"busch-light-card\", \"name\": \"Busch Lampenkarte\", \"description\": \"Hue-artige Karte für Lampen und Szenen, die verschachtelte Gruppen auf jeder Ebene auflöst und nicht erreichbare Entitäten übersteht.\", \"preview\": true, \"documentationURL\": \"https://github.com/luukkii123/ha-busch-lightcards\"}}"
+    },
+    {
+      "name": "getGridOptions gives columns in multiples of three",
+      "pass": true,
+      "detail": "{\"columns\": 12, \"min_columns\": 6}"
+    },
+    {
+      "name": "the only config key outside the schema is a named exception with a reason",
+      "pass": true,
+      "detail": "{\"type\": \"Written by Lovelace itself. Not an option of this card.\", \"scenes\": \"A list of objects, edited by the editor’s own scene rows (add, reorder, remove, import in one click). `ha-form` has no selector for that shape; every row is itself an `ha-form` whose four fields carry label and helper (scene_entity, scene_title, scene_icon, scene_color).\"}"
+    },
+    {
+      "name": "the editor hands ha-form a computeHelper for every field",
+      "pass": true,
+      "detail": "{\"ohne\": [], \"anzahl\": 18}"
+    },
+    {
+      "name": "editor preserves scene fields and neighboring edits through HA config echo",
+      "pass": true,
+      "detail": "{\"original\": {\"type\": \"custom:busch-light-card\", \"entity\": \"light.one\", \"title\": \"Original\", \"scenes\": [{\"entity\": \"scene.one\", \"title\": \"Old\", \"color\": \"#112233\", \"transition\": 5}, {\"entity\": \"scene.two\"}]}, \"first\": {\"type\": \"custom:busch-light-card\", \"entity\": \"light.one\", \"title\": \"Original\", \"scenes\": [{\"entity\": \"scene.one\", \"title\": \"New\", \"color\": \"#112233\", \"transition\": 5}, {\"entity\": \"scene.two\"}]}, \"second\": {\"type\": \"custom:busch-light-card\", \"entity\": \"light.one\", \"title\": \"External\", \"scenes\": [{\"entity\": \"scene.one\", \"title\": \"New\", \"color\": \"#112233\", \"transition\": 5, \"icon\": \"mdi:star\"}, {\"entity\": \"scene.two\"}], \"slider\": false}, \"third\": {\"type\": \"custom:busch-light-card\", \"entity\": \"light.changed\", \"title\": \"Elsewhere\", \"scenes\": [{\"entity\": \"scene.one\", \"title\": \"New\", \"color\": \"#112233\", \"transition\": 5, \"icon\": \"mdi:star\"}, {\"entity\": \"scene.two\"}], \"slider\": fals"
+    },
+    {
+      "name": "editor keeps scene focus and blocks only shortcut propagation",
+      "pass": true,
+      "detail": "{\"original\": {\"type\": \"custom:busch-light-card\", \"entity\": \"light.one\", \"title\": \"Original\", \"scenes\": [{\"entity\": \"scene.one\", \"title\": \"Old\", \"color\": \"#112233\", \"transition\": 5}, {\"entity\": \"scene.two\"}]}, \"first\": {\"type\": \"custom:busch-light-card\", \"entity\": \"light.one\", \"title\": \"Original\", \"scenes\": [{\"entity\": \"scene.one\", \"title\": \"New\", \"color\": \"#112233\", \"transition\": 5}, {\"entity\": \"scene.two\"}]}, \"second\": {\"type\": \"custom:busch-light-card\", \"entity\": \"light.one\", \"title\": \"External\", \"scenes\": [{\"entity\": \"scene.one\", \"title\": \"New\", \"color\": \"#112233\", \"transition\": 5, \"icon\": \"mdi:star\"}, {\"entity\": \"scene.two\"}], \"slider\": false}, \"third\": {\"type\": \"custom:busch-light-card\", \"entity\": \"light.changed\", \"title\": \"Elsewhere\", \"scenes\": [{\"entity\": \"scene.one\", \"title\": \"New\", \"color\": \"#112233\", \"transition\": 5, \"icon\": \"mdi:star\"}, {\"entity\": \"scene.two\"}], \"slider\": fals"
+    },
+    {
+      "name": "editor isolates nested caller config and accepts frozen config",
+      "pass": true,
+      "detail": "{\"inputResult\": {\"type\": \"custom:busch-light-card\", \"entity\": \"light.one\", \"entities\": [\"light.two\"], \"scenes\": [{\"entity\": \"scene.one\", \"title\": \"Original\", \"extra\": {\"duration\": 5}}], \"slider\": false}, \"frozenResult\": {\"type\": \"custom:busch-light-card\", \"entity\": \"light.frozen\", \"entities\": [\"light.member\"], \"scenes\": [{\"entity\": \"scene.frozen\", \"title\": \"After\", \"extra\": {\"duration\": 7}}]}, \"frozenTitle\": \"Before\", \"frozenDuration\": 7, \"second\": {\"type\": \"custom:busch-light-card\", \"entity\": \"light.next\", \"entities\": [\"light.keep\"], \"scenes\": [{\"entity\": \"scene.event\", \"title\": \"Keep\", \"extra\": {\"duration\": 11}}], \"slider\": false}, \"eventCount\": 2}"
+    },
+    {
+      "name": "mutating first config-changed payload cannot affect next edit",
+      "pass": true,
+      "detail": "{\"inputResult\": {\"type\": \"custom:busch-light-card\", \"entity\": \"light.one\", \"entities\": [\"light.two\"], \"scenes\": [{\"entity\": \"scene.one\", \"title\": \"Original\", \"extra\": {\"duration\": 5}}], \"slider\": false}, \"frozenResult\": {\"type\": \"custom:busch-light-card\", \"entity\": \"light.frozen\", \"entities\": [\"light.member\"], \"scenes\": [{\"entity\": \"scene.frozen\", \"title\": \"After\", \"extra\": {\"duration\": 7}}]}, \"frozenTitle\": \"Before\", \"frozenDuration\": 7, \"second\": {\"type\": \"custom:busch-light-card\", \"entity\": \"light.next\", \"entities\": [\"light.keep\"], \"scenes\": [{\"entity\": \"scene.event\", \"title\": \"Keep\", \"extra\": {\"duration\": 11}}], \"slider\": false}, \"eventCount\": 2}"
+    },
+    {
+      "name": "editor retries HA form loading after a transient failure",
+      "pass": true,
+      "detail": "{\"fallback\": true, \"recovered\": true}"
+    },
+    {
+      "name": "editor and scene rows fit 320, 480 and 960 px in both themes",
+      "pass": true,
+      "detail": "[{\"breite\": 320, \"thema\": \"hell\", \"width\": 320, \"scrollWidth\": 320, \"bad\": []}, {\"breite\": 320, \"thema\": \"dunkel\", \"width\": 320, \"scrollWidth\": 320, \"bad\": []}, {\"breite\": 480, \"thema\": \"hell\", \"width\": 480, \"scrollWidth\": 480, \"bad\": []}, {\"breite\": 480, \"thema\": \"dunkel\", \"width\": 480, \"scrollWidth\": 480, \"bad\": []}, {\"breite\": 960, \"thema\": \"hell\", \"width\": 960, \"scrollWidth\": 960, \"bad\": []}, {\"breite\": 960, \"thema\": \"dunkel\", \"width\": 960, \"scrollWidth\": 960, \"bad\": []}]"
+    },
+    {
+      "name": "both configuration errors come from the dictionary, in German",
+      "pass": true,
+      "detail": "{\"fehlerKeineEntitaet\": \"Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\\\" eine Entität wählen.\", \"fehlerKeineEntitaetSpaeteresHass\": \"Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\\\" eine Entität wählen.\", \"fehlerSzene\": \"Ein Szeneneintrag hat keine Entität: {\\\"titel\\\":\\\"ohne\\\"}. Jede Szenenkachel braucht eine Szene oder ein Skript.\", \"sollKeineEntitaet\": \"Die"
+    },
+    {
+      "name": "the dialog's close X is the first thing in the header",
+      "pass": true,
+      "detail": "{\"kopf\": [\"button.iconbtn[mdi:close]\", \"div.who\", \"button.gtoggle headsw on\"], \"erstes\": true}"
+    },
+    {
+      "name": "removing a scene row is reversible: Remove, mdi:close, not red",
+      "pass": true,
+      "detail": "{\"symbol\": \"mdi:close\", \"klassen\": \"busch-ui-action iconbtn\", \"beschriftung\": \"Entfernen\", \"rotImStilblatt\": false}"
+    }
+  ],
+  "screenshots": [
+    "card-off.png",
+    "card-on.png",
+    "dialog.png",
+    "dialog-white.png",
+    "dialog-groups.png",
+    "dialog-tiles.png"
+  ],
+  "harnessUrl": "http://127.0.0.1:53403/docs/render/ergebnis/harness.html",
+  "resolution": {
+    "leaves": [
+      "light.room_a_spot_1",
+      "light.lamp_heli",
+      "light.curtain",
+      "light.led_strip_a",
+      "light.room_a_spot_2",
+      "light.room_a_spot_3"
+    ],
+    "groups": [
+      "light.magic_areas_light_groups_ld_room_a_all_lights",
+      "light.spots_a",
+      "light.light_group_room_a",
+      "light.leds_room_a"
+    ],
+    "recovered": [],
+    "dropped": [],
+    "truncated": [],
+    "maxDepth": 2
+  },
+  "edgeCases": {
+    "cycle": {
+      "leaves": [
+        "light.leaf2",
+        "light.leaf"
+      ],
+      "groups": [
+        "light.a",
+        "light.b"
+      ],
+      "recovered": [],
+      "dropped": [],
+      "truncated": [],
+      "maxDepth": 2
+    },
+    "selfRef": {
+      "leaves": [
+        "light.selfie"
+      ],
+      "groups": [],
+      "recovered": [],
+      "dropped": [],
+      "truncated": [],
+      "maxDepth": 0
+    },
+    "missing": {
+      "leaves": [
+        "light.here",
+        "light.deleted"
+      ],
+      "groups": [
+        "light.grp"
+      ],
+      "recovered": [],
+      "dropped": [],
+      "truncated": [],
+      "maxDepth": 1
+    },
+    "missingModel": {
+      "lights": 2,
+      "alive": 1,
+      "dead": 1,
+      "isOn": true,
+      "description": "Alle an (1)"
+    },
+    "mixed": {
+      "leaves": [
+        "light.ok",
+        "switch.plug"
+      ],
+      "groups": [
+        "group.mixed"
+      ],
+      "recovered": [],
+      "dropped": [
+        "device_tracker.phone",
+        "person.someone"
+      ],
+      "truncated": [],
+      "maxDepth": 1
+    },
+    "deepFull": {
+      "leaves": [
+        "light.l6"
+      ],
+      "groups": [
+        "light.l0",
+        "light.l1",
+        "light.l2",
+        "light.l3",
+        "light.l4",
+        "light.l5"
+      ],
+      "recovered": [],
+      "dropped": [],
+      "truncated": [],
+      "maxDepth": 6
+    },
+    "deepCapped": {
+      "leaves": [
+        "light.l3"
+      ],
+      "groups": [
+        "light.l0",
+        "light.l1",
+        "light.l2"
+      ],
+      "recovered": [],
+      "dropped": [],
+      "truncated": [
+        "light.l3"
+      ],
+      "maxDepth": 3
+    }
+  },
+  "groupDown": {
+    "coldLeaves": [
+      "light.room_a_spot_1",
+      "light.lamp_heli",
+      "light.curtain",
+      "light.led_strip_a",
+      "light.spots_a"
+    ],
+    "warmBefore": [
+      "light.room_a_spot_1",
+      "light.lamp_heli",
+      "light.curtain",
+      "light.led_strip_a",
+      "light.room_a_spot_2",
+      "light.room_a_spot_3"
+    ],
+    "warmAfter": [
+      "light.room_a_spot_1",
+      "light.lamp_heli",
+      "light.curtain",
+      "light.led_strip_a",
+      "light.room_a_spot_2",
+      "light.room_a_spot_3"
+    ],
+    "recovered": [
+      "light.spots_a"
+    ],
+    "deadCount": 1,
+    "total": 5
+  },
+  "aggregate": {
+    "before": {
+      "lights": 6,
+      "alive": 5,
+      "dead": 1,
+      "on": 4,
+      "brightness": 68,
+      "isOn": true,
+      "description": "4 von 5 an",
+      "deadNames": [
+        "light.lamp_heli"
+      ]
+    },
+    "calls": [
+      {
+        "domain": "light",
+        "service": "turn_on",
+        "data": {
+          "entity_id": [
+            "light.room_a_spot_1",
+            "light.curtain",
+            "light.led_strip_a",
+            "light.room_a_spot_2",
+            "light.room_a_spot_3"
+          ]
+        }
+      },
+      {
+        "domain": "light",
+        "service": "turn_on",
+        "data": {
+          "entity_id": [
+            "light.curtain",
+            "light.led_strip_a",
+            "light.room_a_spot_2",
+            "light.room_a_spot_3"
+          ],
+          "brightness_pct": 40
+        }
+      },
+      {
+        "domain": "light",
+        "service": "turn_on",
+        "data": {
+          "entity_id": [
+            "light.room_a_spot_1",
+            "light.curtain",
+            "light.led_strip_a",
+            "light.room_a_spot_2",
+            "light.room_a_spot_3"
+          ],
+          "color_temp_kelvin": 3000
+        }
+      }
+    ]
+  },
+  "allUnavailable": {
+    "allDead": true,
+    "empty": false,
+    "desc": "Keine Lampe erreichbar",
+    "total": 0,
+    "lights": 6
+  },
+  "cardOff": {
+    "title": "LD Room A All Lights",
+    "desc": "Alle aus",
+    "warnVisible": true,
+    "warnText": "1",
+    "warnTitle": "1 nicht erreichbar: Helicopter Lamp",
+    "icon": "mdi:lightbulb-group",
+    "fill": "0%",
+    "sliderLabel": "Helligkeit",
+    "background": "#ffffff",
+    "themeBackground": "#ffffff",
+    "accent": "#03a9f4",
+    "toggleOn": false
+  },
+  "cardLit": {
+    "title": "LD Room A All Lights",
+    "desc": "4 von 5 an",
+    "warnVisible": true,
+    "warnText": "1",
+    "warnTitle": "1 nicht erreichbar: Helicopter Lamp",
+    "icon": "mdi:lightbulb-group",
+    "fill": "68%",
+    "sliderLabel": "68 %",
+    "background": "#ffffff",
+    "themeBackground": "#ffffff",
+    "accent": "linear-gradient(100deg, rgb(88, 120, 255) 0%, rgb(88, 120, 255) 7%, rgb(255, 92, 168) 33%, rgb(255, 248, 237) 67%, rgb(255, 204, 119) 93%, rgb(255, 204, 119) 100%)",
+    "toggleOn": true
+  },
+  "dialog": {
+    "opened": true,
+    "title": "LD Room A All Lights",
+    "sub": "4 von 5 an",
+    "tileCount": 6,
+    "tileNames": [
+      "Room A Spot 1",
+      "Helicopter Lamp",
+      "Cosy Corner",
+      "Ledstreifen",
+      "Room A Spot 2",
+      "Room A Spot 3"
+    ],
+    "deadTiles": [
+      "Helicopter Lamp"
+    ],
+    "sceneCount": 5,
+    "disabledScenes": [
+      "Fehlt absichtlich"
+    ],
+    "headings": [
+      "Szenen",
+      "Helligkeit",
+      "Lampen (6)"
+    ],
+    "hasWheel": true,
+    "hasTempBar": false,
+    "tabs": [
+      "colour",
+      "white"
+    ],
+    "deadNote": "Oben bereits enthalten: Light Group Room A, LEDs Room A | 1 nicht erreichbar: Helicopter Lamp",
+    "litTilePct": {
+      "name": "Room A Spot 2",
+      "tileColor": "rgb(17, 17, 17)",
+      "pctColor": "rgb(17, 17, 17)"
+    }
+  },
+  "stacking": {
+    "zIndex": "100000",
+    "intruderZ": "1000",
+    "topmost": "busch-light-dialog"
+  },
+  "masterSwitch": {
+    "present": true,
+    "onInGroupView": true,
+    "groupCalls": [
+      {
+        "domain": "light",
+        "service": "turn_off",
+        "data": {
+          "entity_id": [
+            "light.room_a_spot_1",
+            "light.curtain",
+            "light.led_strip_a",
+            "light.room_a_spot_2",
+            "light.room_a_spot_3"
+          ]
+        }
+      }
+    ],
+    "disabledWhenAllDead": true
+  },
+  "dialogWhiteTab": {
+    "hasWheel": false,
+    "hasTempBar": true,
+    "gradient": "linear-gradient(90deg, rgb(255, 187, 73) 0%, rgb(255, 199, 106) 8%, rgb(255, 211, 138) 17%, rgb(255, 223, 171) 25%, rgb(255, 236, 203) 33%, rgb(255, 248, 236) 42%, rgb(251, 253, 254) 50%, rgb(241, 249, 252) 58%, rgb(231, 245, 250) 67%, rgb(220, 241, 249) 75%, rgb(210, 236, 247) 83%, rgb(200, 232, 245) 92%, rgb(190, 228, 243) 100%)"
+  },
+  "kelvinRange": {
+    "min": 2200,
+    "max": 6500,
+    "startRgb": [
+      255,
+      187,
+      73
+    ],
+    "endRgb": [
+      190,
+      228,
+      243
+    ]
+  },
+  "tempBarOverflow": {
+    "atMax": {
+      "markerLeft": 572,
+      "markerRight": 598,
+      "barLeft": 70,
+      "barRight": 598,
+      "scrollWidth": 560,
+      "clientWidth": 560,
+      "bodyScroll": 668,
+      "bodyClient": 668
+    },
+    "atMin": {
+      "markerLeft": 70,
+      "markerRight": 96,
+      "barLeft": 70,
+      "barRight": 598,
+      "scrollWidth": 560,
+      "clientWidth": 560,
+      "bodyScroll": 668,
+      "bodyClient": 668
+    }
+  },
+  "sections": {
+    "sections": [
+      {
+        "entityId": "light.magic_areas_light_groups_ld_room_a_all_lights",
+        "name": "LD Room A All Lights",
+        "depth": 0,
+        "lights": [
+          "light.room_a_spot_1",
+          "light.lamp_heli",
+          "light.curtain",
+          "light.led_strip_a"
+        ]
+      },
+      {
+        "entityId": "light.spots_a",
+        "name": "Spots",
+        "depth": 1,
+        "lights": [
+          "light.room_a_spot_2",
+          "light.room_a_spot_3"
+        ]
+      }
+    ],
+    "emptyGroups": [
+      "light.light_group_room_a",
+      "light.leds_room_a"
+    ],
+    "leaves": [
+      "light.room_a_spot_1",
+      "light.lamp_heli",
+      "light.curtain",
+      "light.led_strip_a",
+      "light.room_a_spot_2",
+      "light.room_a_spot_3"
+    ]
+  },
+  "dialogGroups": {
+    "blockCount": 1,
+    "names": [
+      "Spots"
+    ],
+    "counts": [
+      "2/2"
+    ],
+    "depths": [
+      "1"
+    ],
+    "nested": [
+      true
+    ],
+    "tilesPerBlock": [
+      2
+    ],
+    "totalTiles": 6,
+    "gridCount": 2,
+    "bareTiles": 4,
+    "alreadyNote": "Oben bereits enthalten: Light Group Room A, LEDs Room A"
+  },
+  "groupToggle": {
+    "spots": [
+      {
+        "domain": "light",
+        "service": "turn_off",
+        "data": {
+          "entity_id": [
+            "light.room_a_spot_2",
+            "light.room_a_spot_3"
+          ]
+        }
+      }
+    ],
+    "mixedSection": [
+      "light.room_a_spot_1",
+      "light.lamp_heli",
+      "light.curtain",
+      "light.led_strip_a"
+    ],
+    "mixedCalls": [
+      {
+        "domain": "light",
+        "service": "turn_off",
+        "data": {
+          "entity_id": [
+            "light.room_a_spot_1",
+            "light.curtain",
+            "light.led_strip_a"
+          ]
+        }
+      }
+    ]
+  },
+  "flatDialog": {
+    "blocks": 0,
+    "grids": 1,
+    "tiles": 6,
+    "alreadyNote": false
+  },
+  "zigbee": {
+    "attributes": [
+      "entity_id",
+      "group_entities",
+      "lights"
+    ],
+    "leaves": [
+      "light.room_b_spot_1",
+      "light.room_b_spot_2",
+      "light.room_b_spot_3",
+      "light.room_b_ceiling",
+      "light.bulb_x1"
+    ],
+    "sectionNames": [
+      "K Room B All Lights",
+      "Zigbee Room B Lampen"
+    ],
+    "emptyGroups": [
+      "light.zigbee_room_b_spots"
+    ],
+    "maxDepth": 2,
+    "leavesBlind": [
+      "light.room_b_spot_1",
+      "light.room_b_spot_2",
+      "light.room_b_spot_3",
+      "light.zigbee_room_b_lamps",
+      "light.zigbee_room_b_spots",
+      "light.bulb_x1",
+      "light.room_b_ceiling"
+    ],
+    "childIds": [
+      "light.magic_areas_light_groups_k_room_b_lights_overhead_lights",
+      "light.magic_areas_light_groups_k_room_b_lights_accent_lights"
+    ],
+    "schedule": [
+      "switch.schedule_tv_off"
+    ]
+  },
+  "sceneImport": {
+    "all": [
+      "scene.neue_szene",
+      "scene.nur_gruppe",
+      "scene.taglicht_2"
+    ],
+    "leavesOnly": [
+      "scene.neue_szene",
+      "scene.taglicht_2"
+    ],
+    "none": []
+  },
+  "tiles": {
+    "sceneBadges": true,
+    "sceneIcons": [
+      "mdi:white-balance-sunny",
+      "mdi:power-sleep",
+      "mdi:leaf-maple",
+      "mdi:palette",
+      "mdi:palette"
+    ],
+    "sceneBadgeColors": [
+      "rgb(255, 224, 163)",
+      "rgb(43, 58, 103)",
+      "rgb(194, 98, 42)",
+      "rgb(123, 47, 247)",
+      "rgb(255, 218, 149)"
+    ],
+    "tilesWithSwitch": 5,
+    "deadWithSwitch": 0,
+    "totalTiles": 6,
+    "nestedButtons": 0,
+    "switchCalls": [
+      {
+        "domain": "light",
+        "service": "turn_off",
+        "data": {
+          "entity_id": "light.curtain"
+        }
+      }
+    ],
+    "detailTitle": "Cosy Corner",
+    "hasBackButton": true,
+    "detailSwitchPresent": true,
+    "detailSwitchOn": true,
+    "detailSwitchCalls": [
+      {
+        "domain": "light",
+        "service": "turn_off",
+        "data": {
+          "entity_id": "light.curtain"
+        }
+      }
+    ]
+  },
+  "backButton": {
+    "stateAfterOpen": 1,
+    "closedByEscape": true,
+    "closedByBack": true,
+    "stateInDetail": 2,
+    "detailTitle": "Cosy Corner",
+    "stillOpenAfterFirstBack": true,
+    "titleAfterFirstBack": "LD Room A All Lights",
+    "closedBySecondBack": true,
+    "escFromDetailKeepsDialog": true,
+    "titleAfterEsc": "LD Room A All Lights",
+    "escTwiceCloses": true,
+    "closedByButton": true,
+    "stateRestored": true,
+    "lengthUnchangedByClose": true
+  },
+  "editor": {
+    "hasGetConfigElement": true,
+    "editorTag": "busch-light-card-editor",
+    "stub": {
+      "type": "custom:busch-light-card",
+      "entity": "light.magic_areas_light_groups_ld_room_a_all_lights"
+    },
+    "formCount": 4,
+    "fields": [
+      "entity",
+      "entities",
+      "title",
+      "icon",
+      "description",
+      "resolve_groups",
+      "max_depth",
+      "show_unavailable",
+      "group_display",
+      "off_color",
+      "default_color",
+      "hue_borders",
+      "show_switch",
+      "slider",
+      "allow_zero",
+      "off_shadow",
+      "tap_action",
+      "hold_action"
+    ],
+    "labels": [
+      "Lampe, Schalter oder Gruppe",
+      "Weitere Entitäten",
+      "Überschrift",
+      "Symbol",
+      "Beschreibung",
+      "Verschachtelte Gruppen auflösen",
+      "Größte Tiefe",
+      "Ausfall-Abzeichen",
+      "Lampen im Dialog",
+      "Farbe im Aus-Zustand",
+      "Farbe ohne eigene Farbe",
+      "Hue-Ecken und -Schatten",
+      "Schalter auf der Karte",
+      "Regler auf der Karte",
+      "Regler darf auf 0",
+      "Innenschatten im Aus-Zustand",
+      "Beim Tippen",
+      "Beim Halten"
+    ],
+    "selectorless": [],
+    "sections": [
+      "Gruppenauflösung",
+      "Darstellung",
+      "Aktionen",
+      "Szenen"
+    ],
+    "previewHead": "Löst auf zu:6 Lampen aus 4 Gruppen, Tiefe 2",
+    "previewChips": [
+      "Room A Spot 1",
+      "Helicopter Lamp",
+      "Cosy Corner",
+      "Ledstreifen",
+      "Room A Spot 2",
+      "Room A Spot 3"
+    ],
+    "previewDeadChips": [
+      "Helicopter Lamp"
+    ],
+    "previewNotes": [
+      "1 nicht erreichbar"
+    ],
+    "afterSliderOff": {
+      "type": "custom:busch-light-card",
+      "entity": "light.magic_areas_light_groups_ld_room_a_all_lights",
+      "slider": false
+    },
+    "afterSliderBackOn": {
+      "type": "custom:busch-light-card",
+      "entity": "light.magic_areas_light_groups_ld_room_a_all_lights"
+    },
+    "flatPreviewHead": "Löst auf zu:1 Entität, Gruppen werden nicht aufgelöst",
+    "afterCamel": {
+      "type": "custom:busch-light-card",
+      "entity": "light.magic_areas_light_groups_ld_room_a_all_lights",
+      "resolve_groups": false,
+      "off_color": "#123456",
+      "max_depth": 4
+    },
+    "sceneRowsAfterAdd": 2,
+    "afterScenes": {
+      "type": "custom:busch-light-card",
+      "entity": "light.magic_areas_light_groups_ld_room_a_all_lights",
+      "scenes": [
+        {
+          "entity": "scene.taglicht",
+          "color": "#ffe0a3"
+        },
+        {
+          "entity": "scene.nachtlicht",
+          "title": "Nacht"
+        }
+      ]
+    },
+    "afterMove": {
+      "type": "custom:busch-light-card",
+      "entity": "light.magic_areas_light_groups_ld_room_a_all_lights",
+      "scenes": [
+        {
+          "entity": "scene.nachtlicht",
+          "title": "Nacht"
+        },
+        {
+          "entity": "scene.taglicht",
+          "color": "#ffe0a3"
+        }
+      ]
+    },
+    "afterDelete": {
+      "type": "custom:busch-light-card",
+      "entity": "light.magic_areas_light_groups_ld_room_a_all_lights",
+      "scenes": [
+        {
+          "entity": "scene.taglicht",
+          "color": "#ffe0a3"
+        }
+      ]
+    },
+    "sceneRowsAfterDelete": 1,
+    "colorRoundTrip": "#ffe0a3",
+    "importLabelBefore": "↧  Alle Szenen mit diesen Lampen übernehmen (3)",
+    "importDisabledBefore": false,
+    "afterImport": {
+      "type": "custom:busch-light-card",
+      "entity": "light.magic_areas_light_groups_ld_room_a_all_lights",
+      "scenes": [
+        {
+          "entity": "scene.neue_szene"
+        },
+        {
+          "entity": "scene.nur_gruppe"
+        },
+        {
+          "entity": "scene.taglicht_2"
+        }
+      ]
+    },
+    "rowsAfterImport": 3,
+    "importLabelAfter": "Alle 3 passenden Szenen stehen schon in der Liste",
+    "importDisabledAfter": true,
+    "afterRemoveOne": {
+      "type": "custom:busch-light-card",
+      "entity": "light.magic_areas_light_groups_ld_room_a_all_lights",
+      "scenes": [
+        {
+          "entity": "scene.nur_gruppe"
+        },
+        {
+          "entity": "scene.taglicht_2"
+        }
+      ]
+    },
+    "importLabelAfterRemove": "↧  Alle Szenen mit diesen Lampen übernehmen (1)",
+    "importDisabledAfterRemove": false
+  },
+  "regel3Texte": {
+    "felder": [
+      "entity",
+      "entities",
+      "title",
+      "icon",
+      "description",
+      "resolve_groups",
+      "max_depth",
+      "show_unavailable",
+      "group_display",
+      "off_color",
+      "default_color",
+      "hue_borders",
+      "show_switch",
+      "slider",
+      "allow_zero",
+      "off_shadow",
+      "tap_action",
+      "hold_action",
+      "scenes",
+      "scene_entity",
+      "scene_title",
+      "scene_icon",
+      "scene_color"
+    ],
+    "sprachen": {
+      "de": [
+        {
+          "name": "entity",
+          "label": "Lampe, Schalter oder Gruppe",
+          "helper": "Die Hauptentität der Karte. Ist es eine Gruppe, steigt die Karte in jede verschachtelte Untergruppe ab und schaltet die echten Lampen dahinter; Doppelnennungen zählen einmal, Zyklen werden abgebrochen. Pflichtfeld."
+        },
+        {
+          "name": "entities",
+          "label": "Weitere Entitäten",
+          "helper": "Wird zusätzlich zur Hauptentität aufgelöst, Gruppen genauso tief wie dort. Vorgabe: leer."
+        },
+        {
+          "name": "title",
+          "label": "Überschrift",
+          "helper": "Ersetzt den Namen der Hauptentität auf der Karte und im Dialog. Vorgabe: der Name der Entität."
+        },
+        {
+          "name": "icon",
+          "label": "Symbol",
+          "helper": "Ein mdi-Symbol für die Karte. Vorgabe: das Symbol der Entität."
+        },
+        {
+          "name": "description",
+          "label": "Beschreibung",
+          "helper": "Ersetzt die Zeile unter der Überschrift, die sonst zählt, wie viele Lampen an sind. Vorgabe: die Zählung."
+        },
+        {
+          "name": "resolve_groups",
+          "label": "Verschachtelte Gruppen auflösen",
+          "helper": "An steigt die Karte in jede Untergruppe ab und schaltet die Lampen einzeln. Aus bleibt die Gruppe eine einzige Entität, wie bei der Vorlage. Vorgabe an."
+        },
+        {
+          "name": "max_depth",
+          "label": "Größte Tiefe",
+          "helper": "Wie viele Gruppenebenen die Karte höchstens absteigt, bevor sie abbricht. Vorgabe 10."
+        },
+        {
+          "name": "show_unavailable",
+          "label": "Ausfall-Abzeichen",
+          "helper": "Zeigt auf der Karte ein Abzeichen mit der Zahl der nicht erreichbaren Mitglieder. Vorgabe an."
+        },
+        {
+          "name": "group_display",
+          "label": "Lampen im Dialog",
+          "helper": "Nach Gruppe geordnet gibt jeder aufgelösten Gruppe einen eigenen Block mit eigenem Schalter; eine flache Liste zeigt alle Lampen ohne Überschriften. Vorgabe: nach Gruppe geordnet."
+        },
+        {
+          "name": "off_color",
+          "label": "Farbe im Aus-Zustand",
+          "helper": "Hintergrund der Karte, solange keine Lampe an ist. Leer heißt: das Thema entscheidet. Vorgabe leer."
+        },
+        {
+          "name": "default_color",
+          "label": "Farbe ohne eigene Farbe",
+          "helper": "Farbe für eine leuchtende Lampe, die selbst keine meldet. Nimmt #rrggbb, rgb(…) oder die Namen warm und cold. Vorgabe #ffda95."
+        },
+        {
+          "name": "hue_borders",
+          "label": "Hue-Ecken und -Schatten",
+          "helper": "Rundet die Karte stärker ab und legt den Schlagschatten der Hue-Vorlage darunter. Vorgabe an."
+        },
+        {
+          "name": "show_switch",
+          "label": "Schalter auf der Karte",
+          "helper": "Zeigt rechts oben einen Schalter für die ganze Gruppe. Vorgabe an."
+        },
+        {
+          "name": "slider",
+          "label": "Regler auf der Karte",
+          "helper": "Zeigt unter der Überschrift einen Regler für die Helligkeit der ganzen Gruppe. Vorgabe an."
+        },
+        {
+          "name": "allow_zero",
+          "label": "Regler darf auf 0",
+          "helper": "Erlaubt dem Regler den Wert 0, der die Gruppe ausschaltet; sonst ist bei 1 Prozent Schluss. Vorgabe aus."
+        },
+        {
+          "name": "off_shadow",
+          "label": "Innenschatten im Aus-Zustand",
+          "helper": "Legt einen Innenschatten über die Karte, solange keine Lampe an ist. Vorgabe an."
+        },
+        {
+          "name": "tap_action",
+          "label": "Beim Tippen",
+          "helper": "Was ein kurzer Tipp auf die Karte auslöst. Vorgabe: Dialog öffnen."
+        },
+        {
+          "name": "hold_action",
+          "label": "Beim Halten",
+          "helper": "Was ein halbe Sekunde langes Halten auf der Karte auslöst. Vorgabe: Mehr Informationen."
+        },
+        {
+          "name": "scenes",
+          "label": "Szenenkacheln",
+          "helper": "Die Kacheln oben im Dialog, eine je Szene oder Skript. Ein Knopf übernimmt in einem Zug jede Szene, die diese Lampen benutzt; entfernen lässt sich jede einzeln wieder. Vorgabe: keine."
+        },
+        {
+          "name": "scene_entity",
+          "label": "Szene oder Skript",
+          "helper": "Die Szene oder das Skript, das diese Kachel im Dialog auslöst. Pflichtfeld."
+        },
+        {
+          "name": "scene_title",
+          "label": "Beschriftung",
+          "helper": "Text auf der Kachel. Vorgabe: der Name der Szene."
+        },
+        {
+          "name": "scene_icon",
+          "label": "Symbol",
+          "helper": "Symbol auf der Kachel. Vorgabe: das Symbol der Szene, sonst mdi:palette."
+        },
+        {
+          "name": "scene_color",
+          "label": "Kachelfarbe",
+          "helper": "Farbe des runden Flecks auf der Kachel. Vorgabe #ffda95."
+        }
+      ],
+      "en": [
+        {
+          "name": "entity",
+          "label": "Light, switch or group",
+          "helper": "The card's main entity. If it is a group, the card walks down into every nested sub-group and controls the real lights behind it; a light named twice counts once, and cycles are cut. Required."
+        },
+        {
+          "name": "entities",
+          "label": "Additional entities",
+          "helper": "Resolved on top of the main entity, groups just as deep. Default: empty."
+        },
+        {
+          "name": "title",
+          "label": "Title",
+          "helper": "Replaces the main entity's name on the card and in the dialog. Default: the entity's own name."
+        },
+        {
+          "name": "icon",
+          "label": "Icon",
+          "helper": "An mdi icon for the card. Default: the entity's own icon."
+        },
+        {
+          "name": "description",
+          "label": "Description",
+          "helper": "Replaces the line under the title that otherwise counts how many lights are on. Default: the count."
+        },
+        {
+          "name": "resolve_groups",
+          "label": "Resolve nested groups",
+          "helper": "On, the card walks into every sub-group and controls the lights one by one. Off, the group stays a single entity, the way the original card does it. Default on."
+        },
+        {
+          "name": "max_depth",
+          "label": "Maximum depth",
+          "helper": "How many group levels the card descends at most before it stops. Default 10."
+        },
+        {
+          "name": "show_unavailable",
+          "label": "Unreachable badge",
+          "helper": "Shows a badge on the card counting the members that cannot be reached. Default on."
+        },
+        {
+          "name": "group_display",
+          "label": "Lights in the dialog",
+          "helper": "Grouped by their group gives every resolved group its own block with its own switch; one flat list shows every light without headings. Default: grouped by their group."
+        },
+        {
+          "name": "off_color",
+          "label": "Colour while off",
+          "helper": "The card's background while no light is on. Empty uses the theme colour. Default empty."
+        },
+        {
+          "name": "default_color",
+          "label": "Colour without its own",
+          "helper": "Colour for a lit light that reports none of its own. Accepts #rrggbb, rgb(…) or the names warm and cold. Default #ffda95."
+        },
+        {
+          "name": "hue_borders",
+          "label": "Hue corners and shadow",
+          "helper": "Rounds the card more strongly and puts the Hue template's drop shadow under it. Default on."
+        },
+        {
+          "name": "show_switch",
+          "label": "Toggle on the card",
+          "helper": "Shows a switch for the whole group in the top right. Default on."
+        },
+        {
+          "name": "slider",
+          "label": "Slider on the card",
+          "helper": "Shows a slider for the whole group's brightness under the title. Default on."
+        },
+        {
+          "name": "allow_zero",
+          "label": "Slider may reach 0",
+          "helper": "Lets the slider reach 0, which turns the group off; otherwise it stops at 1 per cent. Default off."
+        },
+        {
+          "name": "off_shadow",
+          "label": "Inset shadow while off",
+          "helper": "Puts an inset shadow over the card while no light is on. Default on."
+        },
+        {
+          "name": "tap_action",
+          "label": "On tap",
+          "helper": "What a short tap on the card does. Default: open dialog."
+        },
+        {
+          "name": "hold_action",
+          "label": "On hold",
+          "helper": "What holding the card for half a second does. Default: more info."
+        },
+        {
+          "name": "scenes",
+          "label": "Scene tiles",
+          "helper": "The tiles at the top of the dialog, one per scene or script. One button adds every scene using these lights at once, and each one can be removed again. Default: none."
+        },
+        {
+          "name": "scene_entity",
+          "label": "Scene or script",
+          "helper": "The scene or script this tile triggers in the dialog. Required."
+        },
+        {
+          "name": "scene_title",
+          "label": "Label",
+          "helper": "Text on the tile. Default: the scene's own name."
+        },
+        {
+          "name": "scene_icon",
+          "label": "Icon",
+          "helper": "Icon on the tile. Default: the scene's own icon, otherwise mdi:palette."
+        },
+        {
+          "name": "scene_color",
+          "label": "Tile colour",
+          "helper": "Colour of the round badge on the tile. Default #ffda95."
+        }
+      ]
+    },
+    "pickerEintrag": {
+      "type": "busch-light-card",
+      "name": "Busch Lampenkarte",
+      "description": "Hue-artige Karte für Lampen und Szenen, die verschachtelte Gruppen auf jeder Ebene auflöst und nicht erreichbare Entitäten übersteht.",
+      "preview": true,
+      "documentationURL": "https://github.com/luukkii123/ha-busch-lightcards"
+    },
+    "woerterbuchName": {
+      "de": "Busch Lampenkarte",
+      "en": "Busch Light Card"
+    },
+    "woerterbuchBeschreibung": {
+      "de": "Hue-artige Karte für Lampen und Szenen, die verschachtelte Gruppen auf jeder Ebene auflöst und nicht erreichbare Entitäten übersteht.",
+      "en": "Hue-like card for lights and scenes that resolves nested groups on every level and survives unavailable entities."
+    },
+    "navigatorSprache": "de-DE",
+    "ausnahmen": {
+      "type": "Written by Lovelace itself. Not an option of this card.",
+      "scenes": "A list of objects, edited by the editor’s own scene rows (add, reorder, remove, import in one click). `ha-form` has no selector for that shape; every row is itself an `ha-form` whose four fields carry label and helper (scene_entity, scene_title, scene_icon, scene_color)."
+    },
+    "gridOptions": {
+      "columns": 12,
+      "min_columns": 6
+    }
+  },
+  "regel3Maengel": [],
+  "regel3Editor": {
+    "ohneHelper": [],
+    "paare": [
+      [
+        "entity",
+        "Lampe, Schalter oder Gruppe",
+        "Die Hauptentität der Karte. Ist es eine Gruppe, steigt die Karte in jede verschachtelte Untergruppe ab und schaltet die echten Lampen dahinter; Doppelnennungen zählen einmal, Zyklen werden abgebrochen. Pflichtfeld."
+      ],
+      [
+        "entities",
+        "Weitere Entitäten",
+        "Wird zusätzlich zur Hauptentität aufgelöst, Gruppen genauso tief wie dort. Vorgabe: leer."
+      ],
+      [
+        "title",
+        "Überschrift",
+        "Ersetzt den Namen der Hauptentität auf der Karte und im Dialog. Vorgabe: der Name der Entität."
+      ],
+      [
+        "icon",
+        "Symbol",
+        "Ein mdi-Symbol für die Karte. Vorgabe: das Symbol der Entität."
+      ],
+      [
+        "description",
+        "Beschreibung",
+        "Ersetzt die Zeile unter der Überschrift, die sonst zählt, wie viele Lampen an sind. Vorgabe: die Zählung."
+      ],
+      [
+        "resolve_groups",
+        "Verschachtelte Gruppen auflösen",
+        "An steigt die Karte in jede Untergruppe ab und schaltet die Lampen einzeln. Aus bleibt die Gruppe eine einzige Entität, wie bei der Vorlage. Vorgabe an."
+      ],
+      [
+        "max_depth",
+        "Größte Tiefe",
+        "Wie viele Gruppenebenen die Karte höchstens absteigt, bevor sie abbricht. Vorgabe 10."
+      ],
+      [
+        "show_unavailable",
+        "Ausfall-Abzeichen",
+        "Zeigt auf der Karte ein Abzeichen mit der Zahl der nicht erreichbaren Mitglieder. Vorgabe an."
+      ],
+      [
+        "group_display",
+        "Lampen im Dialog",
+        "Nach Gruppe geordnet gibt jeder aufgelösten Gruppe einen eigenen Block mit eigenem Schalter; eine flache Liste zeigt alle Lampen ohne Überschriften. Vorgabe: nach Gruppe geordnet."
+      ],
+      [
+        "off_color",
+        "Farbe im Aus-Zustand",
+        "Hintergrund der Karte, solange keine Lampe an ist. Leer heißt: das Thema entscheidet. Vorgabe leer."
+      ],
+      [
+        "default_color",
+        "Farbe ohne eigene Farbe",
+        "Farbe für eine leuchtende Lampe, die selbst keine meldet. Nimmt #rrggbb, rgb(…) oder die Namen warm und cold. Vorgabe #ffda95."
+      ],
+      [
+        "hue_borders",
+        "Hue-Ecken und -Schatten",
+        "Rundet die Karte stärker ab und legt den Schlagschatten der Hue-Vorlage darunter. Vorgabe an."
+      ],
+      [
+        "show_switch",
+        "Schalter auf der Karte",
+        "Zeigt rechts oben einen Schalter für die ganze Gruppe. Vorgabe an."
+      ],
+      [
+        "slider",
+        "Regler auf der Karte",
+        "Zeigt unter der Überschrift einen Regler für die Helligkeit der ganzen Gruppe. Vorgabe an."
+      ],
+      [
+        "allow_zero",
+        "Regler darf auf 0",
+        "Erlaubt dem Regler den Wert 0, der die Gruppe ausschaltet; sonst ist bei 1 Prozent Schluss. Vorgabe aus."
+      ],
+      [
+        "off_shadow",
+        "Innenschatten im Aus-Zustand",
+        "Legt einen Innenschatten über die Karte, solange keine Lampe an ist. Vorgabe an."
+      ],
+      [
+        "tap_action",
+        "Beim Tippen",
+        "Was ein kurzer Tipp auf die Karte auslöst. Vorgabe: Dialog öffnen."
+      ],
+      [
+        "hold_action",
+        "Beim Halten",
+        "Was ein halbe Sekunde langes Halten auf der Karte auslöst. Vorgabe: Mehr Informationen."
+      ]
+    ]
+  },
+  "editorVertrag": {
+    "original": {
+      "type": "custom:busch-light-card",
+      "entity": "light.one",
+      "title": "Original",
+      "scenes": [
+        {
+          "entity": "scene.one",
+          "title": "Old",
+          "color": "#112233",
+          "transition": 5
+        },
+        {
+          "entity": "scene.two"
+        }
+      ]
+    },
+    "first": {
+      "type": "custom:busch-light-card",
+      "entity": "light.one",
+      "title": "Original",
+      "scenes": [
+        {
+          "entity": "scene.one",
+          "title": "New",
+          "color": "#112233",
+          "transition": 5
+        },
+        {
+          "entity": "scene.two"
+        }
+      ]
+    },
+    "second": {
+      "type": "custom:busch-light-card",
+      "entity": "light.one",
+      "title": "External",
+      "scenes": [
+        {
+          "entity": "scene.one",
+          "title": "New",
+          "color": "#112233",
+          "transition": 5,
+          "icon": "mdi:star"
+        },
+        {
+          "entity": "scene.two"
+        }
+      ],
+      "slider": false
+    },
+    "third": {
+      "type": "custom:busch-light-card",
+      "entity": "light.changed",
+      "title": "Elsewhere",
+      "scenes": [
+        {
+          "entity": "scene.one",
+          "title": "New",
+          "color": "#112233",
+          "transition": 5,
+          "icon": "mdi:star"
+        },
+        {
+          "entity": "scene.two"
+        }
+      ],
+      "slider": false
+    },
+    "eventsAfterSet": 3,
+    "beforeSet": 3,
+    "focusBefore": true,
+    "focusAfter": true,
+    "initialSceneWrites": 2,
+    "sceneWritesAfter": 2,
+    "escaped": 0,
+    "prevented": false
+  },
+  "editorReferenzen": {
+    "inputResult": {
+      "type": "custom:busch-light-card",
+      "entity": "light.one",
+      "entities": [
+        "light.two"
+      ],
+      "scenes": [
+        {
+          "entity": "scene.one",
+          "title": "Original",
+          "extra": {
+            "duration": 5
+          }
+        }
+      ],
+      "slider": false
+    },
+    "frozenResult": {
+      "type": "custom:busch-light-card",
+      "entity": "light.frozen",
+      "entities": [
+        "light.member"
+      ],
+      "scenes": [
+        {
+          "entity": "scene.frozen",
+          "title": "After",
+          "extra": {
+            "duration": 7
+          }
+        }
+      ]
+    },
+    "frozenTitle": "Before",
+    "frozenDuration": 7,
+    "second": {
+      "type": "custom:busch-light-card",
+      "entity": "light.next",
+      "entities": [
+        "light.keep"
+      ],
+      "scenes": [
+        {
+          "entity": "scene.event",
+          "title": "Keep",
+          "extra": {
+            "duration": 11
+          }
+        }
+      ],
+      "slider": false
+    },
+    "eventCount": 2
+  },
+  "haFormRetry": {
+    "fallback": true,
+    "recovered": true
+  },
+  "editorLayout": [
+    {
+      "breite": 320,
+      "thema": "hell",
+      "width": 320,
+      "scrollWidth": 320,
+      "bad": []
+    },
+    {
+      "breite": 320,
+      "thema": "dunkel",
+      "width": 320,
+      "scrollWidth": 320,
+      "bad": []
+    },
+    {
+      "breite": 480,
+      "thema": "hell",
+      "width": 480,
+      "scrollWidth": 480,
+      "bad": []
+    },
+    {
+      "breite": 480,
+      "thema": "dunkel",
+      "width": 480,
+      "scrollWidth": 480,
+      "bad": []
+    },
+    {
+      "breite": 960,
+      "thema": "hell",
+      "width": 960,
+      "scrollWidth": 960,
+      "bad": []
+    },
+    {
+      "breite": 960,
+      "thema": "dunkel",
+      "width": 960,
+      "scrollWidth": 960,
+      "bad": []
+    }
+  ],
+  "fixRunde1": {
+    "fehlerKeineEntitaet": "Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\" eine Entität wählen.",
+    "fehlerKeineEntitaetSpaeteresHass": "Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\" eine Entität wählen.",
+    "fehlerSzene": "Ein Szeneneintrag hat keine Entität: {\"titel\":\"ohne\"}. Jede Szenenkachel braucht eine Szene oder ein Skript.",
+    "sollKeineEntitaet": "Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe\" eine Entität wählen.",
+    "sollSzeneAnfang": "Ein Szeneneintrag hat keine Entität: ",
+    "englischImWoerterbuch": "This card needs a light, a switch or a group. Pick an entity under “Light, switch or group” in the editor.",
+    "kopfKinder": [
+      "button.iconbtn[mdi:close]",
+      "div.who",
+      "button.gtoggle headsw on"
+    ],
+    "schliessenIstErstes": true,
+    "schliessenSymbol": "mdi:close"
+  },
+  "fixRunde1Entfernen": {
+    "symbol": "mdi:close",
+    "klassen": "busch-ui-action iconbtn",
+    "beschriftung": "Entfernen",
+    "rotImStilblatt": false
+  },
+  "uiRegeln": {
+    "selbsttest_karte": {
+      "sonde_gesetzt": true,
+      "ueberlauf_erkannt": true,
+      "ausserhalb_erkannt": true,
+      "ellipsis_nicht_gemeldet": true,
+      "ellipsis_als_gekuerzt_gezaehlt": true,
+      "gekuerzt_mit_sonden": 1,
+      "gekuerzt_ohne_sonden": 0,
+      "befund": {
+        "sonde_ueberlauf": [
+          {
+            "selektor": "html > body > div#stack > busch-light-card > ::shadow > div#regeln-sonde",
+            "text": "Absichtlich viel zu langer Text fuer die Selbstprobe",
+            "masse": {
+              "x": -30,
+              "y": 0,
+              "w": 40,
+              "h": 16,
+              "scrollW": 312,
+              "clientW": 40,
+              "scrollH": 16,
+              "clientH": 16
+            },
+            "richtung": "Breite",
+            "overflow": "hidden",
+            "textOverflow": "clip"
+          }
+        ],
+        "sonde_ausserhalb": [
+          {
+            "selektor": "html > body > div#stack > busch-light-card > ::shadow > div#regeln-sonde",
+            "text": "Absichtlich viel zu langer Text fuer die Selbstprobe",
+            "ueberstand": {
+              "links": 54,
+              "rechts": -586,
+              "oben": 24,
+              "unten": -166
+            },
+            "karte": {
+              "x": 24,
+              "y": 24,
+              "w": 572,
+              "h": 158
+            }
+          },
+          {
+            "selektor": "html > body > div#stack > busch-light-card > ::shadow > div#regeln-sonde-ellipsis",
+            "text": "Absichtlich viel zu langer Text fuer die Selbstprobe",
+            "ueberstand": {
+              "links": 24,
+              "rechts": -556,
+              "oben": 24,
+              "unten": -166
+            },
+            "karte": {
+              "x": 24,
+              "y": 24,
+              "w": 572,
+              "h": 158
+            }
+          }
+        ],
+        "ellipsis_faelschlich_gemeldet": []
+      }
+    },
+    "selbsttest_dialog": {
+      "sonde_gesetzt": true,
+      "ueberlauf_erkannt": true,
+      "ausserhalb_erkannt": true,
+      "ellipsis_nicht_gemeldet": true,
+      "ellipsis_als_gekuerzt_gezaehlt": true,
+      "gekuerzt_mit_sonden": 1,
+      "gekuerzt_ohne_sonden": 0,
+      "befund": {
+        "sonde_ueberlauf": [
+          {
+            "selektor": "html > body > busch-light-dialog > ::shadow > div.sheet > div#regeln-sonde",
+            "text": "Absichtlich viel zu langer Text fuer die Selbstprobe",
+            "masse": {
+              "x": 0,
+              "y": 250,
+              "w": 40,
+              "h": 16,
+              "scrollW": 312,
+              "clientW": 40,
+              "scrollH": 16,
+              "clientH": 16
+            },
+            "richtung": "Breite",
+            "overflow": "hidden",
+            "textOverflow": "clip"
+          }
+        ],
+        "sonde_ausserhalb": [
+          {
+            "selektor": "html > body > busch-light-dialog > ::shadow > div.sheet > div#regeln-sonde",
+            "text": "Absichtlich viel zu langer Text fuer die Selbstprobe",
+            "ueberstand": {
+              "links": 30,
+              "rechts": -550,
+              "oben": 0,
+              "unten": -934
+            },
+            "karte": {
+              "x": 30,
+              "y": 250,
+              "w": 560,
+              "h": 950
+            }
+          }
+        ],
+        "ellipsis_faelschlich_gemeldet": []
+      }
+    },
+    "regel1_karte": {
+      "laeufe": [
+        {
+          "breite": 320,
+          "thema": "light",
+          "messung": {
+            "ueberlauf": [],
+            "ausserhalb": [],
+            "ueberlappung": [],
+            "gekuerzt": 0,
+            "kein_urteil": 0,
+            "kein_urteil_liste": [],
+            "geprueft": 4,
+            "geprueft_mit_kasten": 4,
+            "geprueft_liste": [
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.tap > div.text > h2",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.desc > span.dtext",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.desc > span.warn > span",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.slider > div.label"
+            ],
+            "karte": {
+              "selektor": "busch-light-card",
+              "x": 24,
+              "y": 24,
+              "breite": 272,
+              "hoehe": 184
+            }
+          }
+        },
+        {
+          "breite": 320,
+          "thema": "dark",
+          "messung": {
+            "ueberlauf": [],
+            "ausserhalb": [],
+            "ueberlappung": [],
+            "gekuerzt": 0,
+            "kein_urteil": 0,
+            "kein_urteil_liste": [],
+            "geprueft": 4,
+            "geprueft_mit_kasten": 4,
+            "geprueft_liste": [
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.tap > div.text > h2",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.desc > span.dtext",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.desc > span.warn > span",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.slider > div.label"
+            ],
+            "karte": {
+              "selektor": "busch-light-card",
+              "x": 24,
+              "y": 24,
+              "breite": 272,
+              "hoehe": 184
+            }
+          }
+        },
+        {
+          "breite": 480,
+          "thema": "light",
+          "messung": {
+            "ueberlauf": [],
+            "ausserhalb": [],
+            "ueberlappung": [],
+            "gekuerzt": 0,
+            "kein_urteil": 0,
+            "kein_urteil_liste": [],
+            "geprueft": 4,
+            "geprueft_mit_kasten": 4,
+            "geprueft_liste": [
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.tap > div.text > h2",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.desc > span.dtext",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.desc > span.warn > span",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.slider > div.label"
+            ],
+            "karte": {
+              "selektor": "busch-light-card",
+              "x": 24,
+              "y": 24,
+              "breite": 432,
+              "hoehe": 184
+            }
+          }
+        },
+        {
+          "breite": 480,
+          "thema": "dark",
+          "messung": {
+            "ueberlauf": [],
+            "ausserhalb": [],
+            "ueberlappung": [],
+            "gekuerzt": 0,
+            "kein_urteil": 0,
+            "kein_urteil_liste": [],
+            "geprueft": 4,
+            "geprueft_mit_kasten": 4,
+            "geprueft_liste": [
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.tap > div.text > h2",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.desc > span.dtext",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.desc > span.warn > span",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.slider > div.label"
+            ],
+            "karte": {
+              "selektor": "busch-light-card",
+              "x": 24,
+              "y": 24,
+              "breite": 432,
+              "hoehe": 184
+            }
+          }
+        },
+        {
+          "breite": 960,
+          "thema": "light",
+          "messung": {
+            "ueberlauf": [],
+            "ausserhalb": [],
+            "ueberlappung": [],
+            "gekuerzt": 0,
+            "kein_urteil": 0,
+            "kein_urteil_liste": [],
+            "geprueft": 4,
+            "geprueft_mit_kasten": 4,
+            "geprueft_liste": [
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.tap > div.text > h2",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.desc > span.dtext",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.desc > span.warn > span",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.slider > div.label"
+            ],
+            "karte": {
+              "selektor": "busch-light-card",
+              "x": 24,
+              "y": 24,
+              "breite": 620,
+              "hoehe": 158
+            }
+          }
+        },
+        {
+          "breite": 960,
+          "thema": "dark",
+          "messung": {
+            "ueberlauf": [],
+            "ausserhalb": [],
+            "ueberlappung": [],
+            "gekuerzt": 0,
+            "kein_urteil": 0,
+            "kein_urteil_liste": [],
+            "geprueft": 4,
+            "geprueft_mit_kasten": 4,
+            "geprueft_liste": [
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.tap > div.text > h2",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.desc > span.dtext",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.main > div.desc > span.warn > span",
+              "html > body > div#stack > busch-light-card > ::shadow > ha-card.hue-borders > div.slider > div.label"
+            ],
+            "karte": {
+              "selektor": "busch-light-card",
+              "x": 24,
+              "y": 24,
+              "breite": 620,
+              "hoehe": 158
+            }
+          }
+        }
+      ]
+    },
+    "regel1_dialog": {
+      "laeufe": [
+        {
+          "breite": 320,
+          "thema": "light",
+          "messung": {
+            "ueberlauf": [],
+            "ausserhalb": [],
+            "ueberlappung": [],
+            "gekuerzt": 0,
+            "kein_urteil": 0,
+            "kein_urteil_liste": [],
+            "geprueft": 27,
+            "geprueft_mit_kasten": 27,
+            "geprueft_liste": [
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.head.busch-ui-header > div.who > h1#light-dialog-title",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.head.busch-ui-header > div.who > div.sub",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.dslider > div.label",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.picker-tabs > button.active",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.picker-tabs > button",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.dead > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.group-head > span.gname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.group-head > span.gcount",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist"
+            ],
+            "karte": {
+              "selektor": ".sheet",
+              "x": 0,
+              "y": 678,
+              "breite": 320,
+              "hoehe": 1322
+            }
+          }
+        },
+        {
+          "breite": 320,
+          "thema": "dark",
+          "messung": {
+            "ueberlauf": [],
+            "ausserhalb": [],
+            "ueberlappung": [],
+            "gekuerzt": 0,
+            "kein_urteil": 0,
+            "kein_urteil_liste": [],
+            "geprueft": 27,
+            "geprueft_mit_kasten": 27,
+            "geprueft_liste": [
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.head.busch-ui-header > div.who > h1#light-dialog-title",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.head.busch-ui-header > div.who > div.sub",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.dslider > div.label",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.picker-tabs > button.active",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.picker-tabs > button",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.dead > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.group-head > span.gname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.group-head > span.gcount",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist"
+            ],
+            "karte": {
+              "selektor": ".sheet",
+              "x": 0,
+              "y": 679,
+              "breite": 320,
+              "hoehe": 1322
+            }
+          }
+        },
+        {
+          "breite": 480,
+          "thema": "light",
+          "messung": {
+            "ueberlauf": [],
+            "ausserhalb": [],
+            "ueberlappung": [],
+            "gekuerzt": 0,
+            "kein_urteil": 0,
+            "kein_urteil_liste": [],
+            "geprueft": 27,
+            "geprueft_mit_kasten": 27,
+            "geprueft_liste": [
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.head.busch-ui-header > div.who > h1#light-dialog-title",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.head.busch-ui-header > div.who > div.sub",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.dslider > div.label",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.picker-tabs > button.active",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.picker-tabs > button",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.dead > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.group-head > span.gname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.group-head > span.gcount",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist"
+            ],
+            "karte": {
+              "selektor": ".sheet",
+              "x": 0,
+              "y": 936,
+              "breite": 480,
+              "hoehe": 1064
+            }
+          }
+        },
+        {
+          "breite": 480,
+          "thema": "dark",
+          "messung": {
+            "ueberlauf": [],
+            "ausserhalb": [],
+            "ueberlappung": [],
+            "gekuerzt": 0,
+            "kein_urteil": 0,
+            "kein_urteil_liste": [],
+            "geprueft": 27,
+            "geprueft_mit_kasten": 27,
+            "geprueft_liste": [
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.head.busch-ui-header > div.who > h1#light-dialog-title",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.head.busch-ui-header > div.who > div.sub",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.dslider > div.label",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.picker-tabs > button.active",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.picker-tabs > button",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.dead > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.group-head > span.gname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.group-head > span.gcount",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist"
+            ],
+            "karte": {
+              "selektor": ".sheet",
+              "x": 0,
+              "y": 936,
+              "breite": 480,
+              "hoehe": 1064
+            }
+          }
+        },
+        {
+          "breite": 960,
+          "thema": "light",
+          "messung": {
+            "ueberlauf": [],
+            "ausserhalb": [],
+            "ueberlappung": [],
+            "gekuerzt": 0,
+            "kein_urteil": 0,
+            "kein_urteil_liste": [],
+            "geprueft": 27,
+            "geprueft_mit_kasten": 27,
+            "geprueft_liste": [
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.head.busch-ui-header > div.who > h1#light-dialog-title",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.head.busch-ui-header > div.who > div.sub",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.dslider > div.label",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.picker-tabs > button.active",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.picker-tabs > button",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.dead > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.group-head > span.gname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.group-head > span.gcount",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist"
+            ],
+            "karte": {
+              "selektor": ".sheet",
+              "x": 200,
+              "y": 525,
+              "breite": 560,
+              "hoehe": 950
+            }
+          }
+        },
+        {
+          "breite": 960,
+          "thema": "dark",
+          "messung": {
+            "ueberlauf": [],
+            "ausserhalb": [],
+            "ueberlappung": [],
+            "gekuerzt": 0,
+            "kein_urteil": 0,
+            "kein_urteil_liste": [],
+            "geprueft": 27,
+            "geprueft_mit_kasten": 27,
+            "geprueft_liste": [
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.head.busch-ui-header > div.who > h1#light-dialog-title",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.head.busch-ui-header > div.who > div.sub",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.scenes > button.scene > span",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.dslider > div.label",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.picker-tabs > button.active",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.picker-tabs > button",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > h3",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.dead > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.group-head > span.gname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.group-head > span.gcount",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.thead > span.tpct",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.group.nested > div.tiles > div.tile.lit > div.tmid > div.tname",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist",
+              "html > body > busch-light-dialog > ::shadow > div.sheet > div.deadlist"
+            ],
+            "karte": {
+              "selektor": ".sheet",
+              "x": 200,
+              "y": 525,
+              "breite": 560,
+              "hoehe": 950
+            }
+          }
+        }
+      ]
+    },
+    "regel2_dialog": {
+      "laeufe": [
+        {
+          "breite": 320,
+          "thema": "light",
+          "messung": {
+            "escape": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_escape_sichtbar": false,
+                "zustand": {
+                  "da": false
+                }
+              }
+            },
+            "zurueck": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_back_sichtbar": false,
+                "href_vorher": "http://127.0.0.1:53403/docs/render/ergebnis/harness.html",
+                "href_nachher": "http://127.0.0.1:53403/docs/render/ergebnis/harness.html",
+                "seite_geblieben": true
+              }
+            },
+            "schliessknopf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_klick_sichtbar": false,
+                "history_length_vorher": 16,
+                "history_length_nachher": 16
+              }
+            },
+            "obenauf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 160,
+                  "y": 1348
+                },
+                "treffer": "canvas.wheel",
+                "im_popup": true
+              }
+            },
+            "scrim": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 160,
+                  "y": 679
+                },
+                "seite": "oben",
+                "trifft": "div.scrim",
+                "popup_rect": {
+                  "x": 0,
+                  "y": 687,
+                  "w": 320,
+                  "h": 1322
+                },
+                "fenster": {
+                  "w": 320,
+                  "h": 2000
+                },
+                "abgelehnt": [
+                  {
+                    "name": "links",
+                    "x": -8,
+                    "y": 1347.7728881835938,
+                    "grund": "ausserhalb des Ansichtsfensters"
+                  }
+                ],
+                "nach_klick_sichtbar": true,
+                "history_length_vorher": 16,
+                "history_length_nachher": 16,
+                "formular_mit_aenderungen": false,
+                "dialog_typ": "bearbeitung",
+                "sollverhalten": "bleibt offen"
+              }
+            }
+          }
+        },
+        {
+          "breite": 320,
+          "thema": "dark",
+          "messung": {
+            "escape": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_escape_sichtbar": false,
+                "zustand": {
+                  "da": false
+                }
+              }
+            },
+            "zurueck": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_back_sichtbar": false,
+                "href_vorher": "http://127.0.0.1:53403/docs/render/ergebnis/harness.html",
+                "href_nachher": "http://127.0.0.1:53403/docs/render/ergebnis/harness.html",
+                "seite_geblieben": true
+              }
+            },
+            "schliessknopf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_klick_sichtbar": false,
+                "history_length_vorher": 17,
+                "history_length_nachher": 17
+              }
+            },
+            "obenauf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 160,
+                  "y": 1346
+                },
+                "treffer": "canvas.wheel",
+                "im_popup": true
+              }
+            },
+            "scrim": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 160,
+                  "y": 679
+                },
+                "seite": "oben",
+                "trifft": "div.scrim",
+                "popup_rect": {
+                  "x": 0,
+                  "y": 687,
+                  "w": 320,
+                  "h": 1322
+                },
+                "fenster": {
+                  "w": 320,
+                  "h": 2000
+                },
+                "abgelehnt": [
+                  {
+                    "name": "links",
+                    "x": -8,
+                    "y": 1347.7642211914062,
+                    "grund": "ausserhalb des Ansichtsfensters"
+                  }
+                ],
+                "nach_klick_sichtbar": true,
+                "history_length_vorher": 17,
+                "history_length_nachher": 17,
+                "formular_mit_aenderungen": false,
+                "dialog_typ": "bearbeitung",
+                "sollverhalten": "bleibt offen"
+              }
+            }
+          }
+        },
+        {
+          "breite": 480,
+          "thema": "light",
+          "messung": {
+            "escape": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_escape_sichtbar": false,
+                "zustand": {
+                  "da": false
+                }
+              }
+            },
+            "zurueck": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_back_sichtbar": false,
+                "href_vorher": "http://127.0.0.1:53403/docs/render/ergebnis/harness.html",
+                "href_nachher": "http://127.0.0.1:53403/docs/render/ergebnis/harness.html",
+                "seite_geblieben": true
+              }
+            },
+            "schliessknopf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_klick_sichtbar": false,
+                "history_length_vorher": 18,
+                "history_length_nachher": 18
+              }
+            },
+            "obenauf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 240,
+                  "y": 1477
+                },
+                "treffer": "canvas.wheel",
+                "im_popup": true
+              }
+            },
+            "scrim": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 240,
+                  "y": 937
+                },
+                "seite": "oben",
+                "trifft": "div.scrim",
+                "popup_rect": {
+                  "x": 0,
+                  "y": 945,
+                  "w": 480,
+                  "h": 1064
+                },
+                "fenster": {
+                  "w": 480,
+                  "h": 2000
+                },
+                "abgelehnt": [
+                  {
+                    "name": "links",
+                    "x": -8,
+                    "y": 1476.7625122070312,
+                    "grund": "ausserhalb des Ansichtsfensters"
+                  }
+                ],
+                "nach_klick_sichtbar": true,
+                "history_length_vorher": 18,
+                "history_length_nachher": 18,
+                "formular_mit_aenderungen": false,
+                "dialog_typ": "bearbeitung",
+                "sollverhalten": "bleibt offen"
+              }
+            }
+          }
+        },
+        {
+          "breite": 480,
+          "thema": "dark",
+          "messung": {
+            "escape": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_escape_sichtbar": false,
+                "zustand": {
+                  "da": false
+                }
+              }
+            },
+            "zurueck": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_back_sichtbar": false,
+                "href_vorher": "http://127.0.0.1:53403/docs/render/ergebnis/harness.html",
+                "href_nachher": "http://127.0.0.1:53403/docs/render/ergebnis/harness.html",
+                "seite_geblieben": true
+              }
+            },
+            "schliessknopf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_klick_sichtbar": false,
+                "history_length_vorher": 19,
+                "history_length_nachher": 19
+              }
+            },
+            "obenauf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 240,
+                  "y": 1477
+                },
+                "treffer": "canvas.wheel",
+                "im_popup": true
+              }
+            },
+            "scrim": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 240,
+                  "y": 937
+                },
+                "seite": "oben",
+                "trifft": "div.scrim",
+                "popup_rect": {
+                  "x": 0,
+                  "y": 945,
+                  "w": 480,
+                  "h": 1064
+                },
+                "fenster": {
+                  "w": 480,
+                  "h": 2000
+                },
+                "abgelehnt": [
+                  {
+                    "name": "links",
+                    "x": -8,
+                    "y": 1476.76171875,
+                    "grund": "ausserhalb des Ansichtsfensters"
+                  }
+                ],
+                "nach_klick_sichtbar": true,
+                "history_length_vorher": 19,
+                "history_length_nachher": 19,
+                "formular_mit_aenderungen": false,
+                "dialog_typ": "bearbeitung",
+                "sollverhalten": "bleibt offen"
+              }
+            }
+          }
+        },
+        {
+          "breite": 960,
+          "thema": "light",
+          "messung": {
+            "escape": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_escape_sichtbar": false,
+                "zustand": {
+                  "da": false
+                }
+              }
+            },
+            "zurueck": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_back_sichtbar": false,
+                "href_vorher": "http://127.0.0.1:53403/docs/render/ergebnis/harness.html",
+                "href_nachher": "http://127.0.0.1:53403/docs/render/ergebnis/harness.html",
+                "seite_geblieben": true
+              }
+            },
+            "schliessknopf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_klick_sichtbar": false,
+                "history_length_vorher": 20,
+                "history_length_nachher": 20
+              }
+            },
+            "obenauf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 480,
+                  "y": 1007
+                },
+                "treffer": "canvas.wheel",
+                "im_popup": true
+              }
+            },
+            "scrim": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 192,
+                  "y": 1007
+                },
+                "seite": "links",
+                "trifft": "div.scrim",
+                "popup_rect": {
+                  "x": 200,
+                  "y": 532,
+                  "w": 560,
+                  "h": 950
+                },
+                "fenster": {
+                  "w": 960,
+                  "h": 2000
+                },
+                "abgelehnt": [],
+                "nach_klick_sichtbar": true,
+                "history_length_vorher": 20,
+                "history_length_nachher": 20,
+                "formular_mit_aenderungen": false,
+                "dialog_typ": "bearbeitung",
+                "sollverhalten": "bleibt offen"
+              }
+            }
+          }
+        },
+        {
+          "breite": 960,
+          "thema": "dark",
+          "messung": {
+            "escape": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_escape_sichtbar": false,
+                "zustand": {
+                  "da": false
+                }
+              }
+            },
+            "zurueck": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_back_sichtbar": false,
+                "href_vorher": "http://127.0.0.1:53403/docs/render/ergebnis/harness.html",
+                "href_nachher": "http://127.0.0.1:53403/docs/render/ergebnis/harness.html",
+                "seite_geblieben": true
+              }
+            },
+            "schliessknopf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "nach_klick_sichtbar": false,
+                "history_length_vorher": 21,
+                "history_length_nachher": 21
+              }
+            },
+            "obenauf": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 480,
+                  "y": 1009
+                },
+                "treffer": "canvas.wheel",
+                "im_popup": true
+              }
+            },
+            "scrim": {
+              "ergebnis": "bestanden",
+              "beleg": {
+                "punkt": {
+                  "x": 192,
+                  "y": 1007
+                },
+                "seite": "links",
+                "trifft": "div.scrim",
+                "popup_rect": {
+                  "x": 200,
+                  "y": 532,
+                  "w": 560,
+                  "h": 950
+                },
+                "fenster": {
+                  "w": 960,
+                  "h": 2000
+                },
+                "abgelehnt": [],
+                "nach_klick_sichtbar": true,
+                "history_length_vorher": 21,
+                "history_length_nachher": 21,
+                "formular_mit_aenderungen": false,
+                "dialog_typ": "bearbeitung",
+                "sollverhalten": "bleibt offen"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "zaehlung": {
+      "ueberlauf": 0,
+      "ausserhalb": 0,
+      "ueberlappung": 0,
+      "verletzt": 0,
+      "gekuerzt": 0,
+      "kein_urteil": 0,
+      "geprueft": 186
+    }
+  },
+  "uiRegelnVerstoesse": 0,
+  "iconsAsked": [
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:alert-circle-outline",
+    "mdi:alert-circle-outline",
+    "mdi:alert-circle-outline",
+    "mdi:alert-circle-outline",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:alert-circle-outline",
+    "mdi:alert-circle-outline",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:arrow-left",
+    "mdi:close",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:arrow-left",
+    "mdi:close",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:arrow-left",
+    "mdi:close",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:arrow-left",
+    "mdi:close",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:alert-circle-outline",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:alert-circle-outline",
+    "mdi:alert-circle-outline",
+    "mdi:alert-circle-outline",
+    "mdi:alert-circle-outline",
+    "mdi:alert-circle-outline",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:arrow-up",
+    "mdi:arrow-down",
+    "mdi:close",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:lightbulb-group",
+    "mdi:lightbulb-group",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb",
+    "mdi:close",
+    "mdi:white-balance-sunny",
+    "mdi:power-sleep",
+    "mdi:leaf-maple",
+    "mdi:palette",
+    "mdi:palette",
+    "mdi:lightbulb",
+    "mdi:alert-circle-outline",
+    "mdi:teddy-bear",
+    "mdi:led-strip-variant",
+    "hue:bulb-group-recessed-ceiling",
+    "mdi:lightbulb",
+    "mdi:lightbulb"
+  ],
+  "vendorRequests": [],
+  "passed": 105,
+  "failed": 0,
+  "clean": true
+}
