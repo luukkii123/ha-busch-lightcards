@@ -156,3 +156,13 @@ test('Dialog: langsames Ziehen auf einer Kachel dimmt (kein Öffnen der Detailan
   assert.equal(haus.rufe.length, 1, 'ein callService beim Loslassen');
   assert.equal(haus.rufe[0].data.brightness_pct, 30);
 });
+
+test('clearOptimistic beendet Vorschauen wie der Fristablauf: Karte zeigt sofort den echten Zustand', () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const karte = neueKarte(u, haus);
+  karte._toggle.click();
+  assert.equal(schalterAn(karte), false, 'Vorschau aus');
+  const n = u.registry.get('busch-light-card').__internals.clearOptimistic();
+  assert.ok(n >= 1);
+  assert.equal(schalterAn(karte), true, 'ohne weiteres hass-Update wieder echt');
+});

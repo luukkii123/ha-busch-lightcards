@@ -5,8 +5,11 @@ A Hue-like light and scene card for Home Assistant: one card,
 [lovelace-hue-like-light-card][upstream] by Gh61, but it handles groups and
 unavailable entities differently.
 
-![Card with a lit group, light theme](docs/render/baseline/busch-ha-ui-0.1.0/card-on-480-light.png)
-![Card with a lit group, dark theme](docs/render/baseline/busch-ha-ui-0.1.0/card-on-480-dark.png)
+![Card with several lit colours](docs/render/baseline/hue-0.9.0/card-on-480-light.png)
+![Card with one lit colour](docs/render/baseline/hue-0.9.0/card-single-480-dark.png)
+![Card with warm white light](docs/render/baseline/hue-0.9.0/card-warm-480-light.png)
+![Card while everything is off](docs/render/baseline/hue-0.9.0/card-off-480-dark.png)
+![Dialog on a phone](docs/render/baseline/hue-0.9.0/dialog-success-320-dark.png)
 
 ## What the card does
 
@@ -21,9 +24,14 @@ unavailable entities differently.
   unavailable (Home Assistant then drops its member list) the card keeps using
   the last member list it saw. If every member is unreachable, the card is
   disabled and says so.
-- **Card:** a tile in the light's own colour, an on/off switch, a brightness
-  slider and a badge counting unreachable members.
-- **Dialog** (opens on tap by default): scene tiles, group brightness, a colour
+- **Card in the light colours:** while a light is on, the whole card takes on
+  its colour; several colours become a gradient, like the Hue app. Text,
+  switch and slider pick light or dark per background so they stay readable
+  on yellow and white light too. Off, the card uses the theme (or
+  `off_color`). Switching and dimming show at once, before Home Assistant
+  answers.
+- **Dialog** (opens on tap by default): a header in the light colours, scene
+  tiles in their colours, group brightness, a colour
   wheel and a colour-temperature bar (limited to the range all lights support),
   and one tile per light with its own switch. Resolved groups keep their own
   block with their own counter and switch. A master switch sits in the header.
@@ -114,7 +122,7 @@ copied from the upstream card working; the editor folds it into snake_case.
 | `entity` | string | - (required) | The scene or script the tile triggers. |
 | `title` | string | name of the entity | Text on the tile. |
 | `icon` | string | icon of the entity, else `mdi:palette` | Icon on the tile. |
-| `color` | string or `[r, g, b]` | `#ffda95` | Colour of the round badge on the tile. |
+| `color` | string or `[r, g, b]` | `#ffda95` | Colour of the tile. |
 
 The visual editor writes only options that differ from their default.
 
@@ -131,10 +139,10 @@ card-mod), not only on `:root`.
 
 | Variable | Used for |
 | --- | --- |
-| `--blc-background`, `--blc-text-color`, `--blc-shadow` | Card background, text and shadow |
-| `--blc-toggle-off`, `--blc-toggle-on`, `--blc-knob-color` | Switch track and knob |
+| `--blc-background`, `--blc-text-color`, `--blc-shadow` | Card background (the light colours while on), text and shadow |
+| `--blc-toggle-off`, `--blc-toggle-on`, `--blc-knob-color` | Switch track and knob (also on the coloured card) |
 | `--blc-accent` | Accent of the card (default `--primary-color`) |
-| `--blc-dialog-bg`, `--blc-dialog-text`, `--blc-dialog-invert`, `--blc-dialog-tile`, `--blc-dialog-muted`, `--blc-dialog-dim`, `--blc-dialog-faint`, `--blc-dialog-line`, `--blc-dialog-dead-a`, `--blc-dialog-dead-b`, `--blc-scene-badge` | Dialog surface, text, tiles, lines, hatching of unreachable lights and the scene badge. The dialog is dark in both Home Assistant themes by default. |
+| `--blc-dialog-bg`, `--blc-dialog-text`, `--blc-dialog-invert`, `--blc-dialog-tile`, `--blc-dialog-muted`, `--blc-dialog-dim`, `--blc-dialog-faint`, `--blc-dialog-line`, `--blc-dialog-dead-a`, `--blc-dialog-dead-b`, `--blc-scene-badge` | Dialog surface, text, tiles, lines, hatching of unreachable lights and the scene badge. The dialog is dark in both Home Assistant themes by default; its header and the lit tiles take the light colours. |
 
 ## Development
 

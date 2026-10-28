@@ -222,7 +222,7 @@ const BuschUI = (() => {
  * README for why.
  */
 
-const CARD_VERSION = '0.8.3';
+const CARD_VERSION = '0.9.0';
 
 const CARD_TAG = 'busch-light-card';
 const DIALOG_TAG = 'busch-light-dialog';
@@ -242,10 +242,7 @@ const TILE_OFF_COLOR = 'rgba(102, 102, 102, 0.6)';
 // The dialog's own dark palette now lives in DIALOG_STYLES, behind
 // --blc-dialog-* variables a theme can override (rule 4).
 
-// Hue puts the light/dark text breaking point unusually high.
-const LUMINANCE_BREAKING_POINT = 192;
 const GRADIENT_OFFSET = 7; // percent of a multi-colour gradient held at each end
-const TRANSITION_DEFAULT = 'all 0.3s ease-out 0s';
 
 /**
  * Domains whose `entity_id` attribute lists group members.
@@ -669,17 +666,8 @@ function colorToCss(color) {
     return `rgb(${r}, ${g}, ${b})`;
 }
 
-function luminance(color) {
-    return color.r * 0.299 + color.g * 0.587 + color.b * 0.114;
-}
-
 function hueOf(color) {
     return rgb2hsv(color.r, color.g, color.b)[0];
-}
-
-/** Picks `light` or `dark` for text on top of `color`. */
-function foregroundFor(color, light, dark, offset) {
-    return luminance(color) + offset < LUMINANCE_BREAKING_POINT ? light : dark;
 }
 
 function hsv2rgb(hue, saturation, value) {
@@ -795,15 +783,132 @@ function backgroundCss(colors) {
     return `linear-gradient(100deg, ${stops})`;
 }
 
-/** Foreground for a whole background, mirroring how Hue decides on gradients. */
-function foregroundForBackground(colors, offset) {
-    if (!colors || !colors.length) return null;
-    if (colors.length < 3) return foregroundFor(colors[0], 'light', 'dark', offset);
-    let forLight = 0;
-    for (let i = 0; i < colors.length / 2; i++) {
-        if (foregroundFor(colors[i], true, false, offset)) forLight++;
+/*
+ * Readable surfaces (#712). Since 0.9.0 the whole card carries the light
+ * colours, the way the Hue app and the Hue-like card do — so text sits on a
+ * light colour of any brightness. WCAG 2.2 AA wants 4.5:1 for normal text.
+ * For every surface the text is light or dark, whichever needs the smaller
+ * nudge of the colour; a stop that still falls short is mixed towards black
+ * (light text) or white (dark text) just far enough. The hue stays.
+ */
+const MIN_TEXT_CONTRAST = 4.5;
+const TEXT_LIGHT = { r: 255, g: 255, b: 255, a: 1 };
+const TEXT_DARK = { r: 17, g: 17, b: 17, a: 1 };
+const BLACK = { r: 0, g: 0, b: 0, a: 1 };
+const WHITE = { r: 255, g: 255, b: 255, a: 1 };
+/** A lamp tile's dark part: rgba(0, 0, 0, 0.32) over its colour. */
+const TILE_SHADE = 0.68;
+/** Light text wins unless it needs this much more darkening than dark text. */
+const LIGHT_TEXT_BIAS = 0.25;
+
+function relativeLuminance(color) {
+    const channel = (value) => {
+        const v = clamp(value, 0, 255) / 255;
+        return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b);
+}
+
+function contrastRatio(a, b) {
+    const la = relativeLuminance(a);
+    const lb = relativeLuminance(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+function mixColor(color, target, t) {
+    return {
+        r: Math.round(color.r + (target.r - color.r) * t),
+        g: Math.round(color.g + (target.g - color.g) * t),
+        b: Math.round(color.b + (target.b - color.b) * t),
+        a: 1
+    };
+}
+
+function shadeColor(color, factor) {
+    return { r: color.r * factor, g: color.g * factor, b: color.b * factor, a: 1 };
+}
+
+/** Nudges one stop until `text` reads on it (and on its shaded part). */
+function readableStop(color, text, toward, shade) {
+    const reads = (c) => contrastRatio(text, c) >= MIN_TEXT_CONTRAST
+        && (!shade || contrastRatio(text, shadeColor(c, shade)) >= MIN_TEXT_CONTRAST);
+    const base = mixColor(color, color, 0);
+    if (reads(base)) return { color: base, t: 0 };
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 14; i++) {
+        const mid = (lo + hi) / 2;
+        if (reads(mixColor(color, toward, mid))) hi = mid;
+        else lo = mid;
     }
-    return forLight > colors.length / 4 ? 'light' : 'dark';
+    let t = hi;
+    let out = mixColor(color, toward, t);
+    while (!reads(out) && t < 1) {
+        t = Math.min(1, t + 1 / 256);
+        out = mixColor(color, toward, t);
+    }
+    return { color: out, t };
+}
+
+/**
+ * Text colour and, if needed, gently adjusted stops for a coloured surface.
+ * options.shade: the surface also carries a darker part (lamp tiles).
+ * options.adjust false: the colour is the user's (off_color), only pick text.
+ */
+function readableSurface(colors, options) {
+    const opts = options || {};
+    const list = (colors || []).filter(Boolean);
+    if (!list.length) return null;
+    const candidates = [
+        { fg: 'light', text: TEXT_LIGHT, toward: BLACK },
+        { fg: 'dark', text: TEXT_DARK, toward: WHITE }
+    ].map((candidate) => {
+        if (opts.adjust === false) {
+            const stops = list.map((c) => mixColor(c, c, 0));
+            const ratio = Math.min.apply(null, stops.map((c) => contrastRatio(candidate.text, c)));
+            return Object.assign({}, candidate, { colors: stops, cost: -ratio });
+        }
+        const stops = list.map((c) => readableStop(c, candidate.text, candidate.toward, opts.shade));
+        return Object.assign({}, candidate, {
+            colors: stops.map((s) => s.color),
+            cost: Math.max.apply(null, stops.map((s) => s.t))
+        });
+    });
+    const light = candidates[0];
+    const dark = candidates[1];
+    const pick = opts.adjust === false
+        ? (light.cost <= dark.cost ? light : dark)
+        : (light.cost <= dark.cost + LIGHT_TEXT_BIAS ? light : dark);
+    const ratio = Math.min.apply(null, pick.colors.map((c) => contrastRatio(pick.text, c)));
+    return { fg: pick.fg, text: pick.text, css: colorToCss(pick.text), colors: pick.colors, ratio };
+}
+
+/** Same colour twice is one stop, not a gradient of one colour. */
+function uniqueColors(colors) {
+    const seen = new Set();
+    return (colors || []).filter((c) => {
+        const key = Math.round(c.r) + ',' + Math.round(c.g) + ',' + Math.round(c.b);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
+/** A lit surface for a list of light colours: CSS background plus its text. */
+function litSurface(colors, options) {
+    const surface = readableSurface(uniqueColors(colors), options);
+    if (!surface) return null;
+    surface.background = backgroundCss(surface.colors);
+    return surface;
+}
+
+/** Honours prefers-reduced-motion for the few transitions driven from script. */
+function reducedMotion() {
+    try {
+        return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) {
+        return false;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1070,6 +1175,19 @@ function dropOptimistic(entityId, entry) {
     clearTimeout(current.timer);
     OPTIMISTIC.delete(entityId);
     return true;
+}
+
+/**
+ * Ends every running preview at once, as if each hold had run out: the
+ * views redraw from the real states. Not used by the card itself: test
+ * harnesses call it between steps so one step's click cannot shine through
+ * the next for OPTIMISTIC_HOLD_MS (see docs/render/render.py).
+ */
+function clearOptimistic() {
+    const ids = Array.from(OPTIMISTIC.keys());
+    ids.forEach((entityId) => dropOptimistic(entityId));
+    if (ids.length) notifyOptimistic(ids);
+    return ids.length;
 }
 
 function rememberOn(entityId, state) {
@@ -1753,20 +1871,48 @@ const CARD_STYLES = BuschUI.cardStyles + `
     --blc-toggle-on: initial;
     --blc-knob-color: initial;
     --blc-accent: var(--primary-color);
+    /* Overlays on a coloured card (#712), set by .fg-light / .fg-dark. */
+    --blc-chip: initial;
+    --blc-slider-rest: initial;
+    --blc-slider-line: initial;
+    --blc-rest: 1;
 }
 ha-card {
     position: relative;
     display: block;
     overflow: hidden;
+    isolation: isolate;
     background: var(--blc-background, var(--card-background-color));
     background-origin: border-box;
     color: var(--blc-text-color, var(--primary-text-color));
     box-shadow: var(--blc-shadow, none), var(--ha-card-box-shadow, var(--ha-default-shadow, none));
-    transition: ${TRANSITION_DEFAULT};
     --blc-margin: ${BuschUI.tokens.space4};
 }
 ha-card.hue-borders {
     border-radius: var(--ha-card-border-radius, 12px);
+}
+/* The background a change replaces, faded out over the new one: CSS cannot
+   interpolate gradients, but it can fade a layer (opacity only). */
+.ghost {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+.main, .slider {
+    position: relative;
+    z-index: 1;
+}
+ha-card.fg-light {
+    --blc-chip: rgba(0, 0, 0, 0.24);
+    --blc-slider-rest: rgba(0, 0, 0, 0.28);
+    --blc-slider-line: rgba(255, 255, 255, 0.4);
+}
+ha-card.fg-dark {
+    --blc-chip: rgba(255, 255, 255, 0.45);
+    --blc-slider-rest: rgba(255, 255, 255, 0.5);
+    --blc-slider-line: rgba(0, 0, 0, 0.28);
 }
 .main {
     display: grid;
@@ -1791,6 +1937,10 @@ ha-card.hue-borders {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
+.lit .tap:focus-visible, .lit .desc:focus-visible, .lit .toggle:focus-visible, .lit .slider:focus-visible,
+.tinted .tap:focus-visible, .tinted .desc:focus-visible, .tinted .toggle:focus-visible {
+    outline-color: var(--blc-text-color, var(--primary-color));
+}
 .media {
     flex: 0 0 44px;
     width: 44px;
@@ -1809,10 +1959,14 @@ ha-card.hue-borders {
     inset: auto 0 0;
     height: 4px;
     background: var(--blc-accent);
+    transition: opacity 0.3s ease-out;
 }
+/* On a coloured card the whole card is the accent: the tile turns into a
+   translucent chip and the accent strip steps back. */
+.lit .media, .tinted .media { background: var(--blc-chip); }
+.lit .media::after { opacity: 0; }
 .icon {
     color: var(--blc-text-color, var(--primary-text-color));
-    transition: ${TRANSITION_DEFAULT};
     --mdc-icon-size: 24px;
 }
 .text {
@@ -1860,6 +2014,11 @@ ha-card.hue-borders {
 .desc[data-tone='neutral'] .dtext { color: var(--blc-text-color, var(--secondary-text-color)); }
 .desc[data-tone='unknown'] .dtext { color: var(--secondary-text-color); }
 .desc[data-tone='unavailable'] .warn { display: none; }
+/* On a light colour the theme's status colours lose their contrast. The text
+   says the state, so it takes the card's own text colour there. */
+.lit .desc .dtext, .tinted .desc .dtext { color: var(--blc-text-color, var(--primary-text-color)); }
+.lit .desc::before, .tinted .desc::before { background: currentColor; }
+.lit .warn, .tinted .warn { background: var(--blc-chip); color: var(--blc-text-color, var(--primary-text-color)); }
 .desc .dtext {
     flex: 1 1 0;
 }
@@ -1940,6 +2099,10 @@ ha-card.hue-borders {
 .toggle.on .knob {
     transform: translateX(18px);
 }
+/* Light on colour: a darker track with a white knob reads on any light. */
+.lit .toggle.on::before { background: var(--blc-toggle-on, rgba(0, 0, 0, 0.35)); }
+.lit.fg-dark .toggle.on::before { background: var(--blc-toggle-on, rgba(0, 0, 0, 0.62)); }
+.lit .toggle .knob { background: var(--blc-knob-color, rgb(255, 255, 255)); }
 .slider {
     position: relative;
     height: 44px;
@@ -1956,14 +2119,32 @@ ha-card.hue-borders {
 .slider .fill {
     position: absolute;
     inset: 0;
-    width: 0%;
     background: var(--primary-color);
     opacity: 0.35;
-    transition: width 0.2s ease-out;
+    transform-origin: left center;
+    transform: scaleX(0);
+    transition: transform 0.2s ease-out;
 }
-.slider.dragging .fill {
+.slider.dragging .fill, .slider.dragging::before {
     transition: none;
 }
+/* Lit: the filled part is the card's own colour, the rest a darker (light
+   text) or lighter (dark text) veil — the label keeps its contrast on both. */
+.lit .slider {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--blc-slider-line, transparent);
+}
+.lit .slider::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--blc-slider-rest, transparent);
+    transform-origin: right center;
+    transform: scaleX(var(--blc-rest, 1));
+    transition: transform 0.2s ease-out;
+}
+.lit .slider .fill { opacity: 0; }
+.lit .slider .label { color: var(--blc-text-color, var(--primary-text-color)); }
 /* A block with a matching line-height, not a flex box: only then do overflow
    and text-overflow apply to the text itself. It sits in .slider, which is
    overflow: hidden, so the absolute position cannot escape either. */
@@ -1992,6 +2173,9 @@ ha-card.hue-borders {
     overflow-wrap: anywhere;
 }
 .error ha-icon { flex: 0 0 24px; }
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+}
 @container (max-width: 440px) {
     .main {
         grid-template-columns: minmax(0, 1fr) 44px;
@@ -2152,6 +2336,12 @@ class BuschLightCard extends HTMLElement {
         const card = document.createElement('ha-card');
         card.dataset.uiContract = 'Busch HA UI 0.1.0';
         this._card = card;
+        this._paintKey = null;
+        this._shownBackground = null;
+
+        this._ghost = document.createElement('div');
+        this._ghost.className = 'ghost';
+        card.appendChild(this._ghost);
 
         const main = document.createElement('div');
         main.className = 'main';
@@ -2280,7 +2470,7 @@ class BuschLightCard extends HTMLElement {
             } else return;
             event.preventDefault();
             event.stopPropagation();
-            this._sliderFill.style.width = pct + '%';
+            this._showPct(pct);
             this._sliderLabel.textContent = pct + ' %';
             this._slider.setAttribute('aria-valuenow', String(pct));
             this._model.setBrightness(pct);
@@ -2293,7 +2483,7 @@ class BuschLightCard extends HTMLElement {
             const pct = clamp(Math.round((point.x / point.width) * 100), min, 100);
             this._dragging = !done;
             this._slider.classList.toggle('dragging', !done);
-            this._sliderFill.style.width = pct + '%';
+            this._showPct(pct);
             this._sliderLabel.textContent = pct + ' %';
             this._slider.setAttribute('aria-valuenow', String(pct));
             if (done) this._model.setBrightness(pct);
@@ -2360,7 +2550,6 @@ class BuschLightCard extends HTMLElement {
         const model = this._model;
         this._seen = watchSnapshot(this._hass, model.watchIds());
 
-        this._card.className = this._opts.hueBorders ? 'hue-borders' : '';
         this._icon.setAttribute('icon', BuschUI.resolveMedia({display_mode:'icon',icon:model.icon},{},'mdi:lightbulb').icon);
         this._title.textContent = model.title;
         this._descText.textContent = model.description;
@@ -2402,28 +2591,76 @@ class BuschLightCard extends HTMLElement {
         this._slider.setAttribute('aria-valuenow', String(model.brightnessPct));
         if (!this._dragging) {
             const pct = model.brightnessPct;
-            this._sliderFill.style.width = pct + '%';
+            this._showPct(pct);
             this._sliderLabel.textContent = model.isOn
                 ? pct + ' %' : translate(this._hass, 'brightness');
         }
     }
 
-    /** Theme shell with a data-derived light accent in the 44 px media tile. */
-    _paint(model) {
-        const offColor = parseColor(this._opts.offColor);
-        const colors = model.colors;
-        this.style.setProperty('--blc-background', !model.isOn && offColor
-            ? colorToCss(offColor) : 'var(--card-background-color)');
-        this.style.setProperty('--blc-text-color', !model.isOn && offColor
-            ? foregroundFor(offColor, 'rgba(255, 255, 255, 0.85)', 'rgba(0, 0, 0, 0.5)', 0)
-            : 'var(--primary-text-color)');
-        this.style.setProperty('--blc-accent', model.isOn && colors.length
-            ? backgroundCss(colors) : offColor ? colorToCss(offColor) : 'var(--primary-color)');
-        this.style.setProperty('--blc-shadow', !model.isOn ? this._brightnessShadow(model) : 'none');
+    /** Slider position as transform only: no layout work per drag step. */
+    _showPct(pct) {
+        const share = clamp(pct, 0, 100) / 100;
+        this._sliderFill.style.transform = 'scaleX(' + share + ')';
+        this._slider.style.setProperty('--blc-rest', String(Math.round((1 - share) * 1000) / 1000));
     }
 
-    _brightnessShadow(model) {
+    /**
+     * Hue look (#712, user decision 28.10.2026): while a light is on, the whole
+     * card carries the light colours — one colour flat, several as a gradient
+     * — and text, switch and slider sit on it in a colour chosen per
+     * background for 4.5:1. Off, the theme surface or off_color, with
+     * off_shadow. 0.8.x kept the colour in the 44 px tile only (Busch HA UI
+     * 0.1.0, "no strong gradients"); the user decision overrides that.
+     *
+     * Only called for a change of the card's own entities, and it writes only
+     * what changed: the gradient is set again only for new colours.
+     */
+    _paint(model) {
+        const opts = this._opts;
+        const offColor = parseColor(opts.offColor);
+        const lit = model.isOn && model.colors.length > 0;
+        const surface = lit
+            ? litSurface(model.colors)
+            : offColor ? readableSurface([offColor], { adjust: false }) : null;
+        const background = lit ? surface.background
+            : offColor ? colorToCss(offColor) : 'var(--card-background-color)';
+        this._surface = surface;
+        const classes = [];
+        if (opts.hueBorders) classes.push('hue-borders');
+        if (lit) classes.push('lit');
+        else if (offColor) classes.push('tinted');
+        if (surface) classes.push('fg-' + surface.fg);
+        const values = {
+            '--blc-background': background,
+            '--blc-text-color': surface ? surface.css : 'var(--primary-text-color)',
+            '--blc-accent': lit ? background : offColor ? colorToCss(offColor) : 'var(--primary-color)',
+            '--blc-shadow': this._brightnessShadow(model, surface)
+        };
+        const key = classes.join(' ') + '|' + JSON.stringify(values);
+        if (key === this._paintKey) return;
+        this._paintKey = key;
+        this._card.className = classes.join(' ');
+        Object.keys(values).forEach((name) => {
+            if (this.style.getPropertyValue(name) !== values[name]) this.style.setProperty(name, values[name]);
+        });
+        if (this._shownBackground !== null && this._shownBackground !== background) this._fadeFrom(this._shownBackground);
+        this._shownBackground = background;
+    }
+
+    /** Lays the replaced background over the new one and fades it out. */
+    _fadeFrom(previous) {
+        const ghost = this._ghost;
+        if (!ghost || typeof ghost.animate !== 'function' || reducedMotion()) return;
+        if (this._fade) this._fade.cancel();
+        ghost.style.background = previous;
+        this._fade = ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, easing: 'ease-out' });
+    }
+
+    _brightnessShadow(model, surface) {
         if (!model.isOn) return this._opts.offShadow ? 'inset 0px 0px 10px rgba(0,0,0,0.2)' : 'none';
+        // The Hue card dims the lower part by brightness. That only darkens,
+        // so it is safe under light text and skipped under dark text.
+        if (!surface || surface.fg !== 'light') return 'none';
         const height = this._card ? this._card.clientHeight : 0;
         if (!height) return 'none';
         const darkness = 100 - model.brightnessPct;
@@ -2451,6 +2688,11 @@ BuschLightCard.__internals = {
     LightModel,
     parseColor,
     backgroundCss,
+    contrastRatio,
+    readableSurface,
+    litSurface,
+    TILE_SHADE,
+    clearOptimistic,
     tempToRgb,
     hsv2rgb,
     rgb2hsv,
@@ -2535,6 +2777,20 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     margin-bottom: 14px;
 }
 .head .who { flex-grow: 1; min-width: 0; }
+/* Lit (#712): the header carries the light colours like the card, edge to
+   edge at the top of the sheet; its text colour is chosen per background. */
+.head.lit {
+    margin: -16px -16px 14px;
+    padding: 16px;
+    border-radius: 16px 16px 0 0;
+}
+.head.lit .sub { color: inherit; }
+.head.lit .iconbtn { color: inherit; }
+.head.lit.fg-light .iconbtn { background: rgba(0, 0, 0, 0.24); }
+.head.lit.fg-dark .iconbtn { background: rgba(255, 255, 255, 0.45); }
+.head.lit .headsw.on { background: rgba(0, 0, 0, 0.35); }
+.head.lit.fg-dark .headsw.on { background: rgba(0, 0, 0, 0.62); }
+.head.lit .headsw .gknob { background: var(--blc-knob-color, rgb(255, 255, 255)); }
 .head h1 {
     font-size: var(--ha-font-size-xl, 20px);
     font-weight: var(--ha-font-weight-medium, 500);
@@ -2602,8 +2858,9 @@ h3 {
     line-height: 1.25;
     overflow: hidden;
 }
-/* The colour rides in a round badge instead of flooding the whole tile —
-   that keeps the label readable whatever colour the scene carries. */
+/* Since 0.9.0 the tile carries the scene colour like the Hue app; the label
+   colour is chosen per tile for 4.5:1, so it reads on any scene colour. The
+   badge is a translucent chip on top. --blc-scene-badge still overrides it. */
 .scene .badge {
     width: 40px;
     height: 40px;
@@ -2612,8 +2869,10 @@ h3 {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--blc-scene-badge, #ffda95);
+    background: var(--blc-scene-badge, rgba(0, 0, 0, 0.24));
 }
+.scene.fg-dark .badge { background: var(--blc-scene-badge, rgba(255, 255, 255, 0.45)); }
+.scene[disabled] .badge { background: var(--blc-scene-badge, rgba(255, 255, 255, 0.12)); }
 .scene .badge ha-icon { --mdc-icon-size: 22px; }
 .scene span {
     overflow: hidden;
@@ -2650,16 +2909,19 @@ h3 {
     left: 0;
     right: 0;
     top: 0;
-    height: 0%;
+    height: 100%;
     background: rgba(0, 0, 0, 0.32);
     pointer-events: none;
-    transition: height 0.2s ease-out;
+    transform-origin: center top;
+    transform: scaleY(0);
+    transition: transform 0.2s ease-out;
 }
 .tile.dragging .tfill { transition: none; }
 /* On a coloured tile the theme's accent clashes; the switch borrows the
    tile's own contrast instead. */
 .tile.lit .tsw { background: rgba(0, 0, 0, 0.25); }
 .tile.lit .tsw.on { background: rgba(0, 0, 0, 0.45); }
+.tile.lit.fg-dark .tsw.on { background: rgba(0, 0, 0, 0.62); }
 .tile .thead { position: relative; width: 100%; display: flex; justify-content: flex-end; min-height: 14px; }
 .tile .tmid { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .tile .ticon { --mdc-icon-size: 26px; }
@@ -2820,6 +3082,9 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 .head .headsw { width: 42px; height: 24px; border-radius: 12px; }
 .head .headsw .gknob { width: 20px; height: 20px; }
 .head .headsw.on .gknob { transform: translateX(18px); }
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+}
 `;
 
 // ---------------------------------------------------------------------------
@@ -3104,6 +3369,17 @@ class BuschLightDialog extends HTMLElement {
         head.appendChild(who);
         BuschUI.header({node:head,titleNode:h1});
 
+        // Lit header in the colours of whatever it names (#712).
+        const headColors = detail
+            ? (detail.isOn ? [detail.color || parseColor(this._opts.defaultColor) || parseColor(WARM_COLOR)] : [])
+            : (model.isOn ? model.colors : []);
+        const headSurface = headColors.length ? litSurface(headColors) : null;
+        if (headSurface) {
+            head.classList.add('lit', 'fg-' + headSurface.fg);
+            head.style.background = headSurface.background;
+            head.style.color = headSurface.css;
+        }
+
         // The master switch, always in the header: it belongs to whatever the
         // header names — the whole group, or the single light in detail view.
         head.appendChild(
@@ -3299,15 +3575,22 @@ class BuschLightDialog extends HTMLElement {
         const missing = !state;
         const color = parseColor(scene.color) || parseColor(WARM_COLOR);
 
+        // A missing scene stays a grey, disabled tile: colour alone would
+        // promise a scene that cannot run.
+        if (!missing) {
+            const surface = readableSurface([color]);
+            button.classList.add('fg-' + surface.fg);
+            button.style.background = colorToCss(surface.colors[0]);
+            button.style.color = surface.css;
+        }
+
         const badge = document.createElement('span');
         badge.className = 'badge';
-        badge.style.background = colorToCss(color);
         const icon = document.createElement('ha-icon');
         icon.setAttribute(
             'icon',
             scene.icon || (state && state.attributes && state.attributes.icon) || 'mdi:palette'
         );
-        icon.style.color = foregroundFor(color, '#fff', 'rgba(0,0,0,0.75)', 0);
         badge.appendChild(icon);
         button.appendChild(badge);
 
@@ -3438,11 +3721,14 @@ class BuschLightDialog extends HTMLElement {
 
         const color = light.color;
         if (light.isOn) {
-            tile.classList.add('lit');
-            tile.style.background = color ? colorToCss(color) : WARM_COLOR;
-            tile.style.color = foregroundFor(color || parseColor(WARM_COLOR), '#fff', '#111', 0);
+            // The text crosses the shaded top part too, so both must read.
+            const surface = readableSurface(
+                [color || parseColor(this._opts.defaultColor) || parseColor(WARM_COLOR)], { shade: TILE_SHADE });
+            tile.classList.add('lit', 'fg-' + surface.fg);
+            tile.style.background = colorToCss(surface.colors[0]);
+            tile.style.color = surface.css;
             // height = the darkness, not the brightness
-            fill.style.height = 100 - light.brightnessPct + '%';
+            fill.style.transform = 'scaleY(' + (100 - light.brightnessPct) / 100 + ')';
         }
 
         // The switch does on/off, so the tile itself is free for the two things
@@ -3461,7 +3747,7 @@ class BuschLightDialog extends HTMLElement {
                 this._setDragging(true);
                 tile.classList.add('dragging');
                 const value = clamp(Math.round(((point.height - point.y) / point.height) * 100), 1, 100);
-                fill.style.height = 100 - value + '%';
+                fill.style.transform = 'scaleY(' + (100 - value) / 100 + ')';
                 pct.textContent = value + ' %';
             }
             if (!done) return;

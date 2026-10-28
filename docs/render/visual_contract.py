@@ -35,6 +35,25 @@ def synthetic_states(lit):
     return states
 
 
+def recolored(states, looks):
+    """Copy of `states` with lamps 2..5 lit in the given colour attributes."""
+    out = json.loads(json.dumps(states))
+    for number, look in enumerate(looks, 2):
+        attributes = out[f"light.demo_{number}"]["attributes"]
+        for key in ("rgb_color", "color_temp_kelvin"):
+            attributes.pop(key, None)
+        if look is None:
+            out[f"light.demo_{number}"]["state"] = "off"
+            attributes["color_mode"] = None
+            attributes["brightness"] = None
+            continue
+        out[f"light.demo_{number}"]["state"] = "on"
+        attributes["supported_color_modes"] = ["rgb", "color_temp"]
+        attributes["brightness"] = attributes.get("brightness") or 200
+        attributes.update(look)
+    return out
+
+
 def main():
     card_file = Path(sys.argv[1]).resolve()
     result = Path(sys.argv[2]).resolve()
@@ -55,8 +74,18 @@ def main():
             state["state"] = "unavailable"
     empty = {"group.empty": {"entity_id": "group.empty", "state": "on",
                               "attributes": {"entity_id": ["sensor.foreign"]}}}
+    # Hue look (#712): one colour, several colours, white and warm white.
+    single = recolored(clean_on, [{"color_mode": "rgb", "rgb_color": [70, 110, 255]}, None, None, None])
+    warm = recolored(clean_on, [{"color_mode": "color_temp", "color_temp_kelvin": 2700}] * 2 + [None, None])
+    white = recolored(clean_on, [{"color_mode": "color_temp", "color_temp_kelvin": 6500},
+                                 {"color_mode": "rgb", "rgb_color": [255, 255, 255]}, None, None])
+    yellow = recolored(clean_on, [{"color_mode": "rgb", "rgb_color": [255, 236, 0]}, None, None, None])
     scenarios = {
         "on": {"states": on, "config": {"entity": root}},
+        "single": {"states": single, "config": {"entity": root}},
+        "warm": {"states": warm, "config": {"entity": root}},
+        "white": {"states": white, "config": {"entity": root}},
+        "yellow": {"states": yellow, "config": {"entity": root}},
         "off": {"states": off, "config": {"entity": root}},
         "success": {"states": clean_on, "config": {"entity": root}},
         "neutral": {"states": clean_off, "config": {"entity": root}},
@@ -72,6 +101,8 @@ def main():
     }
     expected_tones = {"on": "warning", "off": "warning", "long": "warning",
                       "success": "success", "neutral": "neutral",
+                      "single": "success", "warm": "success", "white": "success",
+                      "yellow": "success",
                       "custom_color": "neutral",
                       "unavailable": "unavailable", "empty": "unknown"}
     port_holder = []
@@ -121,6 +152,7 @@ def main():
                 }""", theme == "dark")
                 for name, payload in scenarios.items():
                     page.evaluate("""(payload) => {
+                        window.freshStep();
                         const stack = document.getElementById('stack');
                         stack.replaceChildren();
                         const card = document.createElement('busch-light-card');
@@ -164,7 +196,19 @@ def main():
                             tapTabIndex: sr.querySelector('.tap')?.tabIndex,
                             error: sr.querySelector('.error')?.textContent,
                             background: card && getComputedStyle(card).backgroundColor,
-                            accent: getComputedStyle(host).getPropertyValue('--blc-accent').trim()
+                            backgroundImage: card && getComputedStyle(card).backgroundImage,
+                            accent: getComputedStyle(host).getPropertyValue('--blc-accent').trim(),
+                            cardClass: card && card.className,
+                            // the text colour of every text on the card, and the
+                            // contrast of the chosen colour on every stop (#712)
+                            textColors: card ? Array.from(sr.querySelectorAll('.text h2, .desc .dtext, .slider .label'))
+                                .filter(visible).map(el => getComputedStyle(el).color) : [],
+                            surface: host._surface ? {
+                                fg: host._surface.fg, css: host._surface.css,
+                                minRatio: Math.min(...host._surface.colors.map(c =>
+                                    customElements.get('busch-light-card').__internals
+                                        .contrastRatio(host._surface.text, c))),
+                                stops: host._surface.colors.length } : null
                         };
                     }""")
                     valid = (metrics["width"] == width
@@ -184,7 +228,23 @@ def main():
                             valid = valid and metrics["warnTextWidth"] >= 6
                         if name == "custom_color":
                             valid = valid and metrics["background"] == "rgb(17, 34, 51)"
-                            valid = valid and metrics["titleColor"].startswith("rgba(255, 255, 255")
+                            valid = valid and metrics["titleColor"] == "rgb(255, 255, 255)"
+                            valid = valid and "tinted" in metrics["cardClass"].split()
+                        lit_case = name in ("on", "success", "single", "warm", "white", "yellow", "long")
+                        if lit_case:
+                            surface = metrics["surface"]
+                            valid = valid and "lit" in metrics["cardClass"].split()
+                            valid = valid and surface is not None and surface["minRatio"] >= 4.5
+                            valid = valid and all(color == surface["css"] for color in metrics["textColors"])
+                        if name in ("off", "neutral"):
+                            valid = valid and "lit" not in metrics["cardClass"].split()
+                        if name == "single":
+                            valid = valid and metrics["surface"]["fg"] == "light"
+                            valid = valid and metrics["surface"]["stops"] == 1
+                        if name in ("warm", "white", "yellow"):
+                            valid = valid and metrics["surface"]["fg"] == "dark"
+                        if name in ("on", "success"):
+                            valid = valid and metrics["backgroundImage"].startswith("linear-gradient")
                         if metrics["slider"]:
                             valid = valid and metrics["slider"]["height"] >= 44
                             valid = valid and metrics["slider"]["role"] == "slider"
@@ -196,6 +256,72 @@ def main():
                         valid = valid and bool(metrics["error"])
                     report["cases"].append({"width": width, "theme": theme, "state": name,
                                             "ok": bool(valid), "metrics": metrics, "screenshot": shot})
+                # The dialog in the same matrix; 320 px is the phone (bottom sheet).
+                for dialog_case in ("success", "warm"):
+                    page.set_viewport_size({"width": width, "height": 900})
+                    dialog_metrics = page.evaluate("""(payload) => {
+                        window.freshStep();
+                        document.querySelectorAll('busch-light-dialog').forEach(d => d.remove());
+                        const stack = document.getElementById('stack');
+                        stack.replaceChildren();
+                        const card = document.createElement('busch-light-card');
+                        card.setConfig({ type: 'custom:busch-light-card', entity: payload.root,
+                            scenes: [{ entity: 'scene.demo_day', title: 'Tageslicht', color: '#ffe0a3',
+                                       icon: 'mdi:white-balance-sunny' },
+                                     { entity: 'scene.demo_night', title: 'Nachtlicht', color: '#2d3c8c',
+                                       icon: 'mdi:weather-night' },
+                                     { entity: 'scene.demo_pink', title: 'Abendrot', color: '#ff5ca8' },
+                                     { entity: 'scene.demo_gone', title: 'Fehlt absichtlich' }] });
+                        stack.appendChild(card);
+                        const states = Object.assign({}, payload.states, {
+                            'scene.demo_day': { entity_id: 'scene.demo_day', state: 'scening', attributes: {} },
+                            'scene.demo_night': { entity_id: 'scene.demo_night', state: 'scening', attributes: {} },
+                            'scene.demo_pink': { entity_id: 'scene.demo_pink', state: 'scening', attributes: {} } });
+                        card.hass = window.makeHass(states);
+                        card._openDialog();
+                        const sr = document.querySelector('busch-light-dialog').shadowRoot;
+                        const sheet = sr.querySelector('.sheet').getBoundingClientRect();
+                        const I = customElements.get('busch-light-card').__internals;
+                        const rgbOf = (css) => {
+                            const m = String(css).match(/rgba?\\(([^)]+)\\)/);
+                            const p = m[1].split(',').map(Number);
+                            return { r: p[0], g: p[1], b: p[2], a: 1 };
+                        };
+                        const head = sr.querySelector('.head');
+                        const headStops = (head.style.background.match(/rgba?\\([^)]+\\)/g) || []).map(rgbOf);
+                        const headText = rgbOf(getComputedStyle(head.querySelector('h1')).color);
+                        const ratios = [];
+                        headStops.forEach(c => ratios.push(I.contrastRatio(headText, c)));
+                        sr.querySelectorAll('.scene:not([disabled]), .tile.lit').forEach(t => {
+                            const bg = rgbOf(getComputedStyle(t).backgroundColor);
+                            const fg = rgbOf(getComputedStyle(t).color);
+                            ratios.push(I.contrastRatio(fg, bg));
+                            if (t.classList.contains('tile')) ratios.push(I.contrastRatio(fg,
+                                { r: bg.r * I.TILE_SHADE, g: bg.g * I.TILE_SHADE, b: bg.b * I.TILE_SHADE, a: 1 }));
+                        });
+                        return { headLit: head.classList.contains('lit'), headStops: headStops.length,
+                                 minRatio: Math.min(...ratios), checked: ratios.length,
+                                 sheetWidth: sheet.width, viewport: innerWidth,
+                                 scrollWidth: sr.querySelector('.sheet').scrollWidth,
+                                 clientWidth: sr.querySelector('.sheet').clientWidth };
+                    }""", {"root": root, "states": scenarios[dialog_case]["states"]})
+                    page.wait_for_timeout(300)
+                    shot = f"dialog-{dialog_case}-{width}-{theme}.png"
+                    page.screenshot(path=str(result / shot))
+                    ok = (dialog_metrics["headLit"] and dialog_metrics["minRatio"] >= 4.5
+                          and dialog_metrics["checked"] >= 4
+                          and dialog_metrics["scrollWidth"] <= dialog_metrics["clientWidth"] + 1)
+                    if width < 450:
+                        ok = ok and abs(dialog_metrics["sheetWidth"] - dialog_metrics["viewport"]) <= 1
+                    report["cases"].append({"width": width, "theme": theme,
+                        "state": f"dialog-{dialog_case}", "ok": bool(ok),
+                        "metrics": dialog_metrics, "screenshot": shot})
+                    page.evaluate("""() => document.querySelectorAll('busch-light-dialog')
+                        .forEach(d => d.close ? d.close() : d.remove())""")
+                    page.wait_for_timeout(120)
+                    page.evaluate("() => document.querySelectorAll('busch-light-dialog').forEach(d => d.remove())")
+                page.set_viewport_size({"width": width, "height": 1000})
+
                 page.evaluate("""() => {
                     const stack = document.getElementById('stack');
                     stack.replaceChildren();
@@ -229,6 +355,7 @@ def main():
         # Real keyboard events verify the card's three action surfaces. The
         # card's own service routing is exercised, not an event-handler spy.
         page.evaluate("""(payload) => {
+            window.freshStep();
             window.__serviceCalls = [];
             const stack = document.getElementById('stack');
             stack.replaceChildren();
@@ -244,6 +371,10 @@ def main():
         page.evaluate("document.querySelector('busch-light-card').shadowRoot.querySelector('.desc').focus()")
         page.keyboard.press("Space")
         status_calls = page.evaluate("window.__serviceCalls.length")
+        # The two toggles above left previews (the harness never answers);
+        # the slider sub-step starts from the reported state again (#712).
+        page.evaluate("""(states) => { window.freshStep();
+            document.querySelector('busch-light-card').hass = window.makeHass(states); }""", on)
         page.evaluate("document.querySelector('busch-light-card').shadowRoot.querySelector('.slider').focus()")
         page.keyboard.press("ArrowRight")
         page.keyboard.press("ArrowRight")

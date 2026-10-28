@@ -37,6 +37,39 @@
 - Sections-Layout: `getGridOptions()` gibt nur Spalten zurück, keine Zeilen;
   die Höhe misst Home Assistant am Inhalt.
 
+## Gestaltung: Hue-Optik (seit 0.9.0)
+
+- Ist eine Lampe an, trägt die ganze Karte die Lichtfarben: eine Farbe flach,
+  mehrere als Verlauf (nach Farbton sortiert wie die Hue-App). Aus: Thema bzw.
+  `off_color`, mit `off_shadow`. Der Dialogkopf, die Szenen- und die
+  Lampenkacheln folgen derselben Regel.
+- Textfarbe je Hintergrund (`readableSurface`): hell oder dunkel, je nachdem,
+  welche die Farbe weniger verändern muss; helle Schrift hat einen kleinen
+  Vorrang. Jede Verlaufsstufe hält mindestens 4,5:1 (WCAG 2.2 AA). Reicht es
+  nicht, wird die Stufe nur so weit zu Schwarz bzw. Weiß gemischt wie nötig,
+  der Farbton bleibt. Lampenkacheln prüfen zusätzlich ihren abgedunkelten
+  Teil. `off_color` wird nie verändert, dort wird nur die Schrift gewählt.
+- Die Helligkeits-Abdunklung der Hue-Karte (Innenschatten unten) gibt es nur
+  unter heller Schrift, weil sie nur abdunkelt; unter dunkler Schrift würde
+  sie den Kontrast senken. Zustand steht immer auch als Text („4 von 5 an“).
+- Übergänge: nur Hintergrund, Deckkraft und `transform`. Der alte Hintergrund
+  wird bei einer Änderung als Ebene darübergelegt und ausgeblendet (Verläufe
+  lassen sich nicht überblenden); Regler über `scaleX`/`scaleY`.
+  `prefers-reduced-motion` schaltet beides ab.
+- Leistung wie 0.8.3+4f0ab11: gemalt wird nur nach eigener Zustandsänderung,
+  und dann nur, was sich geändert hat; der Verlauf wird nur bei neuen Farben
+  neu gesetzt (Test `tests/farbe.test.js`).
+
+**Abweichung (R09, R24):** 0.8.x hielt die Lichtfarbe bewusst nur in der
+44-px-Medienkachel. Grund war die Umstellung auf den gemeinsamen UI-Vertrag
+„Busch HA UI 0.1.0“ (25.09.2026, 0.8.0): Kartenfläche aus dem Thema, „keine
+starken Gradients, keine harte Farbe“ (HACS-Corporate-Design §7/§19). Die
+Nutzerentscheidung vom 28.10.2026 (#712) geht dem vor: Hue-Optik wie die
+Hue-Like Light Card. Risiko: geringerer Kontrast auf hellen Lichtfarben und
+Bedeutung nur über Farbe. Ersatzprüfung: berechnete Textfarbe mit 4,5:1 je
+Stufe (Node-Tests und Browserlauf messen die Quote), Zustand immer als Text,
+Layout, Kopf und Bedienelemente bleiben die des UI-Vertrags.
+
 ## Prüfung
 
 `docs/render/render.py` lädt die ausgelieferte Datei in echtem Chromium
@@ -77,9 +110,40 @@ belegt Verdrahtung, Schema und erzeugte Konfiguration, nicht die Darstellung
 der echten Home-Assistant-Selektoren.
 
 `docs/render/visual_contract.py` erzeugt die synthetische Darstellungsmatrix
-(320/480/960 px, hell/dunkel, Karte in allen Zuständen) und vergleicht sie mit
-der Baseline in `docs/render/baseline/busch-ha-ui-0.1.0/`; siehe deren README.
-Alle Namen darin sind erfunden.
+(320/480/960 px, hell/dunkel): Karte in allen Zuständen, an mit einer Farbe,
+mehreren Farben, Weiß, Warmweiß und Gelb, aus, `off_color`, dazu der Dialog
+je Breite (320 px = Handy) und misst Kontrastquote und Textfarben. Die
+gesichtete Auswahl liegt in `docs/render/baseline/hue-0.9.0/`; siehe deren
+README. Alle Namen darin sind erfunden.
+
+`node --test tests/*.test.js` prüft ohne Browser Reaktion, Neubau-Grenzen und
+die Farbrechnung (Kontrast, Verlauf, Aus-Zustand, `off_color`).
+
+Beide Browserskripte nutzen eine Seite für viele Schritte und beantworten
+keinen Dienstaufruf. Seit 0.9.0 zeigt ein Klick sein Ergebnis bis zu 4 s
+vorab; damit das nicht in den nächsten Schritt hineinwirkt, beginnt jeder
+Schritt mit `window.freshStep()` (ruft `__internals.clearOptimistic()`).
+`render.py` belegt das Risiko und die Abhilfe in einer eigenen Prüfung.
 
 Weitere Prüfungen vor einem Release: `node --check dist/busch-lightcards.js`
 und ein Test auf doppelte Top-Level-Namen im Bundle.
+
+## Geprüft
+
+**28.10.2026 · 0.9.0 (#712, Hue-Optik)** — vier Abnahmebelege vor dem Tag:
+
+1. `node --check dist/busch-lightcards.js` grün.
+2. `python3 scripts/ui-regeln-pruefen.py --repo ha-busch-lightcards`
+   (HACS-Ebene): 0 Verstöße.
+3. `scripts/karten-alle.sh --repo ha-busch-lightcards` im
+   Playwright-Container (`test-hacs-t712-abnahme-…`), Lauf
+   `karten-20261028-225430-438a22`, 3/3 Schritte grün: `node --test` 28/28;
+   `render.py` 111/111, Regel 1 186 Textelemente ohne Überlauf/Außerhalb/
+   Überlappung, Regel 2 ohne Verstoß, 0 Konsolen-/Seitenfehler, keine
+   Unterressource; `visual_contract.py` 102/102 Fälle (Karte 320/480/960 px
+   hell/dunkel an mit einer, mehreren Farben, Weiß, Warmweiß, Gelb, aus,
+   `off_color`; Dialog je Breite inkl. Handy), Kontrast ≥ 4,5:1 je Fall,
+   Tastaturprobe grün. Vorläufe zur Fehlersuche: `karten-20261028-224648-790723`,
+   `-224939-5ba3c0`, `-225119-9a0cd3`, `-225229-a5c2d9`.
+4. Dieser Abschnitt und der Block im HACS-Stand. Bilder gesichtet; Auswahl
+   in `docs/render/baseline/hue-0.9.0/`.

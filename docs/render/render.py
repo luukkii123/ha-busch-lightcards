@@ -159,6 +159,17 @@ PAGE = """<!doctype html>
   }
   customElements.define('ha-icon', HaIconStub);
 
+  // --- one step must not inherit the previous step's previews --------------
+  // Since 0.9.0 (#712) a click previews its result for up to 4 s
+  // (OPTIMISTIC_HOLD_MS) until a matching state arrives. This page reuses one
+  // card for many steps and never answers a call, so a switch clicked in one
+  // step would still shine through the next step's screenshot. Every step
+  // that builds a card or opens the dialog starts with freshStep().
+  window.freshStep = function () {
+    const C = customElements.get('busch-light-card');
+    return C && C.__internals.clearOptimistic ? C.__internals.clearOptimistic() : 0;
+  };
+
   // --- a fake hass --------------------------------------------------------
   window.__serviceCalls = [];
   window.makeHass = function (states) {
@@ -551,6 +562,7 @@ def main():
         def build_card(states, scenario, scenes=True):
             return page.evaluate(
                 """(payload) => {
+                    window.freshStep();
                     const stack = document.getElementById('stack');
                     stack.innerHTML = '';
                     const card = document.createElement('busch-light-card');
@@ -575,7 +587,12 @@ def main():
                         themeBackground: getComputedStyle(document.documentElement)
                             .getPropertyValue('--card-background-color').trim(),
                         accent: getComputedStyle(card).getPropertyValue('--blc-accent').trim(),
-                        toggleOn: sr.querySelector('.toggle').classList.contains('on')
+                        toggleOn: sr.querySelector('.toggle').classList.contains('on'),
+                        cardClass: sr.querySelector('ha-card').className,
+                        transform: sr.querySelector('.slider .fill').style.transform,
+                        titleColor: getComputedStyle(sr.querySelector('.text h2')).color,
+                        surface: card._surface ? { fg: card._surface.fg, css: card._surface.css,
+                            ratio: card._surface.ratio } : null
                     };
                 }""",
                 {"root": fixture["root"], "states": states,
@@ -601,15 +618,26 @@ def main():
 
         card_lit = build_card(lit_states, "lit")
         report["cardLit"] = card_lit
-        check("lit card shows the mixed count and a colour accent on the theme shell",
+        # Hue look since 0.9.0 (#712): the whole card carries the light colours.
+        check("lit card shows the mixed count and is painted in the light colours",
               card_lit["desc"] == "4 von 5 an"
-              and card_lit["background"] == card_lit["themeBackground"]
-              and card_lit["accent"].startswith("linear-gradient")
+              and card_lit["background"].startswith("linear-gradient")
+              and card_lit["accent"] == card_lit["background"]
+              and "lit" in card_lit["cardClass"].split()
               and card_lit["toggleOn"] is True,
               json.dumps(card_lit))
+        check("lit card text colour is the surface's, at 4.5:1 or better",
+              card_lit["surface"] is not None
+              and card_lit["titleColor"] == card_lit["surface"]["css"]
+              and card_lit["surface"]["ratio"] >= 4.5,
+              json.dumps(card_lit["surface"]))
+        check("off card keeps the theme surface",
+              card_off["background"] == card_off["themeBackground"]
+              and "lit" not in card_off["cardClass"].split(),
+              json.dumps({"bg": card_off["background"], "class": card_off["cardClass"]}))
         check("slider fill matches the reported brightness",
-              card_lit["fill"] == "68%" and card_lit["sliderLabel"] == "68 %",
-              json.dumps({"fill": card_lit["fill"], "label": card_lit["sliderLabel"]}))
+              card_lit["transform"] == "scaleX(0.68)" and card_lit["sliderLabel"] == "68 %",
+              json.dumps({"fill": card_lit["transform"], "label": card_lit["sliderLabel"]}))
         page.wait_for_timeout(400)
         shot = out_dir / "card-on.png"
         page.locator("busch-light-card").screenshot(path=str(shot))
@@ -737,7 +765,9 @@ def main():
                     dlg.hass = window.makeHass(dead);
                     out.disabledWhenAllDead = dlg.shadowRoot
                         .querySelector('.head .headsw').hasAttribute('disabled');
+                    window.freshStep();
                     dlg.hass = window.makeHass(states);
+                    out.headLit = dlg.shadowRoot.querySelector('.head').classList.contains('lit');
                     return out;
                 }}""",
                 lit_states,
@@ -756,6 +786,8 @@ def main():
                   json.dumps({"calls": master["groupCalls"], "targets": sorted(targets)}))
             check("the master switch is disabled when nothing is reachable",
                   master["disabledWhenAllDead"] is True, str(master["disabledWhenAllDead"]))
+            check("lit dialog header carries the light colours",
+                  master["headLit"] is True, str(master["headLit"]))
 
             check("brightness label on a light tile follows the tile's text colour",
                   dialog["litTilePct"] is not None
@@ -987,6 +1019,10 @@ def main():
                       for call in group_toggle["mixedCalls"]),
               json.dumps(group_toggle["mixedCalls"]))
 
+        page.evaluate("""(states) => {
+            window.freshStep();
+            document.querySelector('busch-light-dialog').hass = window.makeHass(states);
+        }""", lit_states)
         page.wait_for_timeout(300)
         shot = out_dir / "dialog-groups.png"
         page.screenshot(path=str(shot))
@@ -995,6 +1031,7 @@ def main():
         # group_display: flat must go back to one pile
         flat_dialog = page.evaluate(
             """(payload) => {
+                window.freshStep();
                 const old = document.querySelector('busch-light-dialog');
                 if (old) old.remove();
                 const card = document.querySelector('busch-light-card');
@@ -1121,6 +1158,7 @@ def main():
         # ------------------------------------------------------------------
         tiles = page.evaluate(
             """(payload) => {
+                window.freshStep();
                 const old = document.querySelector('busch-light-dialog');
                 if (old) old.remove();
                 const card = document.querySelector('busch-light-card');
@@ -1133,7 +1171,27 @@ def main():
 
                 const sceneTiles = Array.from(sr.querySelectorAll('.scene'));
                 const lightTiles = Array.from(sr.querySelectorAll('.tile'));
+                const I = customElements.get('busch-light-card').__internals;
+                const rgbOf = (css) => {
+                    const m = String(css).match(/rgba?\\(([^)]+)\\)/);
+                    if (!m) return null;
+                    const p = m[1].split(',').map(Number);
+                    return { r: p[0], g: p[1], b: p[2], a: 1 };
+                };
                 const out = {
+                    sceneContrast: sceneTiles.filter(s => !s.hasAttribute('disabled')).map(s => {
+                        const bg = rgbOf(getComputedStyle(s).backgroundColor);
+                        const fg = rgbOf(getComputedStyle(s).color);
+                        return bg && fg ? Math.round(I.contrastRatio(fg, bg) * 100) / 100 : 0;
+                    }),
+                    tileContrast: lightTiles.filter(t => t.classList.contains('lit')).map(t => {
+                        const bg = rgbOf(getComputedStyle(t).backgroundColor);
+                        const fg = rgbOf(getComputedStyle(t).color);
+                        const dark = { r: bg.r * I.TILE_SHADE, g: bg.g * I.TILE_SHADE,
+                                       b: bg.b * I.TILE_SHADE, a: 1 };
+                        return Math.round(Math.min(I.contrastRatio(fg, bg),
+                                                   I.contrastRatio(fg, dark)) * 100) / 100;
+                    }),
                     sceneBadges: sceneTiles.length
                         && sceneTiles.every(s => !!s.querySelector('.badge ha-icon')),
                     sceneIcons: sceneTiles.map(s => s.querySelector('.badge ha-icon')
@@ -1150,8 +1208,26 @@ def main():
                 // the switch acts on that one light only
                 window.__serviceCalls = [];
                 const lit = lightTiles.find(t => t.querySelector('.tsw.on'));
+                const litName = lit.querySelector('.tname').textContent;
                 lit.querySelector('.tsw').click();
                 out.switchCalls = window.__serviceCalls.slice();
+
+                // The known risk from 4f0ab11: the harness never answers, so
+                // the turn_off preview outlives this sub-step and the detail
+                // view below would open on a light shown as off. Proven
+                // present without the reset, gone with it.
+                const dlgEl = document.querySelector('busch-light-dialog');
+                const tileOn = () => Array.from(sr.querySelectorAll('.tile'))
+                    .find(t => t.querySelector('.tname').textContent === litName)
+                    .querySelector('.tsw').classList.contains('on');
+                // Fresh state objects, as Home Assistant sends them: the same
+                // objects again would rightly not redraw anything.
+                const fresh = () => window.makeHass(JSON.parse(JSON.stringify(payload.states)));
+                dlgEl.hass = fresh();
+                out.previewLeaksWithoutReset = !tileOn();
+                out.previewsCleared = window.freshStep();
+                dlgEl.hass = fresh();
+                out.onAfterReset = tileOn();
 
                 // tapping the tile body opens that light's detail view
                 const target = lightTiles.find(t => t.querySelector('.tname')
@@ -1171,6 +1247,11 @@ def main():
                 window.__serviceCalls = [];
                 detailSw.click();
                 out.detailSwitchCalls = window.__serviceCalls.slice();
+                // the screenshot below shows the detail view as Home Assistant
+                // reports it, not the unanswered preview
+                window.freshStep();
+                document.querySelector('busch-light-dialog').hass = fresh();
+                out.detailHeadLit = sr.querySelector('.head').classList.contains('lit');
                 return out;
             }""",
             {"root": fixture["root"], "states": lit_states,
@@ -1178,10 +1259,16 @@ def main():
         )
         report["tiles"] = tiles
 
-        check("scene tiles carry a round icon badge instead of a flooded colour",
+        check("scene tiles carry their colour and an icon badge, label at 4.5:1",
               tiles["sceneBadges"] and "mdi:white-balance-sunny" in tiles["sceneIcons"]
-              and "mdi:power-sleep" in tiles["sceneIcons"],
-              json.dumps(tiles["sceneIcons"]))
+              and "mdi:power-sleep" in tiles["sceneIcons"]
+              and tiles["sceneContrast"] and min(tiles["sceneContrast"]) >= 4.5,
+              json.dumps({"icons": tiles["sceneIcons"], "contrast": tiles["sceneContrast"]}))
+        check("lit light tiles read at 4.5:1 on the bright and the shaded part",
+              tiles["tileContrast"] and min(tiles["tileContrast"]) >= 4.5,
+              json.dumps(tiles["tileContrast"]))
+        check("detail view header carries that light's colour",
+              tiles["detailHeadLit"] is True, str(tiles["detailHeadLit"]))
         check("a scene without its own icon still gets one",
               tiles["sceneIcons"].count("mdi:palette") >= 1,
               json.dumps(tiles["sceneIcons"]))
@@ -1199,6 +1286,12 @@ def main():
         check("tapping the tile body opens that light's detail view",
               tiles["detailTitle"] == "Cosy Corner" and tiles["hasBackButton"],
               json.dumps({"title": tiles["detailTitle"], "back": tiles["hasBackButton"]}))
+        check("a step's preview does not reach the next step (freshStep)",
+              tiles["previewLeaksWithoutReset"] is True
+              and tiles["previewsCleared"] >= 1
+              and tiles["onAfterReset"] is True,
+              json.dumps({k: tiles[k] for k in ("previewLeaksWithoutReset",
+                          "previewsCleared", "onAfterReset")}))
         check("the master switch follows into the detail view and drives that light",
               tiles["detailSwitchPresent"] and tiles["detailSwitchOn"] is True
               and len(tiles["detailSwitchCalls"]) == 1
@@ -1219,6 +1312,7 @@ def main():
                 const wait = () => new Promise(r => setTimeout(r, 90));
                 const dlg = () => document.querySelector('busch-light-dialog');
                 const openCard = () => {
+                    window.freshStep();
                     const old = dlg();
                     if (old) old.remove();
                     const card = document.querySelector('busch-light-card');
@@ -1928,6 +2022,7 @@ def main():
                 //     in the user's language — once with hass already set,
                 //     once with setConfig running first, as Lovelace does it.
                 const lies = (config, hassZuerst) => {{
+                    window.freshStep();
                     const stack = document.getElementById('stack');
                     stack.innerHTML = '';
                     const card = document.createElement('busch-light-card');
@@ -1949,6 +2044,7 @@ def main():
                 out.englischImWoerterbuch = I.TEXTE.en.texte.fehlerKeineEntitaet;
 
                 // (b) the close X is the FIRST child of the dialog header.
+                window.freshStep();
                 const alt = document.querySelector('busch-light-dialog');
                 if (alt) alt.remove();
                 const card = document.createElement('busch-light-card');
@@ -2032,6 +2128,7 @@ def main():
             def oeffne_dialog():
                 page.evaluate(
                     """() => {
+                        window.freshStep();
                         const alt = document.querySelector('busch-light-dialog');
                         if (alt) alt.remove();
                         const card = document.querySelector('busch-light-card');
