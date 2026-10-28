@@ -1042,6 +1042,179 @@ function scenesForLights(hass, entityIds) {
 }
 
 // ---------------------------------------------------------------------------
+// Optimistic display: a tap shows its result before Home Assistant answers
+// ---------------------------------------------------------------------------
+
+/**
+ * How long a switch or slider keeps showing the value just sent while Home
+ * Assistant has not reported a matching state. Zigbee and Hue usually answer
+ * well within a second; after this the real state wins again.
+ */
+const OPTIMISTIC_HOLD_MS = 4000;
+/** entityId -> { on, pct?, rgb?, kelvin?, base, timer } — what was just asked for. */
+const OPTIMISTIC = new Map();
+/** Cards and dialogs that redraw when a preview starts or ends. */
+const OPTIMISTIC_VIEWS = new Set();
+/** Colour and brightness of each light's last 'on' state, to preview a switch-on. */
+const LAST_ON = new Map();
+const LAST_ON_KEYS = ['brightness', 'color_mode', 'color_temp_kelvin', 'rgb_color', 'xy_color', 'hs_color'];
+const REAL_HASS = Symbol('busch-light-real-hass');
+
+function notifyOptimistic(ids) {
+    Array.from(OPTIMISTIC_VIEWS).forEach((view) => view._onOptimistic(ids));
+}
+
+function dropOptimistic(entityId, entry) {
+    const current = OPTIMISTIC.get(entityId);
+    if (!current || (entry && current !== entry)) return false;
+    clearTimeout(current.timer);
+    OPTIMISTIC.delete(entityId);
+    return true;
+}
+
+function rememberOn(entityId, state) {
+    if (!state || state.state !== 'on' || OPTIMISTIC.has(entityId)) return;
+    const attributes = state.attributes || {};
+    const kept = {};
+    LAST_ON_KEYS.forEach((key) => {
+        if (attributes[key] !== undefined) kept[key] = attributes[key];
+    });
+    LAST_ON.set(entityId, kept);
+}
+
+/** The end state a light/switch call asks for, or null when it cannot be predicted. */
+function optimisticTarget(domain, service, data) {
+    if (!LEAF_DOMAINS.has(domain) || !data) return null;
+    if (service === 'turn_off') return { on: false };
+    if (service !== 'turn_on') return null;
+    const want = { on: true };
+    if (typeof data.brightness_pct === 'number') want.pct = clamp(Math.round(data.brightness_pct), 1, 100);
+    if (Array.isArray(data.rgb_color)) want.rgb = data.rgb_color.slice(0, 3);
+    if (typeof data.color_temp_kelvin === 'number') want.kelvin = data.color_temp_kelvin;
+    return want;
+}
+
+/**
+ * Calls the service and previews its result at once, the way the Hue-like
+ * card sets its local state before calling. The preview ends as soon as Home
+ * Assistant reports a new, matching state, when the call fails, or after
+ * OPTIMISTIC_HOLD_MS — whichever comes first.
+ */
+function optimisticCall(hass, domain, service, data) {
+    const real = (hass && hass[REAL_HASS]) || hass;
+    const want = optimisticTarget(domain, service, data);
+    const started = [];
+    if (want) {
+        [].concat(data.entity_id || []).forEach((entityId) => {
+            const base = real.states ? real.states[entityId] : undefined;
+            if (!base || base.state === 'unavailable') return;
+            dropOptimistic(entityId);
+            const entry = Object.assign({ base }, want);
+            entry.timer = setTimeout(() => {
+                if (dropOptimistic(entityId, entry)) notifyOptimistic([entityId]);
+            }, OPTIMISTIC_HOLD_MS);
+            OPTIMISTIC.set(entityId, entry);
+            started.push([entityId, entry]);
+        });
+    }
+    const fail = () => {
+        const gone = started.filter(([entityId, entry]) => dropOptimistic(entityId, entry)).map((s) => s[0]);
+        if (gone.length) notifyOptimistic(gone);
+    };
+    if (started.length) notifyOptimistic(started.map((s) => s[0]));
+    let result;
+    try {
+        result = real.callService(domain, service, data);
+    } catch (e) {
+        fail();
+        throw e;
+    }
+    // Home Assistant shows its own error toast; the preview only has to stop.
+    if (result && typeof result.then === 'function') result.then(null, fail);
+    return result;
+}
+
+function optimisticReached(real, want) {
+    if (!real || real.state === 'unavailable') return true;
+    if (real === want.base) return false; // nothing new from Home Assistant yet
+    if ((real.state === 'on') !== want.on) return false;
+    const brightness = real.attributes ? real.attributes.brightness : undefined;
+    if (want.on && want.pct !== undefined && typeof brightness === 'number') {
+        return Math.abs(Math.round((brightness / 255) * 100) - want.pct) <= 2;
+    }
+    return true;
+}
+
+function optimisticState(entityId, real, want) {
+    const attributes = Object.assign({}, real.attributes);
+    if (want.on) {
+        if (real.state !== 'on') Object.assign(attributes, LAST_ON.get(entityId) || {});
+        if (want.pct !== undefined) attributes.brightness = Math.round((want.pct * 255) / 100);
+        if (want.rgb) {
+            attributes.rgb_color = want.rgb;
+            attributes.color_mode = 'rgb';
+        }
+        if (want.kelvin !== undefined) {
+            attributes.color_temp_kelvin = Math.round(want.kelvin);
+            attributes.color_mode = 'color_temp';
+        }
+    }
+    return Object.assign({}, real, { state: want.on ? 'on' : 'off', attributes });
+}
+
+/**
+ * `hass` as the card should show it: the real states with every running
+ * preview laid over them. Without previews it is `hass` itself.
+ */
+function optimisticView(hass) {
+    if (!OPTIMISTIC.size || !hass || !hass.states) return hass;
+    let states = null;
+    Array.from(OPTIMISTIC.keys()).forEach((entityId) => {
+        const want = OPTIMISTIC.get(entityId);
+        const real = hass.states[entityId];
+        if (optimisticReached(real, want)) {
+            dropOptimistic(entityId, want);
+            return;
+        }
+        if (!states) states = Object.assign({}, hass.states);
+        states[entityId] = optimisticState(entityId, real, want);
+    });
+    if (!states) return hass;
+    const view = Object.create(hass);
+    view.states = states;
+    view[REAL_HASS] = hass;
+    return view;
+}
+
+/**
+ * What a render depended on: the language and the state object of every
+ * entity it read. Home Assistant replaces a state object whenever it changes,
+ * so identity is enough to tell that nothing relevant moved.
+ */
+function watchSnapshot(hass, entityIds) {
+    const states = (hass && hass.states) || {};
+    return {
+        language: BuschUI.language(hass, { legacy: true }),
+        ids: entityIds,
+        objects: entityIds.map((id) => states[id])
+    };
+}
+
+function snapshotUnchanged(snapshot, hass) {
+    if (!snapshot || !hass || !hass.states) return false;
+    if (BuschUI.language(hass, { legacy: true }) !== snapshot.language) return false;
+    const states = hass.states;
+    for (let i = 0; i < snapshot.ids.length; i++) {
+        if (states[snapshot.ids[i]] !== snapshot.objects[i]) return false;
+    }
+    return true;
+}
+
+function snapshotWatches(snapshot, entityIds) {
+    return !snapshot || entityIds.some((id) => snapshot.ids.indexOf(id) !== -1);
+}
+
+// ---------------------------------------------------------------------------
 // A single light or switch
 // ---------------------------------------------------------------------------
 
@@ -1052,6 +1225,7 @@ class LightModel {
         this.domain = domainOf(entityId);
         this.state = hass && hass.states ? hass.states[entityId] : undefined;
         this.attributes = (this.state && this.state.attributes) || {};
+        rememberOn(entityId, this.state);
     }
 
     /** Missing from the state machine — a stale group member, usually. */
@@ -1184,6 +1358,14 @@ class GroupModel {
         }));
     }
 
+    /** Every entity this model read: roots, expanded groups and leaves. */
+    watchIds() {
+        const ids = new Set(this.opts.entityIds);
+        this.resolution.groups.forEach((id) => ids.add(id));
+        this.resolution.leaves.forEach((id) => ids.add(id));
+        return Array.from(ids);
+    }
+
     get total() {
         return this.alive.length;
     }
@@ -1306,7 +1488,7 @@ class GroupModel {
         });
         Object.keys(byDomain).forEach((domain) => {
             const payload = Object.assign({ entity_id: byDomain[domain] }, domain === 'light' ? data || {} : {});
-            this.hass.callService(domain, service, payload);
+            optimisticCall(this.hass, domain, service, payload);
         });
     }
 
@@ -1835,6 +2017,20 @@ class BuschLightCard extends HTMLElement {
         this._error = null;
         this._holdTimer = null;
         this._held = false;
+        this._seen = null; // what the last render read, see watchSnapshot()
+    }
+
+    connectedCallback() {
+        OPTIMISTIC_VIEWS.add(this);
+    }
+
+    disconnectedCallback() {
+        OPTIMISTIC_VIEWS.delete(this);
+    }
+
+    /** A preview of one of this card's lights started or ended. */
+    _onOptimistic(ids) {
+        if (this._hass && snapshotWatches(this._seen, ids)) this._render();
     }
 
     /** Hands Home Assistant the visual editor for this card. */
@@ -1882,13 +2078,18 @@ class BuschLightCard extends HTMLElement {
                 : (e && e.message ? e.message : String(e));
         }
         this._built = false;
+        this._seen = null;
         this.shadowRoot.innerHTML = '';
         this._render();
     }
 
     set hass(hass) {
+        // Home Assistant hands every card a new hass on every state change in
+        // the whole house. Only redraw when one of our own entities — groups
+        // and their resolved members included — or the language changed.
+        const unchanged = snapshotUnchanged(this._seen, hass);
         this._hass = hass;
-        this._render();
+        if (!unchanged) this._render();
         if (this._dialog) this._dialog.hass = hass;
     }
 
@@ -2143,6 +2344,7 @@ class BuschLightCard extends HTMLElement {
 
     _render() {
         if (!this._built) this._build();
+        this._seen = null;
         if (this._error || !this._opts) return;
         if (!this._hass) {
             this._title.textContent = this._opts.title || this._opts.entityIds[0];
@@ -2154,8 +2356,9 @@ class BuschLightCard extends HTMLElement {
             return;
         }
 
-        this._model = new GroupModel(this._hass, this._opts);
+        this._model = new GroupModel(optimisticView(this._hass), this._opts);
         const model = this._model;
+        this._seen = watchSnapshot(this._hass, model.watchIds());
 
         this._card.className = this._opts.hueBorders ? 'hue-borders' : '';
         this._icon.setAttribute('icon', BuschUI.resolveMedia({display_mode:'icon',icon:model.icon},{},'mdi:lightbulb').icon);
@@ -2623,6 +2826,9 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 // Dialog
 // ---------------------------------------------------------------------------
 
+/** The colour wheel's pixels, shared by every dialog (see _makeColorWheel). */
+let WHEEL_IMAGE = null;
+
 class BuschLightDialog extends HTMLElement {
     constructor() {
         super();
@@ -2642,6 +2848,7 @@ class BuschLightDialog extends HTMLElement {
         this._closing = false;
         this._closed = false;
         this._returnFocus = null;
+        this._seen = null; // what the last sheet read, see watchSnapshot()
         this._onKey = (event) => {
             if (event.key === 'Tab') {
                 const controls = this._focusable();
@@ -2683,12 +2890,27 @@ class BuschLightDialog extends HTMLElement {
 
     set cardConfig(opts) {
         this._opts = opts;
+        this._seen = null;
         this._update();
     }
 
     set hass(hass) {
+        // Rebuilding the sheet is the expensive part of this file; foreign
+        // state changes must not trigger it.
+        const unchanged = snapshotUnchanged(this._seen, hass);
         this._hass = hass;
-        this._update();
+        if (!unchanged) this._update();
+    }
+
+    /** A preview of one of the dialog's lights started or ended. */
+    _onOptimistic(ids) {
+        if (this._hass && snapshotWatches(this._seen, ids)) this._update();
+    }
+
+    _watchIds() {
+        const ids = this._model ? this._model.watchIds() : [];
+        (this._opts.scenes || []).forEach((scene) => ids.push(scene.entity));
+        return ids;
     }
 
     connectedCallback() {
@@ -2698,6 +2920,7 @@ class BuschLightDialog extends HTMLElement {
         document.addEventListener('keydown', this._onKey);
         document.addEventListener('focusin', this._onFocus, true);
         window.addEventListener('popstate', this._onPop);
+        OPTIMISTIC_VIEWS.add(this);
         // The phone's back gesture is a history navigation. Without an entry
         // of its own the dialog would stay open and the whole dashboard would
         // be left instead.
@@ -2709,6 +2932,7 @@ class BuschLightDialog extends HTMLElement {
         document.removeEventListener('keydown', this._onKey);
         document.removeEventListener('focusin', this._onFocus, true);
         window.removeEventListener('popstate', this._onPop);
+        OPTIMISTIC_VIEWS.delete(this);
         if (this._returnFocus && this._returnFocus.isConnected) this._returnFocus.focus();
     }
 
@@ -2791,14 +3015,15 @@ class BuschLightDialog extends HTMLElement {
             this._pendingUpdate = true;
             return; // never rebuild under a finger
         }
-        this._model = new GroupModel(this._hass, this._opts);
+        this._model = new GroupModel(optimisticView(this._hass), this._opts);
+        this._seen = watchSnapshot(this._hass, this._watchIds());
         this._renderSheet();
     }
 
     _setDragging(dragging) {
         this._dragging = dragging;
         if (!dragging && this._pendingUpdate && this._opts && this._hass) {
-            this._model = new GroupModel(this._hass, this._opts);
+            this._model = new GroupModel(optimisticView(this._hass), this._opts);
         }
     }
 
@@ -2862,7 +3087,7 @@ class BuschLightDialog extends HTMLElement {
         const sub = document.createElement('div');
         sub.className = 'sub';
 
-        const detail = this._detailEntity ? new LightModel(hass, this._detailEntity) : null;
+        const detail = this._detailEntity ? new LightModel(optimisticView(hass), this._detailEntity) : null;
         if (detail) {
             h1.textContent = detail.name;
             sub.textContent = detail.isAvailable
@@ -2884,7 +3109,7 @@ class BuschLightDialog extends HTMLElement {
         head.appendChild(
             detail
                 ? this._makeHeadSwitch(detail.isOn, !detail.isAvailable, () =>
-                      hass.callService(detail.domain, detail.isOn ? 'turn_off' : 'turn_on', {
+                      optimisticCall(hass, detail.domain, detail.isOn ? 'turn_off' : 'turn_on', {
                           entity_id: detail.entityId
                       })
                   )
@@ -3007,8 +3232,8 @@ class BuschLightDialog extends HTMLElement {
             wrap.appendChild(
                 this._makeSlider(light.brightnessPct, light.isOn, (pct, done) => {
                     if (!done) return;
-                    if (pct <= 0) this._hass.callService(light.domain, 'turn_off', { entity_id: light.entityId });
-                    else this._hass.callService('light', 'turn_on', { entity_id: light.entityId, brightness_pct: pct });
+                    if (pct <= 0) optimisticCall(this._hass, light.domain, 'turn_off', { entity_id: light.entityId });
+                    else optimisticCall(this._hass, 'light', 'turn_on', { entity_id: light.entityId, brightness_pct: pct });
                 })
             );
         }
@@ -3026,9 +3251,9 @@ class BuschLightDialog extends HTMLElement {
                 minKelvin: light.minKelvin,
                 maxKelvin: light.maxKelvin,
                 currentKelvin: light.kelvin,
-                onRgb: (rgb) => this._hass.callService('light', 'turn_on', { entity_id: light.entityId, rgb_color: rgb }),
+                onRgb: (rgb) => optimisticCall(this._hass, 'light', 'turn_on', { entity_id: light.entityId, rgb_color: rgb }),
                 onKelvin: (k) =>
-                    this._hass.callService('light', 'turn_on', {
+                    optimisticCall(this._hass, 'light', 'turn_on', {
                         entity_id: light.entityId,
                         color_temp_kelvin: Math.round(k)
                     })
@@ -3205,7 +3430,7 @@ class BuschLightDialog extends HTMLElement {
         toggle.addEventListener('pointerdown', (event) => event.stopPropagation());
         toggle.addEventListener('click', (event) => {
             event.stopPropagation();
-            this._hass.callService(light.domain, light.isOn ? 'turn_off' : 'turn_on', {
+            optimisticCall(this._hass, light.domain, light.isOn ? 'turn_off' : 'turn_on', {
                 entity_id: light.entityId
             });
         });
@@ -3224,12 +3449,14 @@ class BuschLightDialog extends HTMLElement {
         // that used to need a long press: drag up/down dims, a plain tap opens
         // that light's detail view.
         let moved = false;
-        let startY = 0;
+        let startY = null;
 
         onDrag(tile, (point, done) => {
-            if (!moved) startY = point.y;
+            // The start is where the finger went down. Taking it anew on every
+            // move made a slow drag (under 8 px per event) never count as one.
+            if (startY === null) startY = point.y;
             const delta = Math.abs(point.y - startY);
-            if (!done && delta > 8 && light.supportsBrightness) {
+            if (!done && (moved || delta > 8) && light.supportsBrightness) {
                 moved = true;
                 this._setDragging(true);
                 tile.classList.add('dragging');
@@ -3239,11 +3466,12 @@ class BuschLightDialog extends HTMLElement {
             }
             if (!done) return;
 
+            startY = null;
             tile.classList.remove('dragging');
             this._setDragging(false);
             if (moved) {
                 const value = clamp(Math.round(((point.height - point.y) / point.height) * 100), 1, 100);
-                this._hass.callService('light', 'turn_on', {
+                optimisticCall(this._hass, 'light', 'turn_on', {
                     entity_id: light.entityId,
                     brightness_pct: value
                 });
@@ -3398,28 +3626,35 @@ class BuschLightDialog extends HTMLElement {
 
         const ctx = canvas.getContext('2d');
         const radius = size / 2;
-        const image = ctx.createImageData(size, size);
-        for (let y = 0; y < size; y++) {
-            for (let x = 0; x < size; x++) {
-                const dx = x - radius;
-                const dy = y - radius;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                const index = (y * size + x) * 4;
-                if (dist > radius) {
-                    image.data[index + 3] = 0;
-                    continue;
+        // The pixels never change, so they are computed once per page load
+        // instead of on every rebuild of the sheet.
+        if (WHEEL_IMAGE) {
+            ctx.putImageData(WHEEL_IMAGE, 0, 0);
+        } else {
+            const image = ctx.createImageData(size, size);
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const dx = x - radius;
+                    const dy = y - radius;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const index = (y * size + x) * 4;
+                    if (dist > radius) {
+                        image.data[index + 3] = 0;
+                        continue;
+                    }
+                    const hue = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
+                    const sat = clamp(dist / radius, 0, 1);
+                    const rgb = hsv2rgb(hue, sat, 1);
+                    image.data[index] = rgb[0];
+                    image.data[index + 1] = rgb[1];
+                    image.data[index + 2] = rgb[2];
+                    // soften the rim so it does not look jagged
+                    image.data[index + 3] = dist > radius - 1.5 ? Math.round(255 * (radius - dist) / 1.5) : 255;
                 }
-                const hue = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
-                const sat = clamp(dist / radius, 0, 1);
-                const rgb = hsv2rgb(hue, sat, 1);
-                image.data[index] = rgb[0];
-                image.data[index + 1] = rgb[1];
-                image.data[index + 2] = rgb[2];
-                // soften the rim so it does not look jagged
-                image.data[index + 3] = dist > radius - 1.5 ? Math.round(255 * (radius - dist) / 1.5) : 255;
             }
+            ctx.putImageData(image, 0, 0);
+            WHEEL_IMAGE = image;
         }
-        ctx.putImageData(image, 0, 0);
 
         const marker = document.createElement('div');
         marker.className = 'marker';
