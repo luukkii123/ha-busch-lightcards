@@ -60,6 +60,46 @@
   und dann nur, was sich geändert hat; der Verlauf wird nur bei neuen Farben
   neu gesetzt (Test `tests/farbe.test.js`).
 
+## Live-Update und Bediengefühl (seit 0.10.0, #715)
+
+Vorbild ist die Hue-Like Light Card (Gh61, LGPL-2.1), deren Quelltext
+gelesen wurde (`live-update-session.ts`, `light-controller.ts`,
+`view-utils.ts`, `brightness-rollup.ts`, `mushroom-slider-container.ts`,
+`hass-text-template.ts`, `api-provider.ts`, `dialog*.ts`). Übernommen ist das
+Verhalten, nachgebaut ohne kopierten Code:
+
+- `LiveSession` je Bedienelement (Kartenregler, Dialog-Gruppenregler,
+  Detailregler, Lampenkachel, Farbrad, Weißleiste): höchstens ein Aufruf
+  unterwegs; der nächste erst nach der Bestätigung von HA (Versprechen von
+  `callService`, Notfrist 5 s) und frühestens nach dem Mindestabstand;
+  dazwischen gewinnt der neueste Wert. Erster Wert nach dem halben Abstand.
+  Loslassen stellt genau den Endwert hinten an. Der Regler zeigt bis 1,5 s
+  nach der letzten Bestätigung seinen eigenen Wert.
+- Mindestabstand 200 ms für eine Lampe, 1000 ms, sobald ein Aufruf mehrere
+  Lampen erreicht (die Karte löst Gruppen auf und schickt an die Mitglieder)
+  oder `is_hue_group` gesetzt ist. Ist der Abstand länger als 400 ms und
+  können alle Ziele `transition`, geht er als Übergang mit. 0 wird beim
+  Ziehen nie gesendet, erst beim Loslassen.
+- Touch: waagerechte Regler tragen `touch-action: pan-y` und eine
+  5-px-Totzone (wie Hues Rollup); eine senkrechte Bewegung bleibt Scrollen,
+  ein Tippen setzt den Wert. Maus wirkt sofort.
+- Übergänge 0,3 s ease-out (Hue `TransitionDefault`), nur `transform`,
+  `opacity` und Hintergrund; Dialogregler jetzt `scaleX` statt `width`.
+  Öffnen: Blatt steigt am Handy auf, mittig wächst es ein; Detailansicht
+  gleitet von oben herein; Kacheln und Szenen schrumpfen beim Drücken auf
+  0,95 (Hue-Kachel). `prefers-reduced-motion` schaltet alles ab.
+- Leistung wie 0.9.0: kein Neubau bei fremden Updates (Messgerüst
+  `hacs/docs/render/perf-t715/`, Erweiterung von perf-t712). Das Ende der
+  Haltezeit setzt nur den Regler neu.
+
+Bewusste Abweichungen von Hue: `%s` in `description` setzt auf Wunsch des
+Nutzers die Standardzeile ein (bei Hue die Zahl der leuchtenden Lampen);
+eine fehlende Vorlagen-Entität heißt `‹light.x fehlt›` statt `MISS[…]`; das
+API-Objekt heißt `window.busch_light_card` statt `hue_card`, weil beide
+Karten nebeneinander installiert sind; `icon_size: original` bleibt das
+bisherige 24-px-Symbol. Der Mushroom-Regler ist ein eigener Nachbau im
+Mushroom-Stil (28-px-Spur in 44-px-Ziel), braucht also keine Mushroom-Karte.
+
 **Abweichung (R09, R24):** 0.8.x hielt die Lichtfarbe bewusst nur in der
 44-px-Medienkachel. Grund war die Umstellung auf den gemeinsamen UI-Vertrag
 „Busch HA UI 0.1.0“ (25.09.2026, 0.8.0): Kartenfläche aus dem Thema, „keine
@@ -116,8 +156,11 @@ je Breite (320 px = Handy) und misst Kontrastquote und Textfarben. Die
 gesichtete Auswahl liegt in `docs/render/baseline/hue-0.9.0/`; siehe deren
 README. Alle Namen darin sind erfunden.
 
-`node --test tests/*.test.js` prüft ohne Browser Reaktion, Neubau-Grenzen und
-die Farbrechnung (Kontrast, Verlauf, Aus-Zustand, `off_color`).
+`node --test tests/*.test.js` prüft ohne Browser Reaktion, Neubau-Grenzen,
+die Farbrechnung (Kontrast, Verlauf, Aus-Zustand, `off_color`), seit 0.10.0
+auch Live-Takt, Bestätigung, Endwert, Touch, Vorlagen, `icon_size`, `slider`,
+`theme`, `api_id`, `is_visible` und den Editor (`tests/live.test.js`,
+`tests/optionen.test.js`).
 
 Beide Browserskripte nutzen eine Seite für viele Schritte und beantworten
 keinen Dienstaufruf. Seit 0.9.0 zeigt ein Klick sein Ergebnis bis zu 4 s
@@ -129,6 +172,28 @@ Weitere Prüfungen vor einem Release: `node --check dist/busch-lightcards.js`
 und ein Test auf doppelte Top-Level-Namen im Bundle.
 
 ## Geprüft
+
+**29.10.2026 · 0.10.0 (#715, Live-Update und Kleinkram)** — vier Abnahmebelege vor dem Tag:
+
+1. `node --check dist/busch-lightcards.js` grün.
+2. `python3 scripts/ui-regeln-pruefen.py --repo ha-busch-lightcards`
+   (HACS-Ebene): 0 Verstöße.
+3. `KARTEN_TODO=715 scripts/karten-alle.sh --repo ha-busch-lightcards`
+   (`test-hacs-t715-abnahme-…`), Lauf `karten-20261029-125227-a1f447`,
+   3/3 grün: `node --test` 52/52 (davon 21 neu, alle 21 rot gegen v0.9.0);
+   `render.py` 125/125 (14 neue #715-Prüfungen mit echten PointerEvents:
+   Lampe ≤ 5/s, Gruppe ≤ 1/s, Endwert, `live_update: false`, Touch senkrecht
+   ohne Aufruf, Mushroom, `icon_size`, `description: false`, Vorlage,
+   `theme`, `api_id` samt Hash und Prototyp-Probe, Öffnungsanimation,
+   `prefers-reduced-motion`), Regel 1 186 Textelemente ohne Befund, Regel 2
+   ohne Verstoß, 0 Konsolen-/Seitenfehler; `visual_contract.py` 138/138
+   (neu: `mushroom`, `mushroom_off`, `icon_big`, `no_description`,
+   `template`, Editor mit den neuen Optionen, je 320/480/960 px hell/dunkel),
+   Tastaturprobe grün. Vorläufe: `karten-20261029-123942-c74d82` (rot:
+   Prüfung las Abzeichen-Fall falsch, Rechteck während der Animation, Escape
+   im Skript), `-124202-622724` (grün; danach zwei Sichtbefunde behoben).
+4. Dieser Abschnitt und der Block im HACS-Stand. Bilder gesichtet; Auswahl
+   in `docs/render/baseline/hue-0.10.0/`.
 
 **28.10.2026 · 0.9.0 (#712, Hue-Optik)** — vier Abnahmebelege vor dem Tag:
 

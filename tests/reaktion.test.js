@@ -67,9 +67,9 @@ test('passender Zustand beendet die Vorschau; spätere echte Änderungen gelten 
   assert.equal(schalterAn(karte), false, 'echtes Aus wird nicht von der alten Vorschau überdeckt');
 });
 
-test('Regler: ein callService je Zug, Wert bleibt nach dem Loslassen stehen', () => {
+test('Regler (live_update: false): ein callService je Zug, Wert bleibt nach dem Loslassen stehen', () => {
   const u = neueUmgebung(), haus = neuesHaus({ an: true });
-  const karte = neueKarte(u, haus);
+  const karte = neueKarte(u, haus, { live_update: false });
   assert.equal(karte._sliderLabel.textContent, '80 %');
   ziehen(u, karte._slider, [100, 90, 80, 70, 65, 60, 60]);
   assert.equal(haus.rufe.length, 1, 'nur beim Loslassen');
@@ -142,9 +142,9 @@ test('Dialog: Farbrad wird nur einmal berechnet', () => {
   assert.equal(u.zaehler.createImageData, 1, 'keine neue Pixelberechnung je Neubau');
 });
 
-test('Dialog: langsames Ziehen auf einer Kachel dimmt (kein Öffnen der Detailansicht)', () => {
+test('Dialog (live_update: false): langsames Ziehen auf einer Kachel dimmt (kein Öffnen der Detailansicht)', () => {
   const u = neueUmgebung(), haus = neuesHaus({ an: true });
-  const karte = neueKarte(u, haus);
+  const karte = neueKarte(u, haus, { live_update: false });
   karte._openDialog();
   const dialog = karte._dialog;
   const kachel = dialog._sheet.querySelectorAll('.tile')[0];

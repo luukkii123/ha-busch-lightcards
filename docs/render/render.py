@@ -178,7 +178,7 @@ PAGE = """<!doctype html>
       themes: {},
       states: states,
       callService: function (domain, service, data) {
-        window.__serviceCalls.push({ domain: domain, service: service, data: data });
+        window.__serviceCalls.push({ domain: domain, service: service, data: data, t: performance.now() });
         return Promise.resolve();
       }
     };
@@ -1552,10 +1552,12 @@ def main():
               editor["stub"]["entity"] == fixture["root"],
               json.dumps(editor["stub"]))
         expected_fields = sorted([
-            "entity", "entities", "title", "icon", "description",
+            "entity", "entities", "title", "icon", "description", "show_description",
             "resolve_groups", "max_depth", "show_unavailable", "group_display",
             "off_color", "default_color", "hue_borders", "show_switch",
-            "slider", "allow_zero", "off_shadow", "tap_action", "hold_action"])
+            "slider", "allow_zero", "off_shadow", "tap_action", "hold_action",
+            # #715
+            "live_update", "icon_size", "theme", "api_id", "is_visible"])
         check("editor exposes every documented option",
               sorted(editor["fields"]) == expected_fields,
               f"missing={sorted(set(expected_fields) - set(editor['fields']))} "
@@ -2111,6 +2113,218 @@ def main():
               and entfernen["beschriftung"] == "Entfernen"
               and entfernen["rotImStilblatt"] is False,
               json.dumps(entfernen, ensure_ascii=False))
+
+        # ------------------------------------------------------------------
+        # 8b. #715: live update while dragging, touch, options, feel
+        # ------------------------------------------------------------------
+        live = page.evaluate(
+            f"""async (payload) => {{
+                const I = {internals};
+                window.freshStep();
+                document.querySelectorAll('busch-light-dialog').forEach(d => d.remove());
+                const stack = document.getElementById('stack');
+                const wait = (ms) => new Promise(r => setTimeout(r, ms));
+                const hass = window.makeHass(payload.states);
+                const lamp = I.resolveEntities(hass, [payload.root], {{}}).leaves.find(id => {{
+                    const s = payload.states[id];
+                    return s && s.state === 'on'
+                        && (s.attributes.supported_color_modes || []).some(m => m !== 'onoff');
+                }});
+                const out = {{ lamp }};
+                const make = (cfg, h) => {{
+                    window.freshStep();
+                    stack.replaceChildren();
+                    const c = document.createElement('busch-light-card');
+                    c.setConfig(Object.assign({{ type: 'custom:busch-light-card' }}, cfg));
+                    stack.appendChild(c);
+                    c.hass = h || hass;
+                    return c;
+                }};
+                // Real PointerEvents in Chromium, 16 ms apart; makeHass answers
+                // every call at once, so the pace is the card's own.
+                async function drag(el, from, to, ms, type) {{
+                    const r = el.getBoundingClientRect();
+                    const steps = Math.round(ms / 16);
+                    const ev = (t, f) => el.dispatchEvent(new PointerEvent(t, {{
+                        pointerId: 11, pointerType: type || 'mouse', bubbles: true, composed: true,
+                        isPrimary: true, clientX: r.left + r.width * f, clientY: r.top + r.height / 2 }}));
+                    const c0 = window.__serviceCalls.length;
+                    const t0 = performance.now();
+                    ev('pointerdown', from);
+                    for (let i = 1; i <= steps; i++) {{ ev('pointermove', from + (to - from) * i / steps); await wait(16); }}
+                    const seconds = (performance.now() - t0) / 1000;
+                    const during = window.__serviceCalls.slice(c0);
+                    ev('pointerup', to);
+                    await wait(1300);
+                    const all = window.__serviceCalls.slice(c0);
+                    const gaps = during.slice(1).map((c, i) => c.t - during[i].t);
+                    return {{ seconds: +seconds.toFixed(2), during: during.length,
+                              perSecond: +(during.length / seconds).toFixed(2), total: all.length,
+                              last: all.length ? all.at(-1).data : null,
+                              firstTransition: during.length ? (during[0].data.transition ?? null) : null }};
+                }}
+                const orig = window.makeHass;
+                let c = make({{ entity: lamp }});
+                const sl = () => c.shadowRoot.querySelector('.slider');
+                out.touchAction = getComputedStyle(sl()).touchAction;
+                out.lamp = await drag(sl(), 0.9, 0.3, 1000);
+                out.labelAfter = sl().querySelector('.label').textContent;
+                c = make({{ entity: payload.root }});
+                out.group = await drag(sl(), 0.9, 0.3, 2000);
+                c = make({{ entity: lamp, live_update: false }});
+                out.off = await drag(sl(), 0.9, 0.3, 600);
+
+                // Touch: a vertical swipe across the slider is scrolling, not dimming.
+                c = make({{ entity: lamp }});
+                {{
+                    const r = sl().getBoundingClientRect();
+                    const c0 = window.__serviceCalls.length;
+                    const ev = (t, x, y) => sl().dispatchEvent(new PointerEvent(t, {{
+                        pointerId: 12, pointerType: 'touch', bubbles: true, composed: true,
+                        isPrimary: true, clientX: r.left + x, clientY: r.top + y }}));
+                    const before = sl().querySelector('.label').textContent;
+                    ev('pointerdown', 100, 20); ev('pointermove', 102, 32); ev('pointermove', 103, 60);
+                    ev('pointercancel', 103, 60);
+                    await wait(400);
+                    out.touchVertical = {{ calls: window.__serviceCalls.length - c0,
+                        labelKept: sl().querySelector('.label').textContent === before }};
+                }}
+                out.touchHorizontal = await drag(sl(), 0.8, 0.4, 600, 'touch');
+
+                // Mushroom slider, icon size, description false, template.
+                c = make({{ entity: payload.root, slider: 'mushroom', icon_size: 'big', description: false,
+                             title: 'Vorlage {{{{ ' + lamp + '.brightness }}}}' }});
+                await wait(60);
+                const sr = c.shadowRoot;
+                const track = sr.querySelector('.slider .track');
+                out.mushroom = {{ cls: sl().className, trackHeight: track.getBoundingClientRect().height,
+                    hitHeight: sl().getBoundingClientRect().height,
+                    trackDisplay: getComputedStyle(track).display,
+                    labelDisplay: getComputedStyle(sr.querySelector('.slider .label')).display,
+                    fill: sr.querySelector('.mfill').style.transform }};
+                out.icon = {{ size: getComputedStyle(sr.querySelector('.icon')).getPropertyValue('--mdc-icon-size').trim(),
+                    media: sr.querySelector('.media').getBoundingClientRect().width }};
+                out.descDisplay = getComputedStyle(sr.querySelector('.desc')).display;
+                out.descTextDisplay = getComputedStyle(sr.querySelector('.desc .dtext')).display;
+                out.warnShown = getComputedStyle(sr.querySelector('.warn')).display !== 'none';
+                out.title = sr.querySelector('.text h2').textContent;
+                out.titleChildren = sr.querySelector('.text h2').children.length;
+
+                // theme + api_id
+                const themed = orig(payload.states);
+                themed.themes = {{ themes: {{ rot: {{ 'primary-color': 'rgb(200, 0, 0)' }} }} }};
+                c = make({{ entity: payload.root, theme: 'rot', api_id: 'render_test' }}, themed);
+                out.themeVar = getComputedStyle(c).getPropertyValue('--primary-color').trim();
+                out.apiFn = typeof (window.busch_light_card || {{}}).render_test_openHueScreen;
+                out.apiProto = window.busch_light_card ? Object.getPrototypeOf(window.busch_light_card) === null : false;
+                window.busch_light_card.render_test_openHueScreen();
+                await wait(60);
+                let dlg = document.querySelector('busch-light-dialog');
+                out.apiOpened = !!dlg;
+                out.openAnimations = dlg ? dlg.shadowRoot.querySelector('.sheet').getAnimations().length : -1;
+                out.dialogTheme = dlg ? getComputedStyle(dlg).getPropertyValue('--primary-color').trim() : null;
+                out.dsliderTouch = dlg ? getComputedStyle(dlg.shadowRoot.querySelector('.dslider')).touchAction : null;
+                await wait(400); // let the opening animation finish before measuring the slider
+                if (dlg) out.dialogGroup = await drag(dlg.shadowRoot.querySelector('.dslider'), 0.9, 0.3, 2000);
+                if (dlg) dlg.close();
+                await wait(400);
+                location.hash = '#busch_light_card:render_test_openHueScreen';
+                await wait(150);
+                dlg = document.querySelector('busch-light-dialog');
+                out.hashOpened = !!dlg;
+                out.hashCleared = location.hash === '';
+                if (dlg) dlg.close();
+                await wait(400);
+                location.hash = '#busch_light_card:__proto___openHueScreen';
+                await wait(150);
+                out.evilHashOpened = !!document.querySelector('busch-light-dialog');
+                history.replaceState(history.state, '', location.pathname + location.search);
+
+                c = make({{ entity: payload.root, is_visible: false }});
+                out.hiddenDisplay = getComputedStyle(c).display;
+                stack.replaceChildren();
+                return out;
+            }}""",
+            {"root": fixture["root"], "states": lit_states},
+        )
+        report["live715"] = live
+        check("#715 card slider: touch-action pan-y (no scroll theft on a phone)",
+              live["touchAction"] == "pan-y" and live["dsliderTouch"] == "pan-y",
+              json.dumps({"card": live["touchAction"], "dialog": live["dsliderTouch"]}))
+        check("#715 single light: live while dragging, at most 5 calls/s, end value on release",
+              3 <= live["lamp"]["during"] <= 6 and live["lamp"]["perSecond"] <= 5.5
+              and live["lamp"]["last"]["brightness_pct"] == 30 and live["labelAfter"] == "30 %",
+              json.dumps(live["lamp"]))
+        check("#715 group: at most 1 call/s while dragging, end value on release",
+              1 <= live["group"]["during"] <= 2 and live["group"]["last"]["brightness_pct"] == 30,
+              json.dumps(live["group"]))
+        check("#715 live_update: false sends only on release",
+              live["off"]["during"] == 0 and live["off"]["total"] == 1
+              and live["off"]["last"]["brightness_pct"] == 30,
+              json.dumps(live["off"]))
+        check("#715 touch: a vertical swipe is scrolling, a horizontal one dims",
+              live["touchVertical"]["calls"] == 0 and live["touchVertical"]["labelKept"]
+              and live["touchHorizontal"]["last"]["brightness_pct"] == 40,
+              json.dumps({"vertical": live["touchVertical"], "horizontal": live["touchHorizontal"]}))
+        check("#715 slider: mushroom draws a 28 px track in a 44 px target, transform only",
+              "mushroom" in live["mushroom"]["cls"].split() and live["mushroom"]["trackDisplay"] == "block"
+              and round(live["mushroom"]["trackHeight"]) == 28 and round(live["mushroom"]["hitHeight"]) == 44
+              and live["mushroom"]["labelDisplay"] == "none"
+              and live["mushroom"]["fill"].startswith("translateX("),
+              json.dumps(live["mushroom"]))
+        check("#715 icon_size: big is 34 px, the tile grows with it",
+              live["icon"]["size"] == "34px" and round(live["icon"]["media"]) == 46,
+              json.dumps(live["icon"]))
+        # The fixture group has one unreachable lamp: the badge keeps its
+        # place, only the text goes (with no badge the whole row goes).
+        check("#715 description: false hides the line; templates resolve as text",
+              live["descTextDisplay"] == "none"
+              and (live["descDisplay"] == "none") == (not live["warnShown"])
+              and live["title"].startswith("Vorlage ")
+              and "{{" not in live["title"] and live["titleChildren"] == 0,
+              json.dumps({"desc": live["descDisplay"], "text": live["descTextDisplay"], "warn": live["warnShown"],
+                          "title": live["title"]}, ensure_ascii=False))
+        check("#715 theme: the card and its dialog carry the theme's variables",
+              live["themeVar"] == "rgb(200, 0, 0)" and live["dialogTheme"] == "rgb(200, 0, 0)",
+              json.dumps({"card": live["themeVar"], "dialog": live["dialogTheme"]}))
+        check("#715 api_id: JS function and #busch_light_card:<id>_openHueScreen open the dialog",
+              live["apiFn"] == "function" and live["apiProto"] and live["apiOpened"]
+              and live["hashOpened"] and live["hashCleared"] and not live["evilHashOpened"],
+              json.dumps({k: live[k] for k in ("apiFn", "apiProto", "apiOpened", "hashOpened",
+                                               "hashCleared", "evilHashOpened")}))
+        check("#715 dialog group slider: live at most 1 call/s, end value on release",
+              1 <= live["dialogGroup"]["during"] <= 2 and live["dialogGroup"]["last"]["brightness_pct"] == 30,
+              json.dumps(live["dialogGroup"]))
+        check("#715 dialog opens with an animation (transform/opacity)",
+              live["openAnimations"] >= 1, str(live["openAnimations"]))
+        check("#715 is_visible: false hides the card",
+              live["hiddenDisplay"] == "none", live["hiddenDisplay"])
+
+        # prefers-reduced-motion: no opening animation at all.
+        page.emulate_media(reduced_motion="reduce")
+        reduced = page.evaluate(
+            """async (payload) => {
+                window.freshStep();
+                const stack = document.getElementById('stack');
+                stack.replaceChildren();
+                const c = document.createElement('busch-light-card');
+                c.setConfig({ type: 'custom:busch-light-card', entity: payload.root });
+                stack.appendChild(c);
+                c.hass = window.makeHass(payload.states);
+                c._openDialog();
+                await new Promise(r => setTimeout(r, 30));
+                const d = document.querySelector('busch-light-dialog');
+                const n = d.shadowRoot.querySelector('.sheet').getAnimations().length
+                    + d.shadowRoot.querySelector('.scrim').getAnimations().length;
+                d.close();
+                await new Promise(r => setTimeout(r, 400));
+                stack.replaceChildren();
+                return n;
+            }""", {"root": fixture["root"], "states": lit_states})
+        page.emulate_media(reduced_motion="no-preference")
+        report["reducedMotionAnimations"] = reduced
+        check("#715 prefers-reduced-motion: the dialog opens without animation",
+              reduced == 0, str(reduced))
 
         # ------------------------------------------------------------------
         # 9. The four UI rules (hacs/docs/ui-regeln.md), measured

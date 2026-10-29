@@ -222,7 +222,7 @@ const BuschUI = (() => {
  * README for why.
  */
 
-const CARD_VERSION = '0.9.0';
+const CARD_VERSION = '0.10.0';
 
 const CARD_TAG = 'busch-light-card';
 const DIALOG_TAG = 'busch-light-dialog';
@@ -326,6 +326,7 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             title: 'Überschrift',
             icon: 'Symbol',
             description: 'Beschreibung',
+            show_description: 'Beschreibung zeigen',
             resolve_groups: 'Verschachtelte Gruppen auflösen',
             max_depth: 'Größte Tiefe',
             show_unavailable: 'Ausfall-Abzeichen',
@@ -337,8 +338,13 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             slider: 'Regler auf der Karte',
             allow_zero: 'Regler darf auf 0',
             off_shadow: 'Innenschatten im Aus-Zustand',
+            live_update: 'Live beim Ziehen',
+            icon_size: 'Symbolgröße',
+            theme: 'Thema der Karte',
+            is_visible: 'Karte sichtbar',
             tap_action: 'Beim Tippen',
             hold_action: 'Beim Halten',
+            api_id: 'API-Kennung',
             scenes: 'Szenenkacheln',
             scene_entity: 'Szene oder Skript',
             scene_title: 'Beschriftung',
@@ -348,9 +354,10 @@ const TEXTE_BUSCH_LIGHT_CARD = {
         helpers: {
             entity: 'Die Hauptentität der Karte. Ist es eine Gruppe, steigt die Karte in jede verschachtelte Untergruppe ab und schaltet die echten Lampen dahinter; Doppelnennungen zählen einmal, Zyklen werden abgebrochen. Pflichtfeld.',
             entities: 'Wird zusätzlich zur Hauptentität aufgelöst, Gruppen genauso tief wie dort. Vorgabe: leer.',
-            title: 'Ersetzt den Namen der Hauptentität auf der Karte und im Dialog. Vorgabe: der Name der Entität.',
+            title: 'Ersetzt den Namen der Hauptentität auf der Karte und im Dialog; {{ light.x }} zeigt einen Zustand, {{ light.x.brightness }} ein Attribut. Vorgabe: der Name der Entität.',
             icon: 'Ein mdi-Symbol für die Karte. Vorgabe: das Symbol der Entität.',
-            description: 'Ersetzt die Zeile unter der Überschrift, die sonst zählt, wie viele Lampen an sind. Vorgabe: die Zählung.',
+            description: 'Ersetzt die Zeile unter der Überschrift; %s setzt die Zählung ein, {{ light.x }} einen Zustand, {{ light.x.attribut }} ein Attribut. Vorgabe: die Zählung.',
+            show_description: 'Aus blendet die Zeile unter der Überschrift auf der Karte aus (description: false); der Dialog zeigt den Zustand weiter. Vorgabe an.',
             resolve_groups: 'An steigt die Karte in jede Untergruppe ab und schaltet die Lampen einzeln. Aus bleibt die Gruppe eine einzige Entität, wie bei der Vorlage. Vorgabe an.',
             max_depth: 'Wie viele Gruppenebenen die Karte höchstens absteigt, bevor sie abbricht. Vorgabe 10.',
             show_unavailable: 'Zeigt auf der Karte ein Abzeichen mit der Zahl der nicht erreichbaren Mitglieder. Vorgabe an.',
@@ -359,11 +366,16 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             default_color: 'Farbe für eine leuchtende Lampe, die selbst keine meldet. Nimmt #rrggbb, rgb(…) oder die Namen warm und cold. Vorgabe #ffda95.',
             hue_borders: 'Rundet die Karte stärker ab und legt den Schlagschatten der Hue-Vorlage darunter. Vorgabe an.',
             show_switch: 'Zeigt rechts oben einen Schalter für die ganze Gruppe. Vorgabe an.',
-            slider: 'Zeigt unter der Überschrift einen Regler für die Helligkeit der ganzen Gruppe. Vorgabe an.',
+            slider: 'Standard ist der Hue-Regler mit Prozentangabe, Mushroom ein flacher Regler im Mushroom-Stil, Keiner blendet ihn aus. Vorgabe: Standard.',
             allow_zero: 'Erlaubt dem Regler den Wert 0, der die Gruppe ausschaltet; sonst ist bei 1 Prozent Schluss. Vorgabe aus.',
             off_shadow: 'Legt einen Innenschatten über die Karte, solange keine Lampe an ist. Vorgabe an.',
+            live_update: 'An schalten die Lampen schon beim Ziehen mit, höchstens fünfmal je Sekunde und bei Gruppen einmal, immer erst nach der Bestätigung von Home Assistant; aus erst beim Loslassen. Vorgabe an.',
+            icon_size: 'Größe des Kartensymbols: Original, Groß, Klein oder eine Zahl wie bei der Hue-Karte (1,42 ist Original, 2 ist Groß). Vorgabe: Original.',
+            theme: 'Ein Home-Assistant-Thema nur für diese Karte und ihren Dialog. Leer heißt: das Thema des Dashboards. Vorgabe leer.',
+            is_visible: 'Aus versteckt die Karte; über die API-Kennung lässt sich ihr Dialog trotzdem öffnen. Vorgabe an.',
             tap_action: 'Was ein kurzer Tipp auf die Karte auslöst. Vorgabe: Dialog öffnen.',
             hold_action: 'Was ein halbe Sekunde langes Halten auf der Karte auslöst. Vorgabe: Mehr Informationen.',
+            api_id: 'Mit einer Kennung öffnet window.busch_light_card.<Kennung>_openHueScreen() oder ein Link auf #busch_light_card:<Kennung>_openHueScreen den Dialog; erlaubt sind Buchstaben, Ziffern, _ und -. Vorgabe leer.',
             scenes: 'Die Kacheln oben im Dialog, eine je Szene oder Skript. Ein Knopf übernimmt in einem Zug jede Szene, die diese Lampen benutzt; entfernen lässt sich jede einzeln wieder. Vorgabe: keine.',
             scene_entity: 'Die Szene oder das Skript, das diese Kachel im Dialog auslöst. Pflichtfeld.',
             scene_title: 'Text auf der Kachel. Vorgabe: der Name der Szene.',
@@ -420,7 +432,17 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             previewDropped: '{n} Mitglieder verworfen (weder Lampe noch Schalter)',
             previewTruncated: 'Tiefenbegrenzung erreicht bei: {list}',
             previewRecovered: 'Gemerkte Mitglieder benutzt für: {list}',
+            sliderDefault: 'Standard',
+            sliderMushroom: 'Mushroom',
+            sliderNone: 'Keiner',
+            iconOriginal: 'Original',
+            iconBig: 'Groß',
+            iconSmall: 'Klein',
+            vorlageFehlt: '‹{id} fehlt›',
             noForm: 'Die Formularelemente von Home Assistant sind nicht geladen. Bitte diese Karte in YAML einrichten.',
+            fehlerSymbolgroesse: 'Unbekannte Symbolgröße „{wert}“. Erlaubt sind original, big, small oder eine Zahl.',
+            fehlerRegler: 'Unbekannter Regler „{wert}“. Erlaubt sind default, mushroom und none.',
+            fehlerApiId: 'Die API-Kennung „{wert}“ ist nicht erlaubt. Sie beginnt mit einem Buchstaben oder einer Ziffer und enthält nur Buchstaben, Ziffern, _ und - (höchstens 64 Zeichen).',
             fehlerKeineEntitaet: 'Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe" eine Entität wählen.',
             fehlerSzeneOhneEntitaet: 'Ein Szeneneintrag hat keine Entität: {eintrag}. Jede Szenenkachel braucht eine Szene oder ein Skript.'
         }
@@ -434,6 +456,7 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             title: 'Title',
             icon: 'Icon',
             description: 'Description',
+            show_description: 'Show description',
             resolve_groups: 'Resolve nested groups',
             max_depth: 'Maximum depth',
             show_unavailable: 'Unreachable badge',
@@ -445,8 +468,13 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             slider: 'Slider on the card',
             allow_zero: 'Slider may reach 0',
             off_shadow: 'Inset shadow while off',
+            live_update: 'Live while dragging',
+            icon_size: 'Icon size',
+            theme: 'Card theme',
+            is_visible: 'Card visible',
             tap_action: 'On tap',
             hold_action: 'On hold',
+            api_id: 'API id',
             scenes: 'Scene tiles',
             scene_entity: 'Scene or script',
             scene_title: 'Label',
@@ -456,9 +484,10 @@ const TEXTE_BUSCH_LIGHT_CARD = {
         helpers: {
             entity: "The card's main entity. If it is a group, the card walks down into every nested sub-group and controls the real lights behind it; a light named twice counts once, and cycles are cut. Required.",
             entities: 'Resolved on top of the main entity, groups just as deep. Default: empty.',
-            title: "Replaces the main entity's name on the card and in the dialog. Default: the entity's own name.",
+            title: "Replaces the main entity's name on the card and in the dialog; {{ light.x }} shows a state, {{ light.x.brightness }} an attribute. Default: the entity's own name.",
             icon: "An mdi icon for the card. Default: the entity's own icon.",
-            description: 'Replaces the line under the title that otherwise counts how many lights are on. Default: the count.',
+            description: 'Replaces the line under the title; %s inserts the count, {{ light.x }} a state, {{ light.x.attribute }} an attribute. Default: the count.',
+            show_description: 'Off hides the line under the title on the card (description: false); the dialog still shows the state. Default on.',
             resolve_groups: 'On, the card walks into every sub-group and controls the lights one by one. Off, the group stays a single entity, the way the original card does it. Default on.',
             max_depth: 'How many group levels the card descends at most before it stops. Default 10.',
             show_unavailable: 'Shows a badge on the card counting the members that cannot be reached. Default on.',
@@ -467,11 +496,16 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             default_color: 'Colour for a lit light that reports none of its own. Accepts #rrggbb, rgb(…) or the names warm and cold. Default #ffda95.',
             hue_borders: "Rounds the card more strongly and puts the Hue template's drop shadow under it. Default on.",
             show_switch: 'Shows a switch for the whole group in the top right. Default on.',
-            slider: "Shows a slider for the whole group's brightness under the title. Default on.",
+            slider: 'Default is the Hue slider with its percentage, Mushroom a flat slider in the Mushroom style, None hides it. Default: default.',
             allow_zero: 'Lets the slider reach 0, which turns the group off; otherwise it stops at 1 per cent. Default off.',
             off_shadow: 'Puts an inset shadow over the card while no light is on. Default on.',
+            live_update: 'On, the lights follow while you drag, at most five times a second and once a second for groups, always after Home Assistant confirmed the last step; off, only on release. Default on.',
+            icon_size: 'Size of the card icon: original, big, small or a number as in the Hue card (1.42 is original, 2 is big). Default: original.',
+            theme: 'A Home Assistant theme for this card and its dialog only. Empty uses the dashboard theme. Default empty.',
+            is_visible: 'Off hides the card; its dialog still opens through the API id. Default on.',
             tap_action: 'What a short tap on the card does. Default: open dialog.',
             hold_action: 'What holding the card for half a second does. Default: more info.',
+            api_id: 'With an id, window.busch_light_card.<id>_openHueScreen() or a link to #busch_light_card:<id>_openHueScreen opens the dialog; letters, digits, _ and - only. Default empty.',
             scenes: 'The tiles at the top of the dialog, one per scene or script. One button adds every scene using these lights at once, and each one can be removed again. Default: none.',
             scene_entity: 'The scene or script this tile triggers in the dialog. Required.',
             scene_title: "Text on the tile. Default: the scene's own name.",
@@ -528,7 +562,17 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             previewDropped: '{n} members dropped (not a light or switch)',
             previewTruncated: 'Depth limit reached at: {list}',
             previewRecovered: 'Remembered members used for: {list}',
+            sliderDefault: 'Default',
+            sliderMushroom: 'Mushroom',
+            sliderNone: 'None',
+            iconOriginal: 'Original',
+            iconBig: 'Big',
+            iconSmall: 'Small',
+            vorlageFehlt: '‹{id} missing›',
             noForm: 'The Home Assistant form elements did not load. Please configure this card in YAML.',
+            fehlerSymbolgroesse: 'Unknown icon size “{wert}”. Allowed are original, big, small or a number.',
+            fehlerRegler: 'Unknown slider “{wert}”. Allowed are default, mushroom and none.',
+            fehlerApiId: 'The API id “{wert}” is not allowed. It starts with a letter or digit and holds only letters, digits, _ and - (at most 64 characters).',
             fehlerKeineEntitaet: 'This card needs a light, a switch or a group. Pick an entity under “Light, switch or group” in the editor.',
             fehlerSzeneOhneEntitaet: 'A scene entry has no entity: {eintrag}. Every scene tile needs a scene or a script.'
         }
@@ -1333,6 +1377,429 @@ function snapshotWatches(snapshot, entityIds) {
 }
 
 // ---------------------------------------------------------------------------
+// Live updates while dragging (#715)
+// ---------------------------------------------------------------------------
+
+/*
+ * Behaviour taken over from the Hue-like card (Gh61/lovelace-hue-like-light-
+ * card, LGPL-2.1, src/core/live-update-session.ts): the same pacing, rebuilt
+ * here in plain JS, not copied. Per control:
+ *
+ *  - at most one call in flight; the next value goes out only after Home
+ *    Assistant confirmed the previous one (or it failed, or 5 s passed) and at
+ *    least the minimum interval after it was sent. Values in between are
+ *    skipped, the newest wins;
+ *  - the first value of a movement goes out after half the interval, so it is
+ *    already closer to where the finger is heading;
+ *  - releasing queues exactly the end value behind the call in flight, never
+ *    overtaken by an older one;
+ *  - the control keeps showing its own value until 1.5 s after the last
+ *    confirmation, so a lagging state from Home Assistant cannot pull it back.
+ *
+ * Minimum interval: 200 ms for one light (5/s). 1000 ms (1/s) when one call
+ * reaches several lights — this card resolves groups and sends to their
+ * members — or a Hue room/zone (`is_hue_group`), which the Hue bridge itself
+ * limits to about one command a second.
+ */
+const LIVE_LIGHT_INTERVAL_MS = 200;
+const LIVE_GROUP_INTERVAL_MS = 1000;
+/** Hue lights fade 400 ms on their own; a longer interval sends a transition. */
+const LIVE_DEFAULT_TRANSITION_MS = 400;
+const LIVE_CONFIRM_TIMEOUT_MS = 5000;
+const LIVE_HOLD_MS = 1500;
+/** LightEntityFeature.TRANSITION */
+const FEATURE_TRANSITION = 32;
+
+class LiveSession {
+    /**
+     * `enabled` false: update() does nothing and commit() applies at once.
+     * `onRelease` runs when the held value is let go (show the real state
+     * again). `interval` returns the minimum interval, read before every call.
+     */
+    constructor(enabled, onRelease, interval) {
+        this.enabled = enabled !== false;
+        this._onRelease = onRelease || (() => {});
+        this._interval = interval || (() => LIVE_LIGHT_INTERVAL_MS);
+        /** The value the control shows instead of the real state, or null. */
+        this.pinned = null;
+        /** The last value a live call actually sent, while held. */
+        this.lastSent = null;
+        this._pending = null;
+        this._busy = false;
+        this._lastApply = 0;
+        this._run = 0;
+        this._applyTimer = null;
+        this._releaseTimer = null;
+    }
+
+    /** An intermediate value while dragging. `apply` returns the call's promise, or nothing when it sent nothing. */
+    update(value, apply) {
+        if (!this.enabled) return;
+        this._pin(value);
+        const first = this._idle();
+        this._pending = { value, apply };
+        if (first) this._schedule(this._interval() / 2);
+        else this._try();
+    }
+
+    /** The end value. Always applied, after the call in flight. */
+    commit(value, apply) {
+        if (!this.enabled) {
+            apply(value);
+            return;
+        }
+        this._pin(value);
+        this._pending = { value, apply };
+        this._clearApply(); // a click needs no head start, only the interval
+        this._try();
+    }
+
+    /** Drops what is queued and lets go of the held value. */
+    stop() {
+        const held = this.pinned !== null;
+        this._clearApply();
+        clearTimeout(this._releaseTimer);
+        this._releaseTimer = null;
+        this._run++;
+        this._pending = null;
+        this.pinned = null;
+        this.lastSent = null;
+        this._busy = false;
+        this._lastApply = 0;
+        if (held) this._onRelease();
+    }
+
+    _idle() {
+        return !this._busy && !this._applyTimer && Date.now() - this._lastApply >= this._interval();
+    }
+
+    _try() {
+        if (!this._pending || this._busy || this._applyTimer) return;
+        const wait = this._lastApply + this._interval() - Date.now();
+        if (wait > 0) {
+            this._schedule(wait);
+            return;
+        }
+        const job = this._pending;
+        this._pending = null;
+        this._lastApply = Date.now();
+        this._busy = true;
+        const run = this._run;
+        this._confirmed(() => {
+            const result = job.apply(job.value);
+            if (result) this.lastSent = job.value;
+            return result;
+        }).then(() => {
+            if (run !== this._run) return;
+            this._busy = false;
+            if (this.pinned !== null) this._restartRelease();
+            this._try();
+        });
+    }
+
+    _schedule(wait) {
+        this._applyTimer = setTimeout(() => {
+            this._applyTimer = null;
+            this._try();
+        }, wait);
+    }
+
+    /** Resolves on confirmation, failure or after LIVE_CONFIRM_TIMEOUT_MS; never rejects. */
+    _confirmed(apply) {
+        return new Promise((resolve) => {
+            const timer = setTimeout(resolve, LIVE_CONFIRM_TIMEOUT_MS);
+            const done = () => {
+                clearTimeout(timer);
+                resolve();
+            };
+            try {
+                // A failure counts as done: Home Assistant shows its own toast.
+                Promise.resolve(apply()).then(done, done);
+            } catch (e) {
+                done();
+            }
+        });
+    }
+
+    _pin(value) {
+        this.pinned = value;
+        this._restartRelease();
+    }
+
+    _restartRelease() {
+        clearTimeout(this._releaseTimer);
+        this._releaseTimer = setTimeout(() => {
+            this._releaseTimer = null;
+            if (this._busy || this._pending) return; // the confirmation restarts it
+            this.pinned = null;
+            this.lastSent = null;
+            this._onRelease();
+        }, LIVE_HOLD_MS);
+    }
+
+    _clearApply() {
+        clearTimeout(this._applyTimer);
+        this._applyTimer = null;
+    }
+}
+
+/** Minimum live interval for one call to these entities (see LiveSession). */
+function liveIntervalFor(hass, entityIds) {
+    const ids = [].concat(entityIds || []);
+    if (ids.length > 1) return LIVE_GROUP_INTERVAL_MS;
+    const state = ids.length && hass && hass.states ? hass.states[ids[0]] : null;
+    const attributes = (state && state.attributes) || {};
+    if (attributes.is_hue_group === true) return LIVE_GROUP_INTERVAL_MS;
+    if (MEMBER_ATTRIBUTES.some((key) => Array.isArray(attributes[key]) && attributes[key].length)) {
+        return LIVE_GROUP_INTERVAL_MS;
+    }
+    return LIVE_LIGHT_INTERVAL_MS;
+}
+
+/**
+ * Service data for a live step: an interval longer than a light's own fade is
+ * sent as `transition`, so the light glides until the next value arrives. Only
+ * when every target supports transitions, like the Hue card does per light.
+ */
+function liveTransition(hass, entityIds) {
+    const ids = [].concat(entityIds || []);
+    const interval = liveIntervalFor(hass, ids);
+    if (!ids.length || interval <= LIVE_DEFAULT_TRANSITION_MS) return {};
+    const states = (hass && hass.states) || {};
+    const all = ids.every((id) => {
+        const features = states[id] && states[id].attributes ? states[id].attributes.supported_features : 0;
+        return (Number(features) & FEATURE_TRANSITION) !== 0;
+    });
+    return all ? { transition: interval / 1000 } : {};
+}
+
+// ---------------------------------------------------------------------------
+// Text templates in title and description (#715)
+// ---------------------------------------------------------------------------
+
+/*
+ * Syntax of the Hue-like card (README "Text template", hass-text-template.ts):
+ * `{{ light.x }}` is the formatted state, `{{ light.x.brightness }}` an
+ * attribute — the part after the last dot, when there are two dots. Parsed
+ * with indexOf, resolved by own-property lookups only, and shown through
+ * textContent: no HTML, no evaluation, no prototype lookups.
+ */
+const TEMPLATE_ENTITY = /^[a-z_][a-z0-9_]*\.[a-z0-9_]+$/;
+const TEMPLATE_ATTRIBUTE = /^[A-Za-z0-9_]+$/;
+const hasOwn = (object, key) => !!object && Object.prototype.hasOwnProperty.call(object, key);
+
+function parseTemplate(text) {
+    const source = String(text);
+    const parts = [];
+    let index = 0;
+    while (index < source.length) {
+        const open = source.indexOf('{{', index);
+        if (open < 0) break;
+        const close = source.indexOf('}}', open + 2);
+        if (close < 0) break; // unclosed: the rest stays text, as upstream
+        if (open > index) parts.push({ text: source.slice(index, open) });
+        const inner = source.slice(open + 2, close).trim();
+        const first = inner.indexOf('.');
+        const last = inner.lastIndexOf('.');
+        parts.push(first !== last
+            ? { entity: inner.slice(0, last), attribute: inner.slice(last + 1) }
+            : { entity: inner, attribute: null });
+        index = close + 2;
+    }
+    if (index < source.length) parts.push({ text: source.slice(index) });
+    return parts;
+}
+
+/** Entity ids a parsed template reads — the card watches exactly these. */
+function templateIds(parts) {
+    return (parts || []).filter((part) => part.entity && TEMPLATE_ENTITY.test(part.entity)).map((part) => part.entity);
+}
+
+function plainValue(value) {
+    if (Array.isArray(value)) return value.map((item) => String(item)).join(', ');
+    if (value && typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+}
+
+function resolveTemplate(hass, parts) {
+    const states = hass && hass.states;
+    return (parts || []).map((part) => {
+        if (part.text !== undefined) return part.text;
+        const valid = TEMPLATE_ENTITY.test(part.entity)
+            && (part.attribute === null || TEMPLATE_ATTRIBUTE.test(part.attribute));
+        const state = valid && hasOwn(states, part.entity) ? states[part.entity] : null;
+        if (!state) return translate(hass, 'vorlageFehlt', { id: part.entity });
+        const attributes = state.attributes || {};
+        if (part.attribute && hasOwn(attributes, part.attribute)
+            && attributes[part.attribute] !== null && attributes[part.attribute] !== undefined
+            && attributes[part.attribute] !== '') {
+            if (typeof hass.formatEntityAttributeValue === 'function') {
+                try {
+                    return String(hass.formatEntityAttributeValue(state, part.attribute));
+                } catch (e) {
+                    /* fall back to the raw value */
+                }
+            }
+            return plainValue(attributes[part.attribute]);
+        }
+        // An unknown attribute falls back to the state, as upstream.
+        if (typeof hass.formatEntityState === 'function') {
+            try {
+                return String(hass.formatEntityState(state));
+            } catch (e) {
+                /* fall back to the raw state */
+            }
+        }
+        return String(state.state);
+    }).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Icon size, slider type (#715)
+// ---------------------------------------------------------------------------
+
+/**
+ * `icon_size` as in the Hue-like card: original, big, small or a factor. The
+ * factors are Hue's own (original 1.42, big 2, small 1); "original" stays the
+ * 24 px this card always drew, the others scale from there.
+ */
+const ICON_BASE_PX = 24;
+const ICON_SIZES = { original: 1.41666667, big: 2, small: 1 };
+
+function iconSizePx(value) {
+    if (value === undefined || value === null || value === '') return ICON_BASE_PX;
+    let factor = typeof value === 'number' ? value : NaN;
+    if (typeof value === 'string') {
+        const key = value.trim().toLowerCase();
+        if (hasOwn(ICON_SIZES, key)) factor = ICON_SIZES[key];
+        else if (/^\d+(\.\d+)?$/.test(key)) factor = Number(key);
+    }
+    if (!Number.isFinite(factor) || factor <= 0) {
+        throw new ConfigError('fehlerSymbolgroesse', { wert: String(value) });
+    }
+    return Math.round((ICON_BASE_PX * clamp(factor, 0.5, 4)) / ICON_SIZES.original);
+}
+
+/** `slider`: default, mushroom or none; the old booleans stay valid. */
+function sliderType(value) {
+    if (value === undefined || value === null || value === true || value === 'default') return 'default';
+    if (value === false || value === 'none') return 'none';
+    if (value === 'mushroom') return 'mushroom';
+    throw new ConfigError('fehlerRegler', { wert: String(value) });
+}
+
+// ---------------------------------------------------------------------------
+// Theme per card (#715)
+// ---------------------------------------------------------------------------
+
+const THEME_KEY = /^[A-Za-z0-9_-]+$/;
+
+/** CSS variables of a Home Assistant theme, light or dark mode merged in. */
+function themeVars(themes, name) {
+    const out = {};
+    if (!name || !themes || !hasOwn(themes.themes, name)) return out;
+    const take = (source) => {
+        if (!source || typeof source !== 'object') return;
+        Object.keys(source).forEach((key) => {
+            const value = source[key];
+            if (key === 'modes' || !THEME_KEY.test(key)) return;
+            if (typeof value === 'string' || typeof value === 'number') out[key] = String(value);
+        });
+    };
+    const theme = themes.themes[name];
+    take(theme);
+    if (theme && theme.modes && typeof theme.modes === 'object') {
+        take(theme.modes[themes.darkMode ? 'dark' : 'light']);
+    }
+    return out;
+}
+
+/** Sets `vars` on `element` and removes what an earlier theme set. Returns the keys now set. */
+function applyThemeVars(element, vars, applied) {
+    (applied || []).forEach((key) => {
+        if (!hasOwn(vars, key)) element.style.removeProperty('--' + key);
+    });
+    Object.keys(vars).forEach((key) => element.style.setProperty('--' + key, vars[key]));
+    return Object.keys(vars);
+}
+
+// ---------------------------------------------------------------------------
+// JS and URL API: open a card's dialog from elsewhere (#715)
+// ---------------------------------------------------------------------------
+
+/*
+ * As in the Hue-like card (src/core/api-provider.ts): a card with `api_id`
+ * publishes `window.busch_light_card.<api_id>_openHueScreen()` (alias
+ * `_openDialog`), and a link ending in `#busch_light_card:<api_id>_openHueScreen`
+ * opens it. Its own name, so it never collides with `window.hue_card` of the
+ * Hue card installed next to it. Parsed by one anchored pattern and looked up
+ * in a Map and a prototype-free object: no eval, no inherited names.
+ */
+const API_NAME = 'busch_light_card';
+const API_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
+const API_HASH = /^#busch_light_card:([A-Za-z0-9][A-Za-z0-9_-]{0,63}?)_(openHueScreen|openDialog)$/;
+const API_METHODS = ['openHueScreen', 'openDialog'];
+const API_CARDS = new Map();
+let apiLastHash = '';
+
+function currentHash() {
+    try {
+        return typeof location !== 'undefined' && location ? String(location.hash || '') : '';
+    } catch (e) {
+        return '';
+    }
+}
+
+function onApiLocation() {
+    const hash = currentHash();
+    if (hash === apiLastHash) return;
+    apiLastHash = hash;
+    const match = API_HASH.exec(hash);
+    if (!match) return;
+    const card = API_CARDS.get(match[1]);
+    if (!card) {
+        apiLastHash = ''; // a card registering later tries again
+        return;
+    }
+    // Asynchronously, like upstream: the dashboard may still be rendering.
+    setTimeout(() => card._openDialog(), 10);
+    try {
+        history.replaceState(history.state, '', location.pathname + location.search);
+    } catch (e) {
+        /* no history API here; the hash simply stays */
+    }
+}
+
+function apiObject() {
+    if (!window[API_NAME]) {
+        const api = Object.create(null);
+        Object.defineProperty(api, 'version', { value: CARD_VERSION, enumerable: true });
+        window[API_NAME] = api;
+        ['hashchange', 'popstate', 'location-changed'].forEach((type) => window.addEventListener(type, onApiLocation));
+    }
+    return window[API_NAME];
+}
+
+function registerApi(apiId, card) {
+    const current = API_CARDS.get(apiId);
+    if (current && current !== card && current.isConnected) return false; // first one wins, e.g. over an editor preview
+    API_CARDS.set(apiId, card);
+    const api = apiObject();
+    API_METHODS.forEach((method) => {
+        api[apiId + '_' + method] = () => card._openDialog();
+    });
+    setTimeout(onApiLocation, 10);
+    return true;
+}
+
+function unregisterApi(apiId, card) {
+    if (API_CARDS.get(apiId) !== card) return;
+    API_CARDS.delete(apiId);
+    const api = window[API_NAME];
+    if (api) API_METHODS.forEach((method) => delete api[apiId + '_' + method]);
+}
+
+// ---------------------------------------------------------------------------
 // A single light or switch
 // ---------------------------------------------------------------------------
 
@@ -1479,6 +1946,7 @@ class GroupModel {
     /** Every entity this model read: roots, expanded groups and leaves. */
     watchIds() {
         const ids = new Set(this.opts.entityIds);
+        (this.opts.templateIds || []).forEach((id) => ids.add(id));
         this.resolution.groups.forEach((id) => ids.add(id));
         this.resolution.leaves.forEach((id) => ids.add(id));
         return Array.from(ids);
@@ -1568,6 +2036,7 @@ class GroupModel {
     }
 
     get title() {
+        if (this.opts.titleParts) return resolveTemplate(this.hass, this.opts.titleParts);
         if (this.opts.title) return this.opts.title;
         const rootId = this.opts.entityIds[0];
         const rootState = this.hass && this.hass.states ? this.hass.states[rootId] : null;
@@ -1577,8 +2046,22 @@ class GroupModel {
         return rootId || CARD_TAG;
     }
 
+    /**
+     * The line under the title. A configured one may use templates and `%s`
+     * for the default line (#715); `description: false` hides it on the card.
+     */
     get description() {
-        if (this.opts.description) return this.opts.description;
+        if (this.opts.description === false) return '';
+        if (this.opts.descriptionParts) {
+            const fallback = this.defaultDescription;
+            return resolveTemplate(this.hass, this.opts.descriptionParts.map((part) => (
+                part.text !== undefined ? { text: part.text.split('%s').join(fallback) } : part)));
+        }
+        return this.defaultDescription;
+    }
+
+    /** The counting line: how many of the reachable lights are on. */
+    get defaultDescription() {
         const hass = this.hass;
         if (this.isEmpty) return translate(hass, 'noEntities');
         if (this.isAllUnavailable) return translate(hass, 'allUnavailable');
@@ -1598,16 +2081,40 @@ class GroupModel {
     // unavailable fix: a dead entity in the list used to make Home Assistant
     // reject or partially apply the call.
 
+    /** Returns the calls' promise, so a live session can wait for Home Assistant. */
     _callByDomain(service, lights, data) {
-        if (!this.hass || !lights.length) return;
+        if (!this.hass || !lights.length) return undefined;
         const byDomain = {};
         lights.forEach((l) => {
             (byDomain[l.domain] = byDomain[l.domain] || []).push(l.entityId);
         });
-        Object.keys(byDomain).forEach((domain) => {
+        const all = Promise.all(Object.keys(byDomain).map((domain) => {
             const payload = Object.assign({ entity_id: byDomain[domain] }, domain === 'light' ? data || {} : {});
-            optimisticCall(this.hass, domain, service, payload);
-        });
+            return optimisticCall(this.hass, domain, service, payload);
+        }));
+        // Most callers do not wait; Home Assistant shows a failure itself.
+        all.catch(() => {});
+        return all;
+    }
+
+    /** The lights a brightness, colour or white change goes to. */
+    targets(kind) {
+        if (kind === 'color') return this.alive.filter((l) => l.supportsColor);
+        if (kind === 'temp') return this.alive.filter((l) => l.supportsTemp);
+        const dimmable = this.alive.filter((l) => l.supportsBrightness);
+        const lit = dimmable.filter((l) => l.isOn);
+        return lit.length ? lit : dimmable;
+    }
+
+    /** Minimum live interval for a change of `kind` (see LiveSession). */
+    liveInterval(kind) {
+        return liveIntervalFor(this.hass, this.targets(kind).map((l) => l.entityId));
+    }
+
+    _liveData(data, lights, opts) {
+        return opts && opts.live
+            ? Object.assign(data, liveTransition(this.hass, lights.map((l) => l.entityId)))
+            : data;
     }
 
     turnOn(data) {
@@ -1646,28 +2153,25 @@ class GroupModel {
      * Mirrors the Hue app: while something is lit, the slider moves only the
      * lit members; from all-off it sets every reachable member.
      */
-    setBrightness(pct) {
+    setBrightness(pct, opts) {
         const value = clamp(Math.round(pct), 0, 100);
         const dimmable = this.alive.filter((l) => l.supportsBrightness);
-        if (!dimmable.length) return;
+        if (!dimmable.length) return undefined;
 
-        if (value <= 0) {
-            this._callByDomain('turn_off', this.alive);
-            return;
-        }
-        const lit = dimmable.filter((l) => l.isOn);
-        const targets = lit.length ? lit : dimmable;
-        this._callByDomain('turn_on', targets, { brightness_pct: value });
+        if (value <= 0) return this._callByDomain('turn_off', this.alive);
+        const targets = this.targets('brightness');
+        return this._callByDomain('turn_on', targets, this._liveData({ brightness_pct: value }, targets, opts));
     }
 
-    setRgb(rgb) {
-        const targets = this.alive.filter((l) => l.supportsColor);
-        this._callByDomain('turn_on', targets, { rgb_color: rgb });
+    setRgb(rgb, opts) {
+        const targets = this.targets('color');
+        return this._callByDomain('turn_on', targets, this._liveData({ rgb_color: rgb }, targets, opts));
     }
 
-    setKelvin(kelvin) {
-        const targets = this.alive.filter((l) => l.supportsTemp);
-        this._callByDomain('turn_on', targets, { color_temp_kelvin: Math.round(kelvin) });
+    setKelvin(kelvin, opts) {
+        const targets = this.targets('temp');
+        return this._callByDomain('turn_on', targets,
+            this._liveData({ color_temp_kelvin: Math.round(kelvin) }, targets, opts));
     }
 
     activateScene(sceneEntityId) {
@@ -1716,9 +2220,14 @@ function normalizeConfig(raw) {
     }
 
     opts.entityIds = entityIds;
-    opts.title = pick(raw, 'title', null);
+    const title = pick(raw, 'title', null);
+    opts.title = typeof title === 'string' && title ? title : null;
+    opts.titleParts = opts.title && opts.title.indexOf('{{') !== -1 ? parseTemplate(opts.title) : null;
     opts.icon = pick(raw, 'icon', null);
-    opts.description = pick(raw, 'description', null);
+    const description = pick(raw, 'description', null);
+    opts.description = description === false ? false : typeof description === 'string' && description ? description : null;
+    opts.descriptionParts = typeof opts.description === 'string' ? parseTemplate(opts.description) : null;
+    opts.templateIds = Array.from(new Set(templateIds(opts.titleParts).concat(templateIds(opts.descriptionParts))));
 
     opts.resolveGroups = pick(raw, 'resolveGroups', true) !== false;
     opts.maxDepth = Number(pick(raw, 'maxDepth', DEFAULT_MAX_DEPTH)) || DEFAULT_MAX_DEPTH;
@@ -1729,9 +2238,19 @@ function normalizeConfig(raw) {
     opts.defaultColor = pick(raw, 'defaultColor', WARM_COLOR);
     opts.hueBorders = pick(raw, 'hueBorders', true) !== false;
     opts.showSwitch = pick(raw, 'showSwitch', true) !== false;
-    opts.slider = pick(raw, 'slider', true) !== false;
+    opts.slider = sliderType(pick(raw, 'slider', true));
     opts.allowZero = pick(raw, 'allowZero', false) === true;
     opts.offShadow = pick(raw, 'offShadow', true) !== false;
+    opts.liveUpdate = pick(raw, 'liveUpdate', true) !== false;
+    opts.iconPx = iconSizePx(pick(raw, 'iconSize', null));
+    const theme = pick(raw, 'theme', null);
+    opts.theme = typeof theme === 'string' && theme && theme !== 'default' ? theme : null;
+    const apiId = pick(raw, 'apiId', null);
+    if (apiId !== null && apiId !== undefined && apiId !== '') {
+        if (typeof apiId !== 'string' || !API_ID.test(apiId)) throw new ConfigError('fehlerApiId', { wert: String(apiId) });
+    }
+    opts.apiId = typeof apiId === 'string' && apiId ? apiId : null;
+    opts.isVisible = pick(raw, 'isVisible', true) !== false;
 
     opts.tapAction = pick(raw, 'tapAction', 'dialog');
     opts.holdAction = pick(raw, 'holdAction', 'more-info');
@@ -1753,8 +2272,11 @@ const CONFIG_DEFAULTS = {
     show_unavailable: true,
     hue_borders: true,
     show_switch: true,
-    slider: true,
+    slider: 'default',
     allow_zero: false,
+    live_update: true,
+    is_visible: true,
+    icon_size: 'original',
     off_shadow: true,
     tap_action: 'dialog',
     hold_action: 'more-info',
@@ -1766,7 +2288,7 @@ const CONFIG_DEFAULTS = {
 const CAMEL_ALIASES = [
     'resolveGroups', 'maxDepth', 'showUnavailable', 'groupDisplay', 'offColor',
     'defaultColor', 'hueBorders', 'showSwitch', 'allowZero', 'offShadow',
-    'tapAction', 'holdAction'
+    'tapAction', 'holdAction', 'liveUpdate', 'iconSize', 'apiId', 'isVisible'
 ];
 
 /**
@@ -1792,57 +2314,104 @@ function toSnakeConfig(raw) {
 /**
  * Wires pointer drag on `element`. `handler` receives the pointer position and
  * a flag saying whether the gesture is finished.
+ *
+ * `options.axis` ('x' or 'y') marks a one-dimensional slider. A finger then
+ * has to move 5 px along that axis before the slider takes over — the Hue
+ * card's dead zone — and a move across it is left to the browser, which
+ * scrolls (the CSS gives these sliders `touch-action: pan-y`). A tap without
+ * movement sets the value where the finger lifted. Mouse and pen-less
+ * pointers act at once, as before.
  */
-function onDrag(element, handler) {
+function onDrag(element, handler, options) {
+    const axis = options && options.axis;
+    const deadZone = 5;
     let active = false;
+    let pending = false;
     let pointerId = null;
+    let start = null;
+    let last = null;
 
-    const report = (event, done) => {
+    const point = (event) => {
         const rect = element.getBoundingClientRect();
-        handler(
-            {
-                x: event.clientX - rect.left,
-                y: event.clientY - rect.top,
-                width: rect.width,
-                height: rect.height
-            },
-            done
-        );
+        return {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top,
+            width: rect.width,
+            height: rect.height
+        };
     };
-
-    element.addEventListener('pointerdown', (event) => {
-        if (element.hasAttribute('disabled')) return;
+    const capture = () => {
         active = true;
-        pointerId = event.pointerId;
         try {
             element.setPointerCapture(pointerId);
         } catch (e) {
             /* no live pointer to capture — carry on without it */
         }
+    };
+    const reset = () => {
+        active = false;
+        pending = false;
+        pointerId = null;
+    };
+
+    element.addEventListener('pointerdown', (event) => {
+        if (element.hasAttribute('disabled') || active || pending) return;
+        pointerId = event.pointerId;
+        last = point(event);
+        if (axis && (event.pointerType === 'touch' || event.pointerType === 'pen')) {
+            pending = true;
+            start = { x: event.clientX, y: event.clientY };
+            return;
+        }
+        capture();
         event.preventDefault();
-        report(event, false);
+        handler(last, false);
     });
 
     element.addEventListener('pointermove', (event) => {
-        if (!active || event.pointerId !== pointerId) return;
+        if (event.pointerId !== pointerId) return;
+        if (pending) {
+            const dx = Math.abs(event.clientX - start.x);
+            const dy = Math.abs(event.clientY - start.y);
+            const along = axis === 'y' ? dy : dx;
+            const across = axis === 'y' ? dx : dy;
+            if (across > deadZone && across >= along) {
+                reset(); // the browser scrolls; this is not a slider gesture
+                return;
+            }
+            if (along <= deadZone) return;
+            pending = false;
+            capture();
+        }
+        if (!active) return;
         event.preventDefault();
-        report(event, false);
+        last = point(event);
+        handler(last, false);
     });
 
-    const finish = (event) => {
-        if (!active || event.pointerId !== pointerId) return;
-        active = false;
-        try {
-            element.releasePointerCapture(pointerId);
-        } catch (e) {
-            /* capture may already be gone */
+    element.addEventListener('pointerup', (event) => {
+        if (event.pointerId !== pointerId) return;
+        const wasActive = active;
+        const wasPending = pending;
+        if (wasActive) {
+            try {
+                element.releasePointerCapture(pointerId);
+            } catch (e) {
+                /* capture may already be gone */
+            }
         }
-        pointerId = null;
-        report(event, true);
-    };
+        reset();
+        if (wasActive || wasPending) handler(point(event), true);
+    });
 
-    element.addEventListener('pointerup', finish);
-    element.addEventListener('pointercancel', finish);
+    // A cancelled pointer carries no reliable position: an unfinished drag
+    // ends where it was last seen, a not yet started one not at all.
+    element.addEventListener('pointercancel', (event) => {
+        if (event.pointerId !== pointerId) return;
+        const wasActive = active;
+        reset();
+        if (wasActive && last) handler(last, true);
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -1875,7 +2444,11 @@ const CARD_STYLES = BuschUI.cardStyles + `
     --blc-chip: initial;
     --blc-slider-rest: initial;
     --blc-slider-line: initial;
+    --blc-mushroom-fill: initial;
     --blc-rest: 1;
+    /* icon_size (#715): set per card from the config; the tile grows with it. */
+    --blc-icon-size: 24px;
+    --blc-media: max(44px, calc(var(--blc-icon-size) + 12px));
 }
 ha-card {
     position: relative;
@@ -1908,11 +2481,13 @@ ha-card.fg-light {
     --blc-chip: rgba(0, 0, 0, 0.24);
     --blc-slider-rest: rgba(0, 0, 0, 0.28);
     --blc-slider-line: rgba(255, 255, 255, 0.4);
+    --blc-mushroom-fill: rgba(255, 255, 255, 0.85);
 }
 ha-card.fg-dark {
     --blc-chip: rgba(255, 255, 255, 0.45);
     --blc-slider-rest: rgba(255, 255, 255, 0.5);
     --blc-slider-line: rgba(0, 0, 0, 0.28);
+    --blc-mushroom-fill: rgba(0, 0, 0, 0.42);
 }
 .main {
     display: grid;
@@ -1942,9 +2517,9 @@ ha-card.fg-dark {
     outline-color: var(--blc-text-color, var(--primary-color));
 }
 .media {
-    flex: 0 0 44px;
-    width: 44px;
-    height: 44px;
+    flex: 0 0 var(--blc-media);
+    width: var(--blc-media);
+    height: var(--blc-media);
     box-sizing: border-box;
     position: relative;
     display: grid;
@@ -1967,7 +2542,7 @@ ha-card.fg-dark {
 .lit .media::after { opacity: 0; }
 .icon {
     color: var(--blc-text-color, var(--primary-text-color));
-    --mdc-icon-size: 24px;
+    --mdc-icon-size: var(--blc-icon-size);
 }
 .text {
     min-width: 0;
@@ -1985,7 +2560,7 @@ ha-card.fg-dark {
 }
 .desc {
     grid-area: status;
-    margin-left: calc(44px + var(--ha-space-3, 12px));
+    margin-left: calc(var(--blc-media) + var(--ha-space-3, 12px));
     font-size: var(--ha-font-size-s, 14px);
     display: flex;
     align-items: center;
@@ -2111,11 +2686,17 @@ ha-card.fg-dark {
     background: var(--secondary-background-color, var(--divider-color));
     overflow: hidden;
     cursor: pointer;
-    touch-action: none;
+    /* Vertical swipes stay the page's: no scroll theft on a phone (#715). */
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 .slider[disabled] {
     cursor: default;
 }
+/* Hue's default transition: 0.3 s ease-out, transform only. Off while the
+   finger is down, so the bar sits exactly under it. */
 .slider .fill {
     position: absolute;
     inset: 0;
@@ -2123,11 +2704,56 @@ ha-card.fg-dark {
     opacity: 0.35;
     transform-origin: left center;
     transform: scaleX(0);
-    transition: transform 0.2s ease-out;
+    transition: transform 0.3s ease-out;
 }
-.slider.dragging .fill, .slider.dragging::before {
+.slider.dragging .fill, .slider.dragging::before, .slider.dragging .mfill {
     transition: none;
 }
+/* slider: mushroom (#715) — a flat 28 px track in the Mushroom style inside
+   the same 44 px touch target. The active part moves by translateX only. */
+.slider .track { display: none; }
+.slider.mushroom, .lit .slider.mushroom {
+    background: transparent;
+    box-shadow: none;
+}
+.slider.mushroom::before, .lit .slider.mushroom::before,
+.slider.mushroom .fill, .slider.mushroom .label { display: none; }
+.slider.mushroom .track {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 8px;
+    bottom: 8px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--secondary-background-color, var(--divider-color));
+}
+.lit .slider.mushroom .track, .tinted .slider.mushroom .track {
+    background: var(--blc-slider-rest, rgba(0, 0, 0, 0.28));
+}
+.slider.mushroom .mfill {
+    position: absolute;
+    inset: 0;
+    background: var(--primary-color);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-out;
+}
+.lit .slider.mushroom .mfill, .tinted .slider.mushroom .mfill {
+    background: var(--blc-mushroom-fill, var(--primary-color));
+}
+.slider.mushroom .mfill::after {
+    content: '';
+    position: absolute;
+    top: 7px;
+    bottom: 7px;
+    right: 6px;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--card-background-color);
+    opacity: 0.85;
+}
+.lit .slider.mushroom .mfill::after { background: var(--blc-background, var(--card-background-color)); }
 /* Lit: the filled part is the card's own colour, the rest a darker (light
    text) or lighter (dark text) veil — the label keeps its contrast on both. */
 .lit .slider {
@@ -2141,7 +2767,7 @@ ha-card.fg-dark {
     background: var(--blc-slider-rest, transparent);
     transform-origin: right center;
     transform: scaleX(var(--blc-rest, 1));
-    transition: transform 0.2s ease-out;
+    transition: transform 0.3s ease-out;
 }
 .lit .slider .fill { opacity: 0; }
 .lit .slider .label { color: var(--blc-text-color, var(--primary-text-color)); }
@@ -2183,6 +2809,8 @@ ha-card.fg-dark {
     }
     .desc { margin-left: 0; }
 }
+/* description: false (#715): one row, the switch beside the title. */
+.main.nodesc { grid-template-areas: 'identity action'; }
 `;
 
 // ---------------------------------------------------------------------------
@@ -2202,14 +2830,40 @@ class BuschLightCard extends HTMLElement {
         this._holdTimer = null;
         this._held = false;
         this._seen = null; // what the last render read, see watchSnapshot()
+        this._live = null; // the slider's live session (#715)
+        this._apiId = null;
+        this._themeKeys = [];
+        this._themeSeen = null;
     }
 
     connectedCallback() {
         OPTIMISTIC_VIEWS.add(this);
+        this._syncApi();
     }
 
     disconnectedCallback() {
         OPTIMISTIC_VIEWS.delete(this);
+        if (this._apiId) unregisterApi(this._apiId, this);
+        this._apiId = null;
+    }
+
+    /** `api_id`: (un)registers this card for the JS and URL API. */
+    _syncApi() {
+        const wanted = this._opts && this.isConnected ? this._opts.apiId : null;
+        if (this._apiId && this._apiId !== wanted) unregisterApi(this._apiId, this);
+        this._apiId = null;
+        if (wanted && registerApi(wanted, this)) this._apiId = wanted;
+    }
+
+    /** `theme`: the variables of one Home Assistant theme on this card only. */
+    _applyTheme() {
+        const name = this._opts ? this._opts.theme : null;
+        const themes = this._hass ? this._hass.themes : null;
+        const key = [name, themes];
+        if (this._themeSeen && this._themeSeen[0] === key[0] && this._themeSeen[1] === key[1]) return;
+        this._themeSeen = key;
+        this._themeKeys = applyThemeVars(this, themeVars(themes, name), this._themeKeys);
+        if (this._dialog) this._dialog.themeVars = themeVars(themes, name);
     }
 
     /** A preview of one of this card's lights started or ended. */
@@ -2264,6 +2918,17 @@ class BuschLightCard extends HTMLElement {
         this._built = false;
         this._seen = null;
         this.shadowRoot.innerHTML = '';
+        const opts = this._opts;
+        this.style.setProperty('--blc-icon-size', (opts ? opts.iconPx : ICON_BASE_PX) + 'px');
+        // A pending end value of a replaced session still goes out; only the
+        // new one drives this slider.
+        // Letting go of the held value only redraws the slider: the model is
+        // already current, every own state change rebuilt it.
+        this._live = new LiveSession(!opts || opts.liveUpdate, () => {
+            if (this._model && this._built && !this._error) this._showSlider(this._model);
+        }, () => (this._model ? this._model.liveInterval('brightness') : LIVE_LIGHT_INTERVAL_MS));
+        this._syncApi();
+        this._applyTheme();
         this._render();
     }
 
@@ -2273,6 +2938,7 @@ class BuschLightCard extends HTMLElement {
         // and their resolved members included — or the language changed.
         const unchanged = snapshotUnchanged(this._seen, hass);
         this._hass = hass;
+        this._applyTheme();
         if (!unchanged) this._render();
         if (this._dialog) this._dialog.hass = hass;
     }
@@ -2282,6 +2948,7 @@ class BuschLightCard extends HTMLElement {
     }
 
     getCardSize() {
+        if (this._opts && !this._opts.isVisible) return 0;
         // Masonry uses 50px units to balance columns, not to set a height.
         const height = this._card ? this._card.getBoundingClientRect().height : 0;
         return height ? Math.ceil(height / 50) : 4;
@@ -2345,6 +3012,7 @@ class BuschLightCard extends HTMLElement {
 
         const main = document.createElement('div');
         main.className = 'main';
+        this._main = main;
 
         const tap = document.createElement('div');
         tap.className = 'tap';
@@ -2406,8 +3074,15 @@ class BuschLightCard extends HTMLElement {
         this._sliderFill.className = 'fill';
         this._sliderLabel = document.createElement('div');
         this._sliderLabel.className = 'label';
+        // The Mushroom variant's track; hidden by CSS for the default slider.
+        const track = document.createElement('div');
+        track.className = 'track';
+        this._sliderMFill = document.createElement('div');
+        this._sliderMFill.className = 'mfill';
+        track.appendChild(this._sliderMFill);
         this._slider.appendChild(this._sliderFill);
         this._slider.appendChild(this._sliderLabel);
+        this._slider.appendChild(track);
         card.appendChild(this._slider);
 
         root.appendChild(card);
@@ -2473,7 +3148,9 @@ class BuschLightCard extends HTMLElement {
             this._showPct(pct);
             this._sliderLabel.textContent = pct + ' %';
             this._slider.setAttribute('aria-valuenow', String(pct));
-            this._model.setBrightness(pct);
+            // Through the session as well: fast key repeats collapse into the
+            // newest value instead of queueing one call per key.
+            this._live.commit(pct, (value) => this._model.setBrightness(value));
         });
 
         onDrag(this._slider, (point, done) => {
@@ -2486,8 +3163,15 @@ class BuschLightCard extends HTMLElement {
             this._showPct(pct);
             this._sliderLabel.textContent = pct + ' %';
             this._slider.setAttribute('aria-valuenow', String(pct));
-            if (done) this._model.setBrightness(pct);
-        });
+            const live = this._live;
+            if (!done) {
+                // 0 is never sent while sliding (it would switch lights off
+                // and back on), only on release — as in the Hue card.
+                live.update(pct, (value) => (value > 0 ? this._model.setBrightness(value, { live: true }) : undefined));
+            } else {
+                live.commit(pct, (value) => (value !== live.lastSent ? this._model.setBrightness(value) : undefined));
+            }
+        }, { axis: 'x' });
     }
 
     _runAction(action) {
@@ -2519,8 +3203,9 @@ class BuschLightCard extends HTMLElement {
     }
 
     _openDialog() {
-        if (!this._model || this._model.isEmpty) return;
+        if (!this._model || this._model.isEmpty || (this._dialog && this._dialog.isConnected)) return;
         const dialog = document.createElement(DIALOG_TAG);
+        dialog.themeVars = themeVars(this._hass && this._hass.themes, this._opts.theme);
         dialog.hass = this._hass;
         dialog.cardConfig = this._opts;
         document.body.appendChild(dialog);
@@ -2536,8 +3221,9 @@ class BuschLightCard extends HTMLElement {
         if (!this._built) this._build();
         this._seen = null;
         if (this._error || !this._opts) return;
+        this.style.display = this._opts.isVisible ? '' : 'none';
         if (!this._hass) {
-            this._title.textContent = this._opts.title || this._opts.entityIds[0];
+            this._title.textContent = (!this._opts.titleParts && this._opts.title) || this._opts.entityIds[0];
             this._descText.textContent = translate(null, 'loading');
             this._desc.dataset.tone = 'unknown';
             this._warn.style.display = 'none';
@@ -2570,6 +3256,13 @@ class BuschLightCard extends HTMLElement {
               model.dead.map((l) => l.name).join(', ')
             : '';
 
+        // description: false hides the line; a badge for unreachable members
+        // keeps its place, only the text goes.
+        const hideText = this._opts.description === false;
+        this._descText.style.display = hideText ? 'none' : '';
+        this._desc.style.display = hideText && !showWarn ? 'none' : '';
+        this._main.classList.toggle('nodesc', hideText && !showWarn);
+
         this._paint(model);
 
         // toggle
@@ -2581,26 +3274,39 @@ class BuschLightCard extends HTMLElement {
         this._toggle.style.display = this._opts.showSwitch ? '' : 'none';
 
         // slider
-        const sliderOn = this._opts.slider && model.supportsBrightness;
+        const sliderOn = this._opts.slider !== 'none' && model.supportsBrightness;
         this._slider.style.display = sliderOn ? '' : 'none';
+        this._slider.classList.toggle('mushroom', this._opts.slider === 'mushroom');
         const sliderDisabled = this._opts.allowZero ? model.isAllUnavailable : !model.isOn;
         if (sliderDisabled) this._slider.setAttribute('disabled', '');
         else this._slider.removeAttribute('disabled');
         this._slider.tabIndex = sliderDisabled ? -1 : 0;
         this._slider.setAttribute('aria-valuemin', this._opts.allowZero ? '0' : '1');
-        this._slider.setAttribute('aria-valuenow', String(model.brightnessPct));
+        this._showSlider(model);
+    }
+
+    /**
+     * Under the finger the slider shows the finger; afterwards the value it
+     * sent, until Home Assistant has caught up (#715). Never the lagging state
+     * in between.
+     */
+    _showSlider(model) {
         if (!this._dragging) {
-            const pct = model.brightnessPct;
+            const pinned = this._live ? this._live.pinned : null;
+            const pct = pinned !== null ? pinned : model.brightnessPct;
             this._showPct(pct);
-            this._sliderLabel.textContent = model.isOn
+            this._slider.setAttribute('aria-valuenow', String(pct));
+            this._sliderLabel.textContent = model.isOn || pinned !== null
                 ? pct + ' %' : translate(this._hass, 'brightness');
         }
     }
 
     /** Slider position as transform only: no layout work per drag step. */
     _showPct(pct) {
-        const share = clamp(pct, 0, 100) / 100;
+        const value = clamp(pct, 0, 100);
+        const share = value / 100;
         this._sliderFill.style.transform = 'scaleX(' + share + ')';
+        this._sliderMFill.style.transform = 'translateX(' + (value - 100) + '%)';
         this._slider.style.setProperty('--blc-rest', String(Math.round((1 - share) * 1000) / 1000));
     }
 
@@ -2693,6 +3399,15 @@ BuschLightCard.__internals = {
     litSurface,
     TILE_SHADE,
     clearOptimistic,
+    LiveSession,
+    liveIntervalFor,
+    liveTransition,
+    parseTemplate,
+    resolveTemplate,
+    iconSizePx,
+    sliderType,
+    themeVars,
+    CARD_STYLES,
     tempToRgb,
     hsv2rgb,
     rgb2hsv,
@@ -2742,14 +3457,20 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     align-items: flex-end;
     justify-content: center;
 }
+/* Opening like the Hue card's dialog: 0.3 s ease-out, opacity and transform
+   only (#715). Bottom sheet rises on a phone, the centred dialog grows in. */
 .scrim {
     position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.55);
-    animation: fade 0.2s ease-out;
+    animation: fade 0.3s ease-out;
 }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes rise { from { transform: translateY(32px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes grow { from { transform: scale(0.94); opacity: 0; } to { transform: none; opacity: 1; } }
+/* A light's detail view slides in from above, as Hue's light detail does. */
+@keyframes drop { from { transform: translateY(-30px); opacity: 0; } to { transform: none; opacity: 1; } }
+.enter { animation: drop 0.3s ease-out; }
 .sheet {
     position: relative;
     width: min(560px, 100%);
@@ -2763,12 +3484,12 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     border-radius: 16px 16px 0 0;
     padding: 16px;
     box-sizing: border-box;
-    animation: rise 0.22s ease-out;
+    animation: rise 0.3s ease-out;
     font-family: var(--paper-font-body1_-_font-family, Roboto, sans-serif);
 }
 @media (min-width: 700px) {
     :host { align-items: center; }
-    .sheet { border-radius: 16px; }
+    .sheet { border-radius: 16px; animation-name: grow; }
 }
 .head {
     display: flex;
@@ -2857,7 +3578,12 @@ h3 {
     font-size: var(--ha-font-size-xs, 12px);
     line-height: 1.25;
     overflow: hidden;
+    transition: transform 0.15s ease-out;
+    -webkit-tap-highlight-color: transparent;
 }
+/* Tap feedback of the Hue tiles: pressed tiles shrink a little. */
+.scene:not([disabled]):active,
+.tile:not(.dead):not(.dragging):active { transform: scale(0.95); }
 /* Since 0.9.0 the tile carries the scene colour like the Hue app; the label
    colour is chosen per tile for 4.5:1, so it reads on any scene colour. The
    badge is a translucent chip on top. --blc-scene-badge still overrides it. */
@@ -2900,6 +3626,9 @@ h3 {
     text-align: center;
     touch-action: none;
     -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    transition: transform 0.15s ease-out;
 }
 /* Shades the DARK part from the top, so its height is the missing brightness.
    Filling from the bottom read backwards: a dim lamp looked like a bright one
@@ -2914,7 +3643,7 @@ h3 {
     pointer-events: none;
     transform-origin: center top;
     transform: scaleY(0);
-    transition: transform 0.2s ease-out;
+    transition: transform 0.3s ease-out;
 }
 .tile.dragging .tfill { transition: none; }
 /* On a coloured tile the theme's accent clashes; the switch borrows the
@@ -2982,7 +3711,9 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     height: 44px;
     border-radius: 22px;
     margin: 10px 0 4px;
-    touch-action: none;
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
     cursor: pointer;
 }
 .marker {
@@ -3007,10 +3738,24 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     background: var(--blc-dialog-tile, #363636);
     overflow: hidden;
     margin: 8px 0;
-    touch-action: none;
+    /* Horizontal slider in a vertically scrolling sheet: the page keeps the
+       vertical swipe (#715). */
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
     cursor: pointer;
 }
-.dslider .fill { position: absolute; inset: 0; width: 0%; background: rgba(255,255,255,0.75); }
+/* transform, not width: no layout per drag step (#715). */
+.dslider .fill {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.75);
+    transform-origin: left center;
+    transform: scaleX(0);
+    transition: transform 0.3s ease-out;
+}
+.dslider.dragging .fill { transition: none; }
 /* White through mix-blend-mode difference inverts against whatever is behind
    it, so the label stays readable on both the dark track and the light fill. */
 /* A block with a matching line-height, not a flex box: only on a block do
@@ -3114,6 +3859,9 @@ class BuschLightDialog extends HTMLElement {
         this._closed = false;
         this._returnFocus = null;
         this._seen = null; // what the last sheet read, see watchSnapshot()
+        this._live = new Map(); // one live session per control (#715)
+        this._themeKeys = [];
+        this._viewKey = undefined;
         this._onKey = (event) => {
             if (event.key === 'Tab') {
                 const controls = this._focusable();
@@ -3157,6 +3905,33 @@ class BuschLightDialog extends HTMLElement {
         this._opts = opts;
         this._seen = null;
         this._update();
+    }
+
+    /** The card's `theme`, carried over to the dialog (#715). */
+    set themeVars(vars) {
+        this._themeKeys = applyThemeVars(this, vars || {}, this._themeKeys);
+    }
+
+    /**
+     * The live session of one control, kept across rebuilds of the sheet so a
+     * rebuilt slider still shows the value it sent. Sessions outlive a closed
+     * dialog: an end value already queued is still sent.
+     */
+    _session(key, interval) {
+        let session = this._live.get(key);
+        if (!session) {
+            session = new LiveSession(this._opts.liveUpdate, () => {
+                if (!this._closed) this._update();
+            }, interval);
+            this._live.set(key, session);
+        }
+        return session;
+    }
+
+    /** One drag step through a session: live while moving, the end value on release. */
+    _liveStep(session, value, done, send) {
+        if (!done) session.update(value, (v) => send(v, true));
+        else session.commit(value, (v) => (v !== session.lastSent ? send(v, false) : undefined));
     }
 
     set hass(hass) {
@@ -3317,6 +4092,13 @@ class BuschLightDialog extends HTMLElement {
         const scrollTop = this._sheet?.scrollTop || 0;
         this._buildSheet();
         if (this._sheet) this._sheet.scrollTop = scrollTop;
+        // Into or out of a light's detail view: the content below the header
+        // slides in (#715). Rebuilds of the same view stay still.
+        const view = this._detailEntity || '';
+        if (this._viewKey !== undefined && view !== this._viewKey && !reducedMotion()) {
+            Array.from(this._sheet.childNodes).slice(1).forEach((node) => node.classList && node.classList.add('enter'));
+        }
+        this._viewKey = view;
         if (this.isConnected) {
             const focusable = this._focusable();
             const keyed = focusKey && focusable.find(node => node.dataset.focusKey === focusKey);
@@ -3362,7 +4144,9 @@ class BuschLightDialog extends HTMLElement {
                 : translate(hass, 'unreachable');
         } else {
             h1.textContent = model.title;
-            sub.textContent = model.description;
+            // description: false hides the card's line only; the dialog keeps
+            // the state as text.
+            sub.textContent = model.description || model.defaultDescription;
         }
         who.appendChild(h1);
         who.appendChild(sub);
@@ -3414,9 +4198,9 @@ class BuschLightDialog extends HTMLElement {
         if (model.supportsBrightness && !model.isAllUnavailable) {
             sheet.appendChild(this._heading(translate(hass, 'brightness')));
             sheet.appendChild(
-                this._makeSlider(model.brightnessPct, model.isOn, (pct, done) => {
-                    if (done) this._model.setBrightness(pct);
-                })
+                this._makeSlider('group', model.brightnessPct, model.isOn,
+                    (pct, live) => this._model.setBrightness(pct, { live }),
+                    () => this._model.liveInterval('brightness'))
             );
         }
 
@@ -3431,8 +4215,8 @@ class BuschLightDialog extends HTMLElement {
                 minKelvin: model.minKelvin,
                 maxKelvin: model.maxKelvin,
                 currentKelvin: null,
-                onRgb: (rgb) => this._model.setRgb(rgb),
-                onKelvin: (k) => this._model.setKelvin(k)
+                onRgb: (rgb, live) => this._model.setRgb(rgb, { live }),
+                onKelvin: (k, live) => this._model.setKelvin(k, { live })
             });
         }
 
@@ -3505,12 +4289,14 @@ class BuschLightDialog extends HTMLElement {
 
         if (light.supportsBrightness) {
             wrap.appendChild(this._heading(translate(hass, 'brightness')));
+            const id = light.entityId;
             wrap.appendChild(
-                this._makeSlider(light.brightnessPct, light.isOn, (pct, done) => {
-                    if (!done) return;
-                    if (pct <= 0) optimisticCall(this._hass, light.domain, 'turn_off', { entity_id: light.entityId });
-                    else optimisticCall(this._hass, 'light', 'turn_on', { entity_id: light.entityId, brightness_pct: pct });
-                })
+                this._makeSlider('light:' + id, light.brightnessPct, light.isOn, (pct, live) => (
+                    pct <= 0
+                        ? optimisticCall(this._hass, light.domain, 'turn_off', { entity_id: id })
+                        : optimisticCall(this._hass, 'light', 'turn_on', Object.assign(
+                            { entity_id: id, brightness_pct: pct }, live ? liveTransition(this._hass, [id]) : {}))
+                ), () => liveIntervalFor(this._hass, [id]))
             );
         }
         // A light without brightness needs no row of its own: the header
@@ -3527,12 +4313,13 @@ class BuschLightDialog extends HTMLElement {
                 minKelvin: light.minKelvin,
                 maxKelvin: light.maxKelvin,
                 currentKelvin: light.kelvin,
-                onRgb: (rgb) => optimisticCall(this._hass, 'light', 'turn_on', { entity_id: light.entityId, rgb_color: rgb }),
-                onKelvin: (k) =>
-                    optimisticCall(this._hass, 'light', 'turn_on', {
+                onRgb: (rgb, live) => optimisticCall(this._hass, 'light', 'turn_on', Object.assign(
+                    { entity_id: light.entityId, rgb_color: rgb }, live ? liveTransition(this._hass, [light.entityId]) : {})),
+                onKelvin: (k, live) =>
+                    optimisticCall(this._hass, 'light', 'turn_on', Object.assign({
                         entity_id: light.entityId,
                         color_temp_kelvin: Math.round(k)
-                    })
+                    }, live ? liveTransition(this._hass, [light.entityId]) : {}))
             });
         }
     }
@@ -3677,9 +4464,15 @@ class BuschLightDialog extends HTMLElement {
 
         const head = document.createElement('div');
         head.className = 'thead';
+        // Dragging the tile is live too (#715); a rebuilt tile shows what it sent.
+        const session = light.isAvailable
+            ? this._session('tile:' + light.entityId, () => liveIntervalFor(this._hass, [light.entityId]))
+            : null;
+        const held = session ? session.pinned : null;
+        const shownPct = held !== null ? held : light.brightnessPct;
         const pct = document.createElement('span');
         pct.className = 'tpct';
-        pct.textContent = light.isAvailable ? (light.isOn ? light.brightnessPct + ' %' : '') : '';
+        pct.textContent = light.isAvailable ? (light.isOn || held !== null ? shownPct + ' %' : '') : '';
         head.appendChild(pct);
         tile.appendChild(head);
 
@@ -3728,8 +4521,10 @@ class BuschLightDialog extends HTMLElement {
             tile.style.background = colorToCss(surface.colors[0]);
             tile.style.color = surface.css;
             // height = the darkness, not the brightness
-            fill.style.transform = 'scaleY(' + (100 - light.brightnessPct) / 100 + ')';
+            fill.style.transform = 'scaleY(' + (100 - shownPct) / 100 + ')';
         }
+        const send = (value, live) => optimisticCall(this._hass, 'light', 'turn_on', Object.assign(
+            { entity_id: light.entityId, brightness_pct: value }, live ? liveTransition(this._hass, [light.entityId]) : {}));
 
         // The switch does on/off, so the tile itself is free for the two things
         // that used to need a long press: drag up/down dims, a plain tap opens
@@ -3749,6 +4544,7 @@ class BuschLightDialog extends HTMLElement {
                 const value = clamp(Math.round(((point.height - point.y) / point.height) * 100), 1, 100);
                 fill.style.transform = 'scaleY(' + (100 - value) / 100 + ')';
                 pct.textContent = value + ' %';
+                this._liveStep(session, value, false, send);
             }
             if (!done) return;
 
@@ -3757,10 +4553,7 @@ class BuschLightDialog extends HTMLElement {
             this._setDragging(false);
             if (moved) {
                 const value = clamp(Math.round(((point.height - point.y) / point.height) * 100), 1, 100);
-                optimisticCall(this._hass, 'light', 'turn_on', {
-                    entity_id: light.entityId,
-                    brightness_pct: value
-                });
+                this._liveStep(session, value, true, send);
                 moved = false;
                 this._flushPendingUpdate();
                 return;
@@ -3774,26 +4567,35 @@ class BuschLightDialog extends HTMLElement {
         return tile;
     }
 
-    _makeSlider(value, enabled, onChange) {
+    /**
+     * A brightness slider. `send(pct, live)` makes the call and returns its
+     * promise; `interval` is the live pace for its targets (#715).
+     */
+    _makeSlider(key, value, enabled, send, interval) {
+        const session = this._session(key, interval);
+        const held = session.pinned;
+        const shown = held !== null ? held : value;
         const slider = document.createElement('div');
         slider.className = 'dslider';
         const fill = document.createElement('div');
         fill.className = 'fill';
-        fill.style.width = value + '%';
+        fill.style.transform = 'scaleX(' + clamp(shown, 0, 100) / 100 + ')';
         const label = document.createElement('div');
         label.className = 'label';
-        label.textContent = enabled ? value + ' %' : translate(this._hass, 'allOff');
+        label.textContent = enabled || held !== null ? shown + ' %' : translate(this._hass, 'allOff');
         slider.appendChild(fill);
         slider.appendChild(label);
 
         onDrag(slider, (point, done) => {
             const pct = clamp(Math.round((point.x / point.width) * 100), 0, 100);
             this._setDragging(!done);
-            fill.style.width = pct + '%';
+            slider.classList.toggle('dragging', !done);
+            fill.style.transform = 'scaleX(' + pct / 100 + ')';
             label.textContent = pct + ' %';
-            onChange(pct, done);
+            // 0 only on release (it switches off), never while sliding.
+            this._liveStep(session, pct, done, (v, live) => (live && v <= 0 ? undefined : send(v, live)));
             if (done) this._flushPendingUpdate();
-        });
+        }, { axis: 'x' });
         return slider;
     }
 
@@ -3829,14 +4631,20 @@ class BuschLightDialog extends HTMLElement {
         tabs.className = 'picker-tabs';
         const body = document.createElement('div');
 
+        // Colour and white are live as well, as the Hue card's picker markers.
+        const interval = () => liveIntervalFor(this._hass, options.entityIds);
+        const rgbSession = this._session('rgb:' + options.contextKey, interval);
+        const kelvinSession = this._session('kelvin:' + options.contextKey, interval);
+        const liveRgb = (rgb, done) => this._liveStep(rgbSession, rgb, done, options.onRgb);
+        const liveKelvin = (k, done) => this._liveStep(kelvinSession, k, done, options.onKelvin);
         const showColour = () => {
             body.innerHTML = '';
-            body.appendChild(this._makeColorWheel(options.onRgb));
+            body.appendChild(this._makeColorWheel(liveRgb));
         };
         const showWhite = () => {
             body.innerHTML = '';
             body.appendChild(
-                this._makeTempBar(options.minKelvin, options.maxKelvin, options.currentKelvin, options.onKelvin)
+                this._makeTempBar(options.minKelvin, options.maxKelvin, options.currentKelvin, liveKelvin)
             );
         };
 
@@ -3980,8 +4788,8 @@ class BuschLightDialog extends HTMLElement {
                 background: marker.style.background
             };
             this._setDragging(!done);
+            onPick(rgb, done);
             if (done) {
-                onPick(rgb);
                 this._markPickerDraftSubmitted('colour', rgb);
                 this._flushPendingUpdate();
             }
@@ -4042,12 +4850,12 @@ class BuschLightDialog extends HTMLElement {
                 submittedAt: null, left: marker.style.left, background: marker.style.background
             };
             this._setDragging(!done);
+            onPick(kelvin, done);
             if (done) {
-                onPick(kelvin);
                 this._markPickerDraftSubmitted('white', kelvin);
                 this._flushPendingUpdate();
             }
-        });
+        }, { axis: 'x' });
 
         return bar;
     }
@@ -4250,6 +5058,7 @@ const SCHEMA_BUSCH_LIGHT_CARD = [
         ]
     },
     { name: 'description', selector: { text: {} } },
+    { name: 'show_description', selector: { boolean: {} } },
 
     { name: 'resolve_groups', selector: { boolean: {} } },
     { name: 'max_depth', selector: { number: { min: 1, max: 20, mode: 'box' } } },
@@ -4279,13 +5088,48 @@ const SCHEMA_BUSCH_LIGHT_CARD = [
         name: '',
         type: 'grid',
         schema: [
-            { name: 'hue_borders', selector: { boolean: {} } },
-            { name: 'show_switch', selector: { boolean: {} } },
-            { name: 'slider', selector: { boolean: {} } },
-            { name: 'allow_zero', selector: { boolean: {} } },
-            { name: 'off_shadow', selector: { boolean: {} } }
+            {
+                name: 'slider',
+                selector: {
+                    select: {
+                        mode: 'dropdown',
+                        options: [
+                            { value: 'default', labelKey: 'sliderDefault' },
+                            { value: 'mushroom', labelKey: 'sliderMushroom' },
+                            { value: 'none', labelKey: 'sliderNone' }
+                        ]
+                    }
+                }
+            },
+            {
+                name: 'icon_size',
+                selector: {
+                    select: {
+                        mode: 'dropdown',
+                        custom_value: true,
+                        options: [
+                            { value: 'original', labelKey: 'iconOriginal' },
+                            { value: 'big', labelKey: 'iconBig' },
+                            { value: 'small', labelKey: 'iconSmall' }
+                        ]
+                    }
+                }
+            }
         ]
     },
+    {
+        name: '',
+        type: 'grid',
+        schema: [
+            { name: 'hue_borders', selector: { boolean: {} } },
+            { name: 'show_switch', selector: { boolean: {} } },
+            { name: 'allow_zero', selector: { boolean: {} } },
+            { name: 'off_shadow', selector: { boolean: {} } },
+            { name: 'live_update', selector: { boolean: {} } },
+            { name: 'is_visible', selector: { boolean: {} } }
+        ]
+    },
+    { name: 'theme', selector: { theme: {} } },
 
     {
         name: '',
@@ -4295,6 +5139,7 @@ const SCHEMA_BUSCH_LIGHT_CARD = [
             { name: 'hold_action', selector: { select: { mode: 'dropdown', options: ACTION_OPTIONS } } }
         ]
     },
+    { name: 'api_id', selector: { text: {} } },
 
     {
         name: 'scenes',
@@ -4434,10 +5279,24 @@ class BuschLightCardEditor extends BuschUI.EditorBase {
     _emit(patch) {
         const next = Object.assign({}, this._config, patch);
 
+        // show_description is the editor's switch for description: false; it
+        // is never written itself (#715).
+        if (patch && Object.prototype.hasOwnProperty.call(patch, 'show_description')) {
+            if (patch.show_description === false) next.description = false;
+            else if (next.description === false) delete next.description;
+        }
+        delete next.show_description;
+        // The old boolean `slider: true` is the default as well.
+        if (next.slider === true) delete next.slider;
+        // A number typed into the icon size box is stored as a number.
+        if (typeof next.icon_size === 'string' && /^\d+(\.\d+)?$/.test(next.icon_size.trim())) {
+            next.icon_size = Number(next.icon_size.trim());
+        }
+
         Object.keys(CONFIG_DEFAULTS).forEach((key) => {
             if (next[key] !== undefined && next[key] === CONFIG_DEFAULTS[key]) delete next[key];
         });
-        ['title', 'icon', 'description', 'off_color', 'default_color'].forEach((key) => {
+        ['title', 'icon', 'description', 'off_color', 'default_color', 'icon_size', 'theme', 'api_id'].forEach((key) => {
             if (next[key] === '' || next[key] === null || next[key] === undefined) delete next[key];
         });
         if (Array.isArray(next.entities) && !next.entities.length) delete next.entities;
@@ -4463,7 +5322,8 @@ class BuschLightCardEditor extends BuschUI.EditorBase {
             entities: Array.isArray(c.entities) ? c.entities : [],
             title: c.title || '',
             icon: c.icon || '',
-            description: c.description || '',
+            description: typeof c.description === 'string' ? c.description : '',
+            show_description: c.description !== false,
             resolve_groups: c.resolve_groups !== false,
             max_depth: c.max_depth === undefined ? DEFAULT_MAX_DEPTH : c.max_depth,
             show_unavailable: c.show_unavailable !== false,
@@ -4472,11 +5332,17 @@ class BuschLightCardEditor extends BuschUI.EditorBase {
             default_color: c.default_color || '',
             hue_borders: c.hue_borders !== false,
             show_switch: c.show_switch !== false,
-            slider: c.slider !== false,
+            slider: c.slider === false || c.slider === 'none' ? 'none' : c.slider === 'mushroom' ? 'mushroom' : 'default',
             allow_zero: c.allow_zero === true,
             off_shadow: c.off_shadow !== false,
+            live_update: c.live_update !== false,
+            icon_size: c.icon_size === undefined || c.icon_size === null || c.icon_size === ''
+                ? CONFIG_DEFAULTS.icon_size : String(c.icon_size),
+            theme: c.theme || '',
+            is_visible: c.is_visible !== false,
             tap_action: c.tap_action || CONFIG_DEFAULTS.tap_action,
-            hold_action: c.hold_action || CONFIG_DEFAULTS.hold_action
+            hold_action: c.hold_action || CONFIG_DEFAULTS.hold_action,
+            api_id: c.api_id || ''
         };
         const out = {};
         names.forEach((n) => (out[n] = all[n]));
@@ -4548,7 +5414,7 @@ class BuschLightCardEditor extends BuschUI.EditorBase {
 
         // --- what to control
         this._forms.basic = this._makeForm(
-            ['entity', 'entities', 'title', 'icon', 'description']
+            ['entity', 'entities', 'title', 'icon', 'description', 'show_description']
         );
         wrap.appendChild(this._forms.basic);
 
@@ -4569,14 +5435,15 @@ class BuschLightCardEditor extends BuschUI.EditorBase {
 
         // --- appearance
         this._forms.look = this._makeForm(
-            ['off_color', 'default_color', 'hue_borders', 'show_switch', 'slider', 'allow_zero', 'off_shadow']
+            ['off_color', 'default_color', 'slider', 'icon_size', 'hue_borders', 'show_switch', 'allow_zero',
+                'off_shadow', 'live_update', 'is_visible', 'theme']
         );
         const lookBox = document.createElement('div');
         lookBox.appendChild(this._forms.look);
         wrap.appendChild(this._section('sectionLook', lookBox, false));
 
         // --- actions
-        this._forms.actions = this._makeForm(['tap_action', 'hold_action']);
+        this._forms.actions = this._makeForm(['tap_action', 'hold_action', 'api_id']);
         wrap.appendChild(this._section('sectionActions', this._forms.actions, false));
 
         // --- scenes

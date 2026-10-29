@@ -98,12 +98,23 @@ def main():
         "empty": {"states": empty, "config": {"entity": "group.empty"}},
         "loading": {"states": None, "config": {"entity": root}},
         "error": {"states": off, "config": {}},
+        # #715: Mushroom slider, icon size, hidden description, template.
+        "mushroom": {"states": clean_on, "config": {"entity": root, "slider": "mushroom"}},
+        "mushroom_off": {"states": clean_off, "config": {"entity": root, "slider": "mushroom",
+            "allow_zero": True}},
+        "icon_big": {"states": single, "config": {"entity": root, "icon_size": "big"}},
+        "no_description": {"states": clean_on, "config": {"entity": root, "description": False}},
+        "template": {"states": clean_on, "config": {"entity": root,
+            "title": "Demo {{ light.demo_2 }}",
+            "description": "%s · {{ light.demo_2.brightness }}"}},
     }
     expected_tones = {"on": "warning", "off": "warning", "long": "warning",
                       "success": "success", "neutral": "neutral",
                       "single": "success", "warm": "success", "white": "success",
                       "yellow": "success",
                       "custom_color": "neutral",
+                      "mushroom": "success", "mushroom_off": "neutral", "icon_big": "success",
+                      "no_description": "success", "template": "success",
                       "unavailable": "unavailable", "empty": "unknown"}
     port_holder = []
     server = serve(repo, port_holder)
@@ -192,6 +203,12 @@ def main():
                                 height: rect(slider).height, role: slider.getAttribute('role'),
                                 tabIndex: slider.tabIndex,
                                 label: slider.querySelector('.label')?.textContent } : null,
+                            sliderClass: slider ? slider.className : null,
+                            trackHeight: sr.querySelector('.slider .track')
+                                ? sr.querySelector('.slider .track').getBoundingClientRect().height : 0,
+                            iconSize: getComputedStyle(sr.querySelector('.icon') || host)
+                                .getPropertyValue('--mdc-icon-size').trim(),
+                            statusDisplay: status ? getComputedStyle(status).display : null,
                             tapRole: sr.querySelector('.tap')?.getAttribute('role'),
                             tapTabIndex: sr.querySelector('.tap')?.tabIndex,
                             error: sr.querySelector('.error')?.textContent,
@@ -221,7 +238,7 @@ def main():
                         valid = valid and metrics["tapRole"] == "button" and metrics["tapTabIndex"] == 0
                         valid = valid and metrics["tone"] == expected_tones[name]
                         valid = valid and metrics["toggle"] is not None and metrics["toggle"]["height"] >= 44
-                        if width == 320 and metrics["toggle"]:
+                        if width == 320 and metrics["toggle"] and name != "no_description":
                             valid = valid and abs(metrics["toggle"]["center"]
                                 - metrics["statusCenter"]) <= 22
                         if name == "long":
@@ -230,7 +247,17 @@ def main():
                             valid = valid and metrics["background"] == "rgb(17, 34, 51)"
                             valid = valid and metrics["titleColor"] == "rgb(255, 255, 255)"
                             valid = valid and "tinted" in metrics["cardClass"].split()
-                        lit_case = name in ("on", "success", "single", "warm", "white", "yellow", "long")
+                        lit_case = name in ("on", "success", "single", "warm", "white", "yellow", "long",
+                                            "mushroom", "icon_big", "no_description", "template")
+                        if name in ("mushroom", "mushroom_off"):
+                            valid = valid and "mushroom" in (metrics["sliderClass"] or "").split()
+                            valid = valid and round(metrics["trackHeight"]) == 28
+                        if name == "icon_big":
+                            valid = valid and metrics["iconSize"] == "34px"
+                        if name == "no_description":
+                            valid = valid and metrics["statusDisplay"] == "none"
+                        if name == "template":
+                            valid = valid and metrics["title"] == "Demo on" and "{{" not in metrics["status"]
                         if lit_case:
                             surface = metrics["surface"]
                             valid = valid and "lit" in metrics["cardClass"].split()
@@ -343,6 +370,42 @@ def main():
                             .map(button => ({width:button.getBoundingClientRect().width,
                                              height:button.getBoundingClientRect().height}))};
                 }""")
+                # #715: the editor with the new options set.
+                page.evaluate("""() => {
+                    const stack = document.getElementById('stack');
+                    stack.replaceChildren();
+                    const ed = customElements.get('busch-light-card').getConfigElement();
+                    stack.appendChild(ed);
+                    ed.hass = window.makeHass({});
+                    ed.setConfig({type:'custom:busch-light-card', entity:'light.demo_group',
+                        slider:'mushroom', icon_size:'big', description:false, live_update:false,
+                        theme:'Demo-Thema', api_id:'wohnzimmer', is_visible:false});
+                }""")
+                page.wait_for_timeout(40)
+                page.evaluate("""() => document.querySelector('busch-light-card-editor').shadowRoot
+                    .querySelectorAll('details').forEach(d => { d.open = true; })""")
+                page.wait_for_timeout(40)
+                shot_options = f"editor-optionen-{width}-{theme}.png"
+                page.locator("busch-light-card-editor").screenshot(path=str(result / shot_options))
+                options_metrics = page.evaluate("""() => {
+                    const ed = document.querySelector('busch-light-card-editor');
+                    const forms = Array.from(ed.shadowRoot.querySelectorAll('ha-form'));
+                    const data = Object.assign({}, ...forms.map(f => f.data || {}));
+                    return {width: ed.getBoundingClientRect().width, scrollWidth: ed.scrollWidth,
+                        data: {slider: data.slider, icon_size: data.icon_size,
+                               show_description: data.show_description, live_update: data.live_update,
+                               theme: data.theme, api_id: data.api_id, is_visible: data.is_visible},
+                        text: forms.map(f => f.textContent).join(' | ')};
+                }""")
+                report["cases"].append({"width": width, "theme": theme, "state": "editor-optionen",
+                    "ok": options_metrics["width"] == width
+                          and options_metrics["scrollWidth"] <= width + 1
+                          and options_metrics["data"] == {"slider": "mushroom", "icon_size": "big",
+                              "show_description": False, "live_update": False, "theme": "Demo-Thema",
+                              "api_id": "wohnzimmer", "is_visible": False}
+                          and "Live beim Ziehen" in options_metrics["text"],
+                    "metrics": {k: options_metrics[k] for k in ("width", "scrollWidth", "data")},
+                    "screenshot": shot_options})
                 report["cases"].append({"width": width, "theme": theme, "state": "editor-long",
                     "ok": editor_metrics["width"] == width
                           and editor_metrics["scrollWidth"] <= width + 1
