@@ -10,7 +10,8 @@ unavailable entities differently.
 ![Card with warm white light](docs/render/baseline/hue-0.9.0/card-warm-480-light.png)
 ![Card while everything is off](docs/render/baseline/hue-0.9.0/card-off-480-dark.png)
 ![Card with the Mushroom-style slider](docs/render/baseline/hue-0.10.0/card-mushroom-480-dark.png)
-![Dialog on a phone](docs/render/baseline/hue-0.9.0/dialog-success-320-dark.png)
+![Dialog on a phone](docs/render/baseline/hue-0.11.0/dialog-success-320-dark.png)
+![A light's detail view with its scenes and effects](docs/render/baseline/hue-0.11.0/t885-detail-8-360x640.png)
 
 ## What the card does
 

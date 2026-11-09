@@ -195,6 +195,29 @@ und ein Test auf doppelte Top-Level-Namen im Bundle.
 
 ## Geprüft
 
+**09.11.2026 · 0.11.0 (#877 Dialog am Handy, #885 Szenen/Effekte je Lampe)** — vier Abnahmebelege vor dem Tag:
+
+1. `node --check dist/busch-lightcards.js` grün.
+2. `python3 scripts/ui-regeln-pruefen.py --repo ha-busch-lightcards`
+   (HACS-Ebene): 0 Verstöße.
+3. `KARTEN_TODO=885 scripts/karten-alle.sh --repo ha-busch-lightcards`
+   (`test-hacs-t885-abnahme-…`), Lauf `karten-20261109-210216-3a0f50`,
+   3/3 grün: `node --test` 66/66 (14 neu: Scroll-Sperre auf allen
+   Schließwegen, Effekte, lange Effektlisten, Szenen und Aktivregel; 9 davon
+   rot vor der jeweiligen Änderung); `render.py` 132/132 (7 neue Prüfungen:
+   #877 Lage/Vollbild/Scrollen/Kopf/Seite/Drehen bei 5 Größen, rot gegen
+   0.10.0; #885 Szenen und Effekte bei 360 und 1280 px, Touchziele ≥ 44 px),
+   Regel 1 186 Textelemente ohne Befund, Regel 2 ohne Verstoß, 0 Konsolen-/
+   Seitenfehler; `visual_contract.py` 138/138, Tastaturprobe grün.
+   Zusätzlich lesend im echten HA-Frontend (Schreibzugriffe gesperrt):
+   Fokus, Escape, Zurück, Schließen, Detail↔Gruppe, Scroll nach Update grün;
+   die vier Regler-/Picker-Fälle des unversionierten
+   `layout-dialog-contract.py` setzen das Verhalten vor 0.10.0 voraus und
+   starten gegen v0.10.0 gar nicht, kein Beleg. HA-Dashboard scrollt über
+   `document.scrollingElement` (Probe 390×700), die Sperre greift dort.
+4. Dieser Abschnitt und der Block im HACS-Stand. Bilder gesichtet; Auswahl
+   in `docs/render/baseline/hue-0.11.0/`.
+
 **29.10.2026 · 0.10.0 (#715, Live-Update und Kleinkram)** — vier Abnahmebelege vor dem Tag:
 
 1. `node --check dist/busch-lightcards.js` grün.
