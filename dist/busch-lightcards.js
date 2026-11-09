@@ -392,6 +392,7 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             noEntities: 'Keine Lampe aufgelöst',
             loading: 'Lampen werden geladen',
             scenes: 'Szenen',
+            effects: 'Effekte',
             lights: 'Lampen',
             brightness: 'Helligkeit',
             colour: 'Farbe',
@@ -522,6 +523,7 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             noEntities: 'No light resolved',
             loading: 'Loading lights',
             scenes: 'Scenes',
+            effects: 'Effects',
             lights: 'Lights',
             brightness: 'Brightness',
             colour: 'Colour',
@@ -1253,6 +1255,7 @@ function optimisticTarget(domain, service, data) {
     if (typeof data.brightness_pct === 'number') want.pct = clamp(Math.round(data.brightness_pct), 1, 100);
     if (Array.isArray(data.rgb_color)) want.rgb = data.rgb_color.slice(0, 3);
     if (typeof data.color_temp_kelvin === 'number') want.kelvin = data.color_temp_kelvin;
+    if (typeof data.effect === 'string') want.effect = data.effect;
     return want;
 }
 
@@ -1300,6 +1303,7 @@ function optimisticReached(real, want) {
     if (!real || real.state === 'unavailable') return true;
     if (real === want.base) return false; // nothing new from Home Assistant yet
     if ((real.state === 'on') !== want.on) return false;
+    if (want.effect !== undefined && (real.attributes || {}).effect !== want.effect) return false;
     const brightness = real.attributes ? real.attributes.brightness : undefined;
     if (want.on && want.pct !== undefined && typeof brightness === 'number') {
         return Math.abs(Math.round((brightness / 255) * 100) - want.pct) <= 2;
@@ -1320,6 +1324,7 @@ function optimisticState(entityId, real, want) {
             attributes.color_temp_kelvin = Math.round(want.kelvin);
             attributes.color_mode = 'color_temp';
         }
+        if (want.effect !== undefined) attributes.effect = want.effect;
     }
     return Object.assign({}, real, { state: want.on ? 'on' : 'off', attributes });
 }
@@ -1803,6 +1808,8 @@ function unregisterApi(apiId, card) {
 // A single light or switch
 // ---------------------------------------------------------------------------
 
+const NO_EFFECT = new Set(['off', 'none']);
+
 class LightModel {
     constructor(hass, entityId) {
         this.hass = hass;
@@ -1858,6 +1865,17 @@ class LightModel {
 
     get supportsTemp() {
         return this.colorModes.indexOf('color_temp') !== -1;
+    }
+
+    /** The light's own effects (#885); 'off'/'none' mean no effect, not a choice. */
+    get effects() {
+        const list = this.attributes.effect_list;
+        return Array.isArray(list) ? list.filter((e) => typeof e === 'string' && !NO_EFFECT.has(e.toLowerCase())) : [];
+    }
+
+    get effect() {
+        const effect = this.attributes.effect;
+        return typeof effect === 'string' && !NO_EFFECT.has(effect.toLowerCase()) ? effect : null;
     }
 
     get minKelvin() {
@@ -3719,6 +3737,26 @@ h3 {
     background: var(--blc-dialog-text, #fff);
     color: var(--blc-dialog-invert, #111);
 }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button {
+    min-height: 44px;
+    max-width: 100%;
+    border: none;
+    border-radius: 22px;
+    padding: 0 16px;
+    background: var(--blc-dialog-tile, #363636);
+    color: var(--blc-dialog-dim, #ccc);
+    cursor: pointer;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chips button.active {
+    background: var(--blc-dialog-text, #fff);
+    color: var(--blc-dialog-invert, #111);
+}
+.chips button.active::before { content: '\\2713\\00a0'; }
 .wheelwrap { display: flex; justify-content: center; padding: 6px 0 2px; }
 canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-width: 100%; }
 .tempbar {
@@ -4342,6 +4380,31 @@ class BuschLightDialog extends HTMLElement {
                     }, live ? liveTransition(this._hass, [light.entityId]) : {}))
             });
         }
+
+        const effects = light.effects;
+        if (effects.length) {
+            sheet.appendChild(this._heading(translate(hass, 'effects')));
+            sheet.appendChild(this._makeChips('effects', effects.map((effect) => ({
+                label: effect,
+                active: effect === light.effect,
+                run: () => optimisticCall(this._hass, 'light', 'turn_on', { entity_id: light.entityId, effect })
+            }))));
+        }
+    }
+
+    /** A wrapping row of choices; the active one says so beyond colour (#885). */
+    _makeChips(className, items) {
+        const row = document.createElement('div');
+        row.className = 'chips ' + className;
+        items.forEach((item) => {
+            const button = document.createElement('button');
+            button.textContent = item.label;
+            button.setAttribute('aria-pressed', item.active ? 'true' : 'false');
+            if (item.active) button.classList.add('active');
+            button.addEventListener('click', item.run);
+            row.appendChild(button);
+        });
+        return row;
     }
 
     // -- building blocks ----------------------------------------------------
