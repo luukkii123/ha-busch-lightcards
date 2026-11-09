@@ -2437,6 +2437,63 @@ def main():
               json.dumps(gedreht))
 
         # ------------------------------------------------------------------
+        # 8f. #885: scenes and effects in a light's detail view
+        # ------------------------------------------------------------------
+        detail885 = []
+        for anzahl in (8, 40):
+            states = json.loads(json.dumps(lit_states))
+            curtain = states["light.curtain"]["attributes"]
+            curtain["effect_list"] = ["Effekt %d" % i for i in range(anzahl)]
+            curtain["effect"] = "Effekt 3"
+            for sid, name in (("scene.t885_lesen", "Lesen am Abend"), ("scene.t885_kino", "Kino")):
+                states[sid] = {"entity_id": sid, "state": "unknown",
+                               "attributes": {"friendly_name": name, "entity_id": ["light.curtain"]}}
+            for breite, hoehe in ((360, 640), (1280, 800)):
+                page.set_viewport_size({"width": breite, "height": hoehe})
+                page.evaluate("() => document.querySelectorAll('busch-light-dialog').forEach(d => d.remove())")
+                build_card(states, "t885")
+                page.evaluate("""() => document.querySelector('busch-light-card').shadowRoot
+                    .querySelector('.tap').dispatchEvent(new MouseEvent('click', { bubbles: true }))""")
+                page.wait_for_timeout(300)
+                page.evaluate(geometrie_js, "detail")
+                page.wait_for_timeout(400)
+                m = page.evaluate("""() => {
+                    const sr = document.querySelector('busch-light-dialog').shadowRoot;
+                    const sheet = sr.querySelector('.sheet');
+                    const box = sheet.getBoundingClientRect();
+                    const ctrls = Array.from(sr.querySelectorAll('.chips button, select.pick'));
+                    const out = {
+                        scenes: Array.from(sr.querySelectorAll('.lightscenes button')).map(b => b.textContent),
+                        effectChips: sr.querySelectorAll('.effects button').length,
+                        select: !!sr.querySelector('select.pick'),
+                        selectValue: sr.querySelector('select.pick') ? sr.querySelector('select.pick').value : null,
+                        activeEffect: Array.from(sr.querySelectorAll('.effects button.active')).map(b => b.textContent),
+                        overflowX: sheet.scrollWidth > sheet.clientWidth + 1,
+                        outside: ctrls.filter(c => { const r = c.getBoundingClientRect();
+                            return r.left < box.left - 1 || r.right > box.right + 1; }).length,
+                        small: ctrls.filter(c => c.getBoundingClientRect().height < 44).length,
+                    };
+                    sheet.scrollTop = sheet.scrollHeight;
+                    out.end = Math.abs(sheet.scrollTop - (sheet.scrollHeight - sheet.clientHeight)) <= 1;
+                    return out;
+                }""")
+                page.screenshot(path=str(out_dir / f"t885-detail-{anzahl}-{breite}x{hoehe}.png"))
+                page.evaluate("() => document.querySelector('busch-light-dialog').remove()")
+                detail885.append({"anzahl": anzahl, "breite": breite, "hoehe": hoehe, **m})
+        report["detail885"] = detail885
+        check("#885 detail view lists the light's scenes, effects as chips or a select",
+              all("Kino" in x["scenes"] and "Lesen am Abend" in x["scenes"] for x in detail885)
+              and all((x["effectChips"] == 8 and not x["select"] and x["activeEffect"] == ["Effekt 3"])
+                      if x["anzahl"] == 8 else
+                      (x["effectChips"] == 0 and x["select"] and x["selectValue"] == "Effekt 3")
+                      for x in detail885),
+              json.dumps(detail885, ensure_ascii=False))
+        check("#885 scene/effect controls fit the sheet, are 44 px tall, sheet scrolls to the end",
+              all(not x["overflowX"] and x["outside"] == 0 and x["small"] == 0 and x["end"]
+                  for x in detail885),
+              json.dumps(detail885, ensure_ascii=False))
+
+        # ------------------------------------------------------------------
         # 9. The four UI rules (hacs/docs/ui-regeln.md), measured
         # ------------------------------------------------------------------
         # Rule 1 wants 320/480/960 px in both themes; rule 4 wants the card to

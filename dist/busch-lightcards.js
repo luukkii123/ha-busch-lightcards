@@ -1809,6 +1809,26 @@ function unregisterApi(apiId, card) {
 // ---------------------------------------------------------------------------
 
 const NO_EFFECT = new Set(['off', 'none']);
+/** Up to this many choices stay chips; longer lists (some lights ship 500 effects) become a select. */
+const CHIP_LIMIT = 12;
+/**
+ * The scene of `sceneIds` the light shows now: the one activated last (a
+ * scene's state is its activation time), unless the light changed after it.
+ * shortcut: Home Assistant does not say which scene is active; 10 s after the
+ * activation count as "still that scene" — upgrade if HA ever reports it.
+ */
+function activeSceneFor(hass, sceneIds, light) {
+    const states = (hass && hass.states) || {};
+    let newest = null;
+    let newestAt = -Infinity;
+    sceneIds.forEach((id) => {
+        const at = Date.parse(states[id] && states[id].state);
+        if (!Number.isNaN(at) && at > newestAt) { newest = id; newestAt = at; }
+    });
+    if (!newest) return null;
+    const changed = Date.parse(light.state && light.state.last_updated);
+    return !Number.isNaN(changed) && changed - newestAt > 10000 ? null : newest;
+}
 
 class LightModel {
     constructor(hass, entityId) {
@@ -1870,7 +1890,9 @@ class LightModel {
     /** The light's own effects (#885); 'off'/'none' mean no effect, not a choice. */
     get effects() {
         const list = this.attributes.effect_list;
-        return Array.isArray(list) ? list.filter((e) => typeof e === 'string' && !NO_EFFECT.has(e.toLowerCase())) : [];
+        return Array.isArray(list)
+            ? list.filter((e) => typeof e === 'string' && e.trim() && !NO_EFFECT.has(e.toLowerCase()))
+            : [];
     }
 
     get effect() {
@@ -3756,6 +3778,16 @@ h3 {
     background: var(--blc-dialog-text, #fff);
     color: var(--blc-dialog-invert, #111);
 }
+.pick {
+    width: 100%;
+    min-height: 44px;
+    border: none;
+    border-radius: 9px;
+    padding: 0 12px;
+    background: var(--blc-dialog-tile, #363636);
+    color: var(--blc-dialog-text, #fff);
+    font-size: 14px;
+}
 .chips button.active::before { content: '\\2713\\00a0'; }
 .wheelwrap { display: flex; justify-content: center; padding: 6px 0 2px; }
 canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-width: 100%; }
@@ -4003,6 +4035,8 @@ class BuschLightDialog extends HTMLElement {
     _watchIds() {
         const ids = this._model ? this._model.watchIds() : [];
         (this._opts.scenes || []).forEach((scene) => ids.push(scene.entity));
+        // The detail view's own scenes and light (#885), so an activation elsewhere redraws.
+        if (this._detailEntity) ids.push(this._detailEntity, ...scenesForLights(this._hass, [this._detailEntity]));
         return ids;
     }
 
@@ -4381,15 +4415,59 @@ class BuschLightDialog extends HTMLElement {
             });
         }
 
+        // Real Home Assistant scenes that set this light, then the light's own
+        // effects: two kinds, two headings (#885).
+        const scenes = scenesForLights(hass, [light.entityId]);
+        if (scenes.length) {
+            const wish = this._sceneWish;
+            const wished = wish && wish.light === light.entityId && Date.now() < wish.until
+                && (hass.states[wish.scene] || {}).state === wish.from ? wish.scene : null;
+            const active = wished || activeSceneFor(hass, scenes, light);
+            sheet.appendChild(this._heading(translate(hass, 'scenes')));
+            sheet.appendChild(this._makeChips('lightscenes', scenes.map((id) => ({
+                label: hass.states[id].attributes.friendly_name || id,
+                active: id === active,
+                run: () => {
+                    this._sceneWish = { light: light.entityId, scene: id,
+                        from: hass.states[id].state, until: Date.now() + OPTIMISTIC_HOLD_MS };
+                    this._hass.callService('scene', 'turn_on', { entity_id: id });
+                    this._renderSheet();
+                }
+            }))));
+        }
+
         const effects = light.effects;
         if (effects.length) {
             sheet.appendChild(this._heading(translate(hass, 'effects')));
-            sheet.appendChild(this._makeChips('effects', effects.map((effect) => ({
-                label: effect,
-                active: effect === light.effect,
-                run: () => optimisticCall(this._hass, 'light', 'turn_on', { entity_id: light.entityId, effect })
-            }))));
+            const run = (effect) => optimisticCall(this._hass, 'light', 'turn_on', { entity_id: light.entityId, effect });
+            sheet.appendChild(effects.length > CHIP_LIMIT
+                ? this._makeSelect(effects, light.effect, run)
+                : this._makeChips('effects', effects.map((effect) => ({
+                    label: effect, active: effect === light.effect, run: () => run(effect)
+                }))));
         }
+    }
+
+    /** A long list as the platform's own picker: scrollable on a phone, type-ahead on a desktop. */
+    _makeSelect(values, current, onPick) {
+        const select = document.createElement('select');
+        select.className = 'pick';
+        select.setAttribute('aria-label', translate(this._hass, 'effects'));
+        const none = document.createElement('option');
+        none.value = '';
+        none.textContent = '—';
+        select.appendChild(none);
+        values.forEach((value) => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            select.appendChild(option);
+        });
+        select.value = current || '';
+        select.addEventListener('change', () => {
+            if (select.value) onPick(select.value);
+        });
+        return select;
     }
 
     /** A wrapping row of choices; the active one says so beyond colour (#885). */
