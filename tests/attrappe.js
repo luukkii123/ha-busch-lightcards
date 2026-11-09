@@ -109,6 +109,7 @@ function neueUmgebung({ uhr, sprache = 'de' } = {}) {
   const docListeners = {};
   const document = {
     body,
+    documentElement: new Element('html'),
     activeElement: null,
     createElement(tag) { const K = registry.get(tag); if (K) { const n = new K(); n.tagName = tag.toUpperCase(); return n; } return new Element(tag); },
     createElementNS(_ns, tag) { return new Element(tag); },

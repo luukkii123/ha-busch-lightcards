@@ -3454,8 +3454,13 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
      */
     z-index: 100000;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: center;
+    /* #877: the sheet's height comes from this fixed box, which follows the
+       visible viewport; 92vh did not and slid under Android's system bars. */
+    box-sizing: border-box;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+        max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
 }
 /* Opening like the Hue card's dialog: 0.3 s ease-out, opacity and transform
    only (#715). Bottom sheet rises on a phone, the centred dialog grows in. */
@@ -3474,37 +3479,47 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
 .sheet {
     position: relative;
     width: min(560px, 100%);
-    max-height: 92vh;
+    max-height: 100%;
+    overscroll-behavior: contain;
     /* Vertical only. Nothing in here is meant to scroll sideways, so an
        element that overhangs must be clipped, not turned into a scrollbar. */
     overflow-y: auto;
     overflow-x: hidden;
     background: var(--blc-dialog-bg, #171717);
     color: var(--blc-dialog-text, #fff);
-    border-radius: 16px 16px 0 0;
+    border-radius: 16px;
     padding: 16px;
     box-sizing: border-box;
-    animation: rise 0.3s ease-out;
+    animation: grow 0.3s ease-out;
     font-family: var(--paper-font-body1_-_font-family, Roboto, sans-serif);
 }
-@media (min-width: 700px) {
-    :host { align-items: center; }
-    .sheet { border-radius: 16px; animation-name: grow; }
+/* Phones: full screen (hacs/docs/ui-regeln.md, no floating dialog below
+   450 x 500 px); the system bars stay outside through the safe areas. */
+@media (max-width: 449.98px), (max-height: 499.98px) {
+    :host {
+        padding: env(safe-area-inset-top) env(safe-area-inset-right)
+            env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+    .sheet { width: 100%; height: 100%; border-radius: 0; animation-name: rise; }
 }
 .head {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 14px;
+    /* #877: stays on top while the sheet scrolls, edge to edge so nothing
+       shows through the sheet's padding above it. */
+    position: sticky;
+    top: -16px; /* sticky counts from inside the sheet's padding */
+    z-index: 2;
+    margin: -16px -16px 14px;
+    padding: 16px;
+    border-radius: 16px 16px 0 0;
+    background: var(--blc-dialog-bg, #171717);
 }
 .head .who { flex-grow: 1; min-width: 0; }
 /* Lit (#712): the header carries the light colours like the card, edge to
    edge at the top of the sheet; its text colour is chosen per background. */
-.head.lit {
-    margin: -16px -16px 14px;
-    padding: 16px;
-    border-radius: 16px 16px 0 0;
-}
+@media (max-width: 449.98px), (max-height: 499.98px) { .head { border-radius: 0; } }
 .head.lit .sub { color: inherit; }
 .head.lit .iconbtn { color: inherit; }
 .head.lit.fg-light .iconbtn { background: rgba(0, 0, 0, 0.24); }
@@ -3961,6 +3976,10 @@ class BuschLightDialog extends HTMLElement {
         document.addEventListener('focusin', this._onFocus, true);
         window.addEventListener('popstate', this._onPop);
         OPTIMISTIC_VIEWS.add(this);
+        // #877: the dashboard behind must not scroll along with the sheet.
+        const page = document.documentElement.style;
+        this._pageOverflow = page.overflow;
+        page.overflow = 'hidden';
         // The phone's back gesture is a history navigation. Without an entry
         // of its own the dialog would stay open and the whole dashboard would
         // be left instead.
@@ -3973,6 +3992,7 @@ class BuschLightDialog extends HTMLElement {
         document.removeEventListener('focusin', this._onFocus, true);
         window.removeEventListener('popstate', this._onPop);
         OPTIMISTIC_VIEWS.delete(this);
+        document.documentElement.style.overflow = this._pageOverflow || '';
         if (this._returnFocus && this._returnFocus.isConnected) this._returnFocus.focus();
     }
 

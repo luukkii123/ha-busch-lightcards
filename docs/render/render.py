@@ -2327,6 +2327,116 @@ def main():
               reduced == 0, str(reduced))
 
         # ------------------------------------------------------------------
+        # 8e. #877: the dialog stays inside the viewport and scrolls
+        # ------------------------------------------------------------------
+        # hacs/docs/ui-regeln.md: below 450 px width or 500 px height a dialog
+        # is full screen, above it centred. The page behind it must not move.
+        # A touch swipe cannot be replayed reliably here; the wheel and the
+        # computed styles stand in for it, a real phone check closes #877.
+        geometrie_js = """(view) => {
+            const sr = document.querySelector('busch-light-dialog').shadowRoot;
+            const sheet = sr.querySelector('.sheet');
+            if (view === 'detail') {
+                const tile = Array.from(sr.querySelectorAll('.tile')).find(t =>
+                    t.querySelector('.tname').textContent === 'Cosy Corner');
+                tile.dispatchEvent(new PointerEvent('pointerdown',
+                    { bubbles: true, pointerId: 1, clientX: 10, clientY: 10 }));
+                tile.dispatchEvent(new PointerEvent('pointerup',
+                    { bubbles: true, pointerId: 1, clientX: 10, clientY: 10 }));
+            }
+            const r = sheet.getBoundingClientRect();
+            return { top: r.top, bottom: r.bottom, left: r.left, right: r.right,
+                     W: innerWidth, H: innerHeight,
+                     scrollHeight: sheet.scrollHeight, clientHeight: sheet.clientHeight,
+                     htmlOverflow: getComputedStyle(document.documentElement).overflow,
+                     wheel: !!sr.querySelector('canvas.wheel') };
+        }"""
+        dialog877 = []
+        page.evaluate("""() => {
+            const pad = document.createElement('div');
+            pad.id = 't877pad'; pad.style.height = '4000px';
+            document.body.appendChild(pad);
+        }""")
+        for breite, hoehe in ((360, 640), (360, 480), (640, 360), (800, 600), (1280, 800)):
+            for view in ("gruppe", "detail"):
+                page.set_viewport_size({"width": breite, "height": hoehe})
+                page.evaluate("() => document.querySelectorAll('busch-light-dialog').forEach(d => d.remove())")
+                build_card(lit_states, "t877")
+                page.evaluate("() => window.scrollTo(0, 300)")
+                page.evaluate("""() => document.querySelector('busch-light-card').shadowRoot
+                    .querySelector('.tap').dispatchEvent(new MouseEvent('click', { bubbles: true }))""")
+                page.wait_for_timeout(400)
+                g = page.evaluate(geometrie_js, view)
+                page.wait_for_timeout(400)
+                g = page.evaluate(geometrie_js, "")
+                # Wheel in the sheet's own padding, never on the colour wheel.
+                page.mouse.move(g["left"] + 6, (g["top"] + g["bottom"]) / 2)
+                for _ in range(30):
+                    page.mouse.wheel(0, 400)
+                page.wait_for_timeout(300)
+                nach = page.evaluate("""() => {
+                    const sr = document.querySelector('busch-light-dialog').shadowRoot;
+                    const sheet = sr.querySelector('.sheet');
+                    const head = sr.querySelector('.head').getBoundingClientRect();
+                    const box = sheet.getBoundingClientRect();
+                    return { scrollTop: sheet.scrollTop,
+                             maxScroll: sheet.scrollHeight - sheet.clientHeight,
+                             headVisible: Math.abs(head.top - box.top) <= 1 && head.bottom <= box.bottom + 1,
+                             headTop: head.top - box.top,
+                             pageY: window.scrollY };
+                }""")
+                page.screenshot(path=str(out_dir / f"t877-{view}-{breite}x{hoehe}.png"))
+                page.evaluate("() => document.querySelector('busch-light-dialog').remove()")
+                frei = page.evaluate("() => getComputedStyle(document.documentElement).overflow")
+                handy = breite < 450 or hoehe < 500
+                drin = (g["top"] >= -1 and g["left"] >= -1
+                        and g["bottom"] <= g["H"] + 1 and g["right"] <= g["W"] + 1)
+                if handy:
+                    lage = (abs(g["top"]) <= 1 and abs(g["bottom"] - g["H"]) <= 1
+                            and abs(g["left"]) <= 1 and abs(g["right"] - g["W"]) <= 1)
+                else:
+                    lage = (abs(g["top"] - (g["H"] - g["bottom"])) <= 1
+                            and abs(g["left"] - (g["W"] - g["right"])) <= 1
+                            and g["top"] >= 12)
+                dialog877.append({"breite": breite, "hoehe": hoehe, "view": view, **g, **nach,
+                                  "handy": handy, "drin": drin, "lage": lage,
+                                  "htmlOverflowNachSchliessen": frei})
+        # Orientation change with the dialog open: 360x640 -> 640x360.
+        page.set_viewport_size({"width": 360, "height": 640})
+        build_card(lit_states, "t877")
+        page.evaluate("""() => document.querySelector('busch-light-card').shadowRoot
+            .querySelector('.tap').dispatchEvent(new MouseEvent('click', { bubbles: true }))""")
+        page.wait_for_timeout(400)
+        page.set_viewport_size({"width": 640, "height": 360})
+        page.wait_for_timeout(300)
+        gedreht = page.evaluate(geometrie_js, "")
+        page.evaluate("() => { document.querySelector('busch-light-dialog').remove(); "
+                      "document.getElementById('t877pad').remove(); window.scrollTo(0, 0); }")
+        report["dialog877"] = {"faelle": dialog877, "gedreht": gedreht}
+        check("#877 dialog lies fully inside the viewport (5 sizes, group and detail)",
+              all(x["drin"] for x in dialog877),
+              json.dumps([(x["breite"], x["hoehe"], x["view"], round(x["top"]), round(x["bottom"]))
+                          for x in dialog877 if not x["drin"]]))
+        check("#877 full screen below 450x500, centred with margin above",
+              all(x["lage"] for x in dialog877),
+              json.dumps([(x["breite"], x["hoehe"], x["view"], round(x["top"]), round(x["bottom"]))
+                          for x in dialog877 if not x["lage"]]))
+        check("#877 overflowing content scrolls to its end, header stays visible",
+              all((x["maxScroll"] <= 0 or abs(x["scrollTop"] - x["maxScroll"]) <= 1)
+                  and x["headVisible"] for x in dialog877)
+              and any(x["maxScroll"] > 0 for x in dialog877),
+              json.dumps([(x["breite"], x["hoehe"], x["view"], x["scrollTop"], x["maxScroll"],
+                           x["headVisible"], round(x["headTop"])) for x in dialog877]))
+        check("#877 the page behind does not scroll, and is released on close",
+              all(x["pageY"] == 300 and x["htmlOverflow"] == "hidden"
+                  and x["htmlOverflowNachSchliessen"] != "hidden" for x in dialog877),
+              json.dumps([(x["breite"], x["hoehe"], x["view"], x["pageY"], x["htmlOverflow"],
+                           x["htmlOverflowNachSchliessen"]) for x in dialog877]))
+        check("#877 after turning the phone the dialog fits again",
+              abs(gedreht["top"]) <= 1 and abs(gedreht["bottom"] - gedreht["H"]) <= 1,
+              json.dumps(gedreht))
+
+        # ------------------------------------------------------------------
         # 9. The four UI rules (hacs/docs/ui-regeln.md), measured
         # ------------------------------------------------------------------
         # Rule 1 wants 320/480/960 px in both themes; rule 4 wants the card to
