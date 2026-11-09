@@ -110,6 +110,28 @@ Bedeutung nur über Farbe. Ersatzprüfung: berechnete Textfarbe mit 4,5:1 je
 Stufe (Node-Tests und Browserlauf messen die Quote), Zustand immer als Text,
 Layout, Kopf und Bedienelemente bleiben die des UI-Vertrags.
 
+## Dialog am Handy (seit 0.11.0, #877)
+
+Bis 0.10.0 war der Dialog unter 700 px ein unten angedocktes Sheet mit
+`max-height: 92vh`. Belegt (rote Probe `render.py` 8e gegen 0.10.0): am Ende
+des Sheets scrollte die Geste das Dashboard weiter, der Kopf scrollte weg,
+nach dem Drehen passte der Dialog nicht; `vh` folgt den Android-Leisten nicht
+(im Headless-Chromium nicht nachstellbar). Jetzt: Höhe aus dem fixierten Host
+(folgt dem sichtbaren Viewport), Safe Areas per `env()`, unter 450 × 500 px
+Vollbild (hacs/docs/ui-regeln.md), sonst zentriert; `overscroll-behavior:
+contain`, Seiten-Scroll gesperrt solange offen (an einer Stelle,
+connected/disconnectedCallback), Kopf sticky mit `top: -16px` (Sticky zählt
+ab dem Innenabstand des Sheets).
+
+## Szenen und Effekte je Lampe (seit 0.11.0, #885)
+
+Szenen der Detailansicht kommen aus `scenesForLights` (Mitgliedschaft über
+das `entity_id`-Attribut der Szene). Live am 09.11.2026 hatten alle 21
+Szenen dieses Attribut; Szenen ohne Mitgliederliste (z. B. Hue-eigene) würden
+nicht erscheinen. Aktiv: zuletzt aktivierte Szene, solange die Lampe sich
+nicht mehr als 10 s danach geändert hat (HA meldet keine aktive Szene).
+Effekte bis 12 als Chips, darüber `<select>` (live bis 504 Einträge).
+
 ## Prüfung
 
 `docs/render/render.py` lädt die ausgelieferte Datei in echtem Chromium

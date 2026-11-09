@@ -44,7 +44,16 @@ unavailable entities differently.
   and one tile per light with its own switch. Resolved groups keep their own
   block with their own counter and switch. A master switch sits in the header.
   Escape and the browser's back gesture close the dialog (from a light's detail
-  view they first return to the group).
+  view they first return to the group). On a phone (below 450 px width or
+  500 px height) the dialog fills the screen inside the system bars, above
+  that it is centred; its header stays put while the content scrolls, and the
+  dashboard behind it does not move.
+- **Light detail view**: brightness, colour and white, plus the Home Assistant
+  scenes that contain this light and the light's own effects (`effect_list`),
+  each only when there is something to show. The scene activated last is
+  marked as long as the light has not changed since; the current effect is
+  marked too. Up to 12 effects are buttons, longer lists (some lights ship
+  hundreds) are a drop-down list.
 - **Visual editor** with a live preview of the resolution, one-click import of
   every scene that uses the card's lights, and German and English texts
   (following the Home Assistant language).
@@ -196,6 +205,15 @@ while dragging (interval, waiting for Home Assistant, hold time), the text
 template syntax, the slider types and the `icon_size`, `theme`, `api_id` and
 `is_visible` options with their camelCase names. They were re-implemented
 here from that card's documented behaviour and source; no code was copied.
+
+Deliberate differences from the Hue-Like Light Card:
+
+- `%s` in `title`/`description` inserts the whole line the card would show
+  (for example "2 of 3 on"), not only the number of lights on.
+- The JavaScript API object is `window.busch_light_card`, so the two cards can
+  live side by side on one dashboard.
+- The `mushroom` slider is drawn by this card itself; Mushroom does not need
+  to be installed.
 
 ## License
 
