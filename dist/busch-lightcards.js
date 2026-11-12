@@ -222,7 +222,9 @@ const BuschUI = (() => {
  * README for why.
  */
 
-const CARD_VERSION = '0.11.0';
+const CARD_VERSION = '0.11.1';
+/** #1011: default entity of getStubConfig per entity registry, see there. */
+const STUB_PICKS = new WeakMap();
 
 const CARD_TAG = 'busch-light-card';
 const DIALOG_TAG = 'busch-light-dialog';
@@ -319,7 +321,7 @@ function pick(config, camel, fallback) {
 const TEXTE_BUSCH_LIGHT_CARD = {
     de: {
         name: 'Busch Lampenkarte',
-        description: 'Hue-artige Karte für Lampen und Szenen, die verschachtelte Gruppen auf jeder Ebene auflöst und nicht erreichbare Entitäten übersteht.',
+        description: 'Steuert Lampen und Szenen wie in der Hue-App und löst verschachtelte Gruppen auf jeder Ebene auf.',
         labels: {
             entity: 'Lampe, Schalter oder Gruppe',
             entities: 'Weitere Entitäten',
@@ -449,8 +451,8 @@ const TEXTE_BUSCH_LIGHT_CARD = {
         }
     },
     en: {
-        name: 'Busch Light Card',
-        description: 'Hue-like card for lights and scenes that resolves nested groups on every level and survives unavailable entities.',
+        name: 'Busch light card',
+        description: 'Controls lights and scenes like the Hue app and resolves nested groups on every level.',
         labels: {
             entity: 'Light, switch or group',
             entities: 'Additional entities',
@@ -2922,18 +2924,25 @@ class BuschLightCard extends HTMLElement {
      * none of it.
      */
     static getStubConfig(hass, entities) {
-        const pool = Array.isArray(entities) && entities.length
-            ? entities
-            : hass && hass.states
-                ? Object.keys(hass.states)
-                : [];
-        const lights = pool.filter((id) => domainOf(id) === 'light');
-        const group = lights.find((id) => {
-            const state = hass && hass.states ? hass.states[id] : null;
-            return state && state.attributes && Array.isArray(state.attributes.entity_id)
-                && state.attributes.entity_id.length > 1;
-        });
-        return { type: `custom:${CARD_TAG}`, entity: group || lights[0] || '' };
+        const pick = (pool) => {
+            const lights = pool.filter((id) => domainOf(id) === 'light');
+            const group = lights.find((id) => {
+                const state = hass && hass.states ? hass.states[id] : null;
+                return state && state.attributes && Array.isArray(state.attributes.entity_id)
+                    && state.attributes.entity_id.length > 1;
+            });
+            return group || lights[0] || '';
+        };
+        if (Array.isArray(entities) && entities.length) return { type: `custom:${CARD_TAG}`, entity: pick(entities) };
+        // #1011 card picker: one pass over hass.states per picker visit, remembered
+        // on the entity registry (hass.states is replaced on every state change).
+        const key = hass && (hass.entities || hass.states);
+        let entity = key && typeof key === 'object' ? STUB_PICKS.get(key) : undefined;
+        if (entity === undefined) {
+            entity = pick(hass && hass.states ? Object.keys(hass.states) : []);
+            if (key && typeof key === 'object') STUB_PICKS.set(key, entity);
+        }
+        return { type: `custom:${CARD_TAG}`, entity };
     }
 
     setConfig(raw) {
@@ -5957,7 +5966,7 @@ if (!window.customCards.some((c) => c.type === CARD_TAG)) {
         type: CARD_TAG,
         name: picker.name,
         description: picker.description,
-        preview: true,
+        preview: false,
         documentationURL: 'https://github.com/luukkii123/ha-busch-lightcards'
     });
 }

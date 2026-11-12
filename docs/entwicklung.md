@@ -195,6 +195,13 @@ und ein Test auf doppelte Top-Level-Namen im Bundle.
 
 ## Geprüft
 
+**12.11.2026 · 0.11.1, Kartenwähler ohne Live-Vorschau (#1011, Tag `v0.11.1`)** — Beschreibung ein Satz, englischer Name „Busch light card“; `getStubConfig` merkt die Vorgabe je Entitätsregister (ein Durchlauf über `hass.states`). `docs/render/render.py` erwartet jetzt `preview: false`.
+
+1. `node --check` grün; neue Tests `tests/kartenwaehler.test.js` (preview false, ein Satz Beschreibung de/en, höchstens ein Durchlauf je Register, kein Netz) zuerst rot, danach grün.
+2. `python3 scripts/ui-regeln-pruefen.py`: 0 Verstöße, mit der neuen Prüfung R3.6 (Kartenwähler-Vertrag), die vorher für dieses Repo rot war.
+3. Einziger Abnahmelauf `karten-alle.sh` für alle fünf geänderten Kartenrepos (Lauf `karten-20261112-175558-77c23e`): 3/3 Schritte grün, Node 68 Tests grün, 164 Bilder.
+4. Eintrag in `docs/stand.md` der Projektverwaltung, Block 12.11.2026 (#1011).
+
 **09.11.2026 · 0.11.0 (#877 Dialog am Handy, #885 Szenen/Effekte je Lampe)** — vier Abnahmebelege vor dem Tag:
 
 1. `node --check dist/busch-lightcards.js` grün.

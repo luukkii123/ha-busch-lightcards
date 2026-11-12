@@ -1717,7 +1717,7 @@ def main():
               and woerter["pickerEintrag"]["name"] == woerter["woerterbuchName"]["de"]
               and woerter["pickerEintrag"]["description"]
                   == woerter["woerterbuchBeschreibung"]["de"]
-              and woerter["pickerEintrag"]["preview"] is True,
+              and woerter["pickerEintrag"]["preview"] is False,
               json.dumps({"navigator": woerter["navigatorSprache"],
                           "eintrag": woerter["pickerEintrag"]}, ensure_ascii=False))
 
