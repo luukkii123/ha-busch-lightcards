@@ -195,6 +195,8 @@ und ein Test auf doppelte Top-Level-Namen im Bundle.
 
 ## Geprüft
 
+**18.11.2026 · 0.13.1, Buschcheck Etappe A (#1266, Tag `v0.13.1`)** — Szenen-Aufrufe mit Fehlerpfad: Chip verliert die Markierung bei Fehler, keine unbehandelte Ablehnung (M40). 71 Node-Tests. Abschlusslauf `karten-20261118-115150-b741a7` grün (38/38, 908 Node-Tests), `--beleg-pruefen` gleich; `node --check`, `ui-regeln-pruefen.py` (0), `hacs-contract-lint.py` (0), Kern bytegleich.
+
 **12.11.2026 · 0.11.1, Kartenwähler ohne Live-Vorschau (#1011, Tag `v0.11.1`)** — Beschreibung ein Satz, englischer Name „Busch light card“; `getStubConfig` merkt die Vorgabe je Entitätsregister (ein Durchlauf über `hass.states`). `docs/render/render.py` erwartet jetzt `preview: false`.
 
 1. `node --check` grün; neue Tests `tests/kartenwaehler.test.js` (preview false, ein Satz Beschreibung de/en, höchstens ein Durchlauf je Register, kein Netz) zuerst rot, danach grün.
