@@ -2,7 +2,7 @@
 // #885: Effekte und Szenen einer Lampe in ihrer Detailansicht.
 const test = require('node:test');
 const assert = require('node:assert');
-const { neueUmgebung, neuesHaus, neueKarte, licht } = require('./attrappe.js');
+const { neueUmgebung, neuesHaus, neueKarte, licht, mikro } = require('./attrappe.js');
 
 /** Stehlampe mit Effekten; Detailansicht der Stehlampe offen. */
 function detail(u, haus, id = 'light.steh') {
@@ -132,4 +132,46 @@ test('Lampe ohne Szenen und Effekte: Detailansicht ohne beide Abschnitte', () =>
   const dialog = detail(u, haus);
   assert.equal(dialog._sheet.querySelectorAll('.chips').length, 0);
   assert.equal(dialog._sheet.querySelectorAll('select').length, 0);
+});
+
+// ── M40: abgelehnter Dienstaufruf ──────────────────────────────────────────
+/** Sammelt unbehandelte Ablehnungen, bis `fertig()` aufgerufen wird. */
+function ablehnungen() {
+  const liste = [];
+  const fang = (grund) => liste.push(grund);
+  process.on('unhandledRejection', fang);
+  return { liste, fertig: () => process.off('unhandledRejection', fang) };
+}
+
+test('Szene schlägt fehl: Markierung fällt sofort weg, keine unbehandelte Ablehnung (#1266)', async () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  haus.antwort = () => Promise.reject(new Error('Szene nicht erreichbar'));
+  Object.assign(haus.states, { 'scene.lesen': szene('scene.lesen', 'Lesen', ['light.steh']) });
+  const offen = ablehnungen();
+  try {
+    const dialog = detail(u, haus);
+    chips(dialog, 'lightscenes')[0].click();
+    assert.deepEqual(aktiv(dialog, 'lightscenes'), ['Lesen'], 'vor der Antwort markiert');
+    await mikro(); await mikro();
+    assert.deepEqual(aktiv(dialog, 'lightscenes'), [], 'nach dem Fehler kein aktiver Chip');
+    assert.deepEqual(offen.liste, [], 'keine unbehandelte Ablehnung');
+  } finally { offen.fertig(); }
+});
+
+test('Szene der Karte (scenes:) schlägt fehl: keine unbehandelte Ablehnung (#1266)', async () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  haus.antwort = () => Promise.reject(new Error('Szene nicht erreichbar'));
+  Object.assign(haus.states, {
+    'scene.lesen': szene('scene.lesen', 'Lesen', ['light.steh']),
+    'script.abend': { entity_id: 'script.abend', state: 'off', attributes: { friendly_name: 'Abend' } },
+  });
+  const offen = ablehnungen();
+  try {
+    const karte = neueKarte(u, haus, { scenes: ['scene.lesen', 'script.abend'] });
+    karte._openDialog();
+    karte._dialog._sheet.querySelectorAll('.scene').forEach((b) => b.click());
+    assert.deepEqual(haus.rufe.slice(-2).map((r) => r.domain + '.' + r.service), ['scene.turn_on', 'script.turn_on']);
+    await mikro(); await mikro();
+    assert.deepEqual(offen.liste, [], 'keine unbehandelte Ablehnung');
+  } finally { offen.fertig(); }
 });

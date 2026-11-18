@@ -1291,6 +1291,7 @@ function optimisticCall(hass, domain, service, data) {
     if (started.length) notifyOptimistic(started.map((s) => s[0]));
     let result;
     try {
+        // callservice-ok: a sync throw is caught here, a rejection by result.then(null, fail) below
         result = real.callService(domain, service, data);
     } catch (e) {
         fail();
@@ -2219,9 +2220,9 @@ class GroupModel {
     activateScene(sceneEntityId) {
         if (!this.hass) return;
         const domain = domainOf(sceneEntityId);
-        if (domain === 'scene') this.hass.callService('scene', 'turn_on', { entity_id: sceneEntityId });
-        else if (domain === 'script') this.hass.callService('script', 'turn_on', { entity_id: sceneEntityId });
-        else this.hass.callService('homeassistant', 'turn_on', { entity_id: sceneEntityId });
+        const service = domain === 'scene' || domain === 'script' ? domain : 'homeassistant';
+        // Home Assistant shows its own error toast; nothing here is optimistic.
+        Promise.resolve(this.hass.callService(service, 'turn_on', { entity_id: sceneEntityId })).then(null, () => {});
     }
 }
 
@@ -4437,9 +4438,16 @@ class BuschLightDialog extends HTMLElement {
                 label: hass.states[id].attributes.friendly_name || id,
                 active: id === active,
                 run: () => {
-                    this._sceneWish = { light: light.entityId, scene: id,
+                    const wish = { light: light.entityId, scene: id,
                         from: hass.states[id].state, until: Date.now() + OPTIMISTIC_HOLD_MS };
-                    this._hass.callService('scene', 'turn_on', { entity_id: id });
+                    // Home Assistant shows its own error toast; the mark only has to go.
+                    const fail = () => {
+                        if (this._sceneWish !== wish) return;
+                        this._sceneWish = null;
+                        this._renderSheet();
+                    };
+                    this._sceneWish = wish;
+                    Promise.resolve(this._hass.callService('scene', 'turn_on', { entity_id: id })).then(null, fail);
                     this._renderSheet();
                 }
             }))));
