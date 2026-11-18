@@ -54,7 +54,7 @@ function neueUmgebung({ uhr, sprache = 'de' } = {}) {
 
   class Element {
     constructor(tag = 'div') {
-      this.tagName = String(tag).toUpperCase(); this.childNodes = []; this.parentNode = null;
+      this.nodeType = 1; this.tagName = String(tag).toUpperCase(); this.childNodes = []; this.parentNode = null;
       this.listeners = {}; this.attributes = {}; this.dataset = {}; this.className = ''; this.title = ''; this.id = '';
       this._text = ''; this._tabIndex = -1; this.scrollTop = 0; this.clientHeight = 80;
       const style = {}; style.setProperty = (k, v) => { style[k] = String(v); }; style.getPropertyValue = (k) => style[k] || ''; style.removeProperty = (k) => { delete style[k]; };
@@ -66,9 +66,10 @@ function neueUmgebung({ uhr, sprache = 'de' } = {}) {
     get lastChild() { return this.childNodes.at(-1) || null; }
     get isConnected() { let w = this; while (w) { if (w === body) return true; w = w.parentNode || w.host || null; } return false; }
     attachShadow() { const r = new Element('#shadow'); r.host = this; r._aktiv = null; Object.defineProperty(r, 'activeElement', { get() { return r._aktiv && r.all().includes(r._aktiv) ? r._aktiv : null; } }); this.shadowRoot = r; return r; }
-    set textContent(v) { this._text = String(v); for (const c of this.childNodes) c.parentNode = null; this.childNodes = []; }
+    set textContent(v) { this._text = String(v); this._innerHTML = ''; for (const c of this.childNodes) c.parentNode = null; this.childNodes = []; }
     get textContent() { return this._text + this.childNodes.map((n) => n.textContent).join(''); }
-    set innerHTML(v) { this.textContent = ''; if (v) this._text = String(v); }
+    // `_innerHTML` keeps assigned markup apart from text, so the testkit's activeMarkup() can scan it.
+    set innerHTML(v) { this.textContent = ''; if (v) this._text = this._innerHTML = String(v); }
     get innerHTML() { return this._text; }
     appendChild(n) { if (n.parentNode) n.remove(); n.parentNode = this; this.childNodes.push(n); if (this === body && n.connectedCallback) n.connectedCallback(); return n; }
     append(...n) { for (const x of n) this.appendChild(x); }
