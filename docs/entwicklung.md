@@ -195,6 +195,8 @@ und ein Test auf doppelte Top-Level-Namen im Bundle.
 
 ## Geprüft
 
+**18.11.2026 · 0.13.2, Buschcheck Etappe C (#1278, Tag `v0.13.2`)** — XSS-Payloadtests für Karte, Dialog und Detailansicht und CI-Schritt Sinks (M19), Shared UI 0.4.0. Sichtbar unverändert. 100 Node-Tests. Abschlusslauf `karten-20261118-143236-199107` grün (55/55, 2159 Node-Tests, Block `statisch` mit `sinks` grün), `--beleg-pruefen` gleich; Bilder gegen Etappe B am Bild geprüft (Sonnet), Abweichungen gewollt oder Rauschen (Uhrzeit, Kacheln, Markenlogo aus dem Netz).
+
 **18.11.2026 · main nach 0.13.1, Buschcheck Etappe B (#1271, kein Tag)** — Testkit `tests/_testkit.cjs` (M5); dist unverändert. 71 Node-Tests. Abschlusslauf `karten-20261118-131312-6dd1c4` grün (51/51, 1003 Node-Tests, Block `statisch` grün), `--beleg-pruefen` gleich; Bilder gegen Etappe A: 1836/1901 bytegleich, Rest Uhrzeit-/Animationsrauschen.
 
 **18.11.2026 · 0.13.1, Buschcheck Etappe A (#1266, Tag `v0.13.1`)** — Szenen-Aufrufe mit Fehlerpfad: Chip verliert die Markierung bei Fehler, keine unbehandelte Ablehnung (M40). 71 Node-Tests. Abschlusslauf `karten-20261118-115150-b741a7` grün (38/38, 908 Node-Tests), `--beleg-pruefen` gleich; `node --check`, `ui-regeln-pruefen.py` (0), `hacs-contract-lint.py` (0), Kern bytegleich.
