@@ -1157,7 +1157,7 @@ def main():
         # 7e. The redesigned tiles
         # ------------------------------------------------------------------
         tiles = page.evaluate(
-            """(payload) => {
+            """async (payload) => {
                 window.freshStep();
                 const old = document.querySelector('busch-light-dialog');
                 if (old) old.remove();
@@ -1236,6 +1236,8 @@ def main():
                     { bubbles: true, pointerId: 1, clientX: 10, clientY: 10 }));
                 target.dispatchEvent(new PointerEvent('pointerup',
                     { bubbles: true, pointerId: 1, clientX: 10, clientY: 10 }));
+                // #1254: a single tap waits out the 300 ms double-tap window first
+                await new Promise(r => setTimeout(r, 350));
                 out.detailTitle = sr.querySelector('.head h1').textContent;
                 out.hasBackButton = sr.querySelectorAll('.head .iconbtn').length === 2;
 
@@ -1323,13 +1325,14 @@ def main():
                 };
                 const esc = () => document.dispatchEvent(
                     new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-                const openDetail = () => {
+                const openDetail = async () => {
                     const sr = dlg().shadowRoot;
                     const t = Array.from(sr.querySelectorAll('.tile'))
                         .find(x => x.querySelector('.tname').textContent === 'Cosy Corner');
                     ['pointerdown', 'pointerup'].forEach(type => t.dispatchEvent(
                         new PointerEvent(type, { bubbles: true, pointerId: 9,
                                                  clientX: 10, clientY: 10 })));
+                    await new Promise(r => setTimeout(r, 350)); // #1254: double-tap window
                 };
                 const out = {};
 
@@ -1347,7 +1350,7 @@ def main():
                 // --- back from a light's detail view returns to the group,
                 //     and only the next back closes
                 openCard(); await wait();
-                openDetail(); await wait();
+                await openDetail(); await wait();
                 out.stateInDetail = history.state && history.state.buschLightDialog;
                 out.detailTitle = dlg().shadowRoot.querySelector('.head h1').textContent;
                 history.back(); await wait();
@@ -1359,7 +1362,7 @@ def main():
 
                 // --- Escape does the same one-step-back in the detail view
                 openCard(); await wait();
-                openDetail(); await wait();
+                await openDetail(); await wait();
                 esc(); await wait();
                 out.escFromDetailKeepsDialog = !!dlg();
                 out.titleAfterEsc = dlg()
@@ -2333,7 +2336,7 @@ def main():
         # is full screen, above it centred. The page behind it must not move.
         # A touch swipe cannot be replayed reliably here; the wheel and the
         # computed styles stand in for it, a real phone check closes #877.
-        geometrie_js = """(view) => {
+        geometrie_js = """async (view) => {
             const sr = document.querySelector('busch-light-dialog').shadowRoot;
             const sheet = sr.querySelector('.sheet');
             if (view === 'detail') {
@@ -2343,6 +2346,7 @@ def main():
                     { bubbles: true, pointerId: 1, clientX: 10, clientY: 10 }));
                 tile.dispatchEvent(new PointerEvent('pointerup',
                     { bubbles: true, pointerId: 1, clientX: 10, clientY: 10 }));
+                await new Promise(r => setTimeout(r, 350)); // #1254: double-tap window
             }
             const r = sheet.getBoundingClientRect();
             return { top: r.top, bottom: r.bottom, left: r.left, right: r.right,
