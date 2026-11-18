@@ -42,7 +42,8 @@ unavailable entities differently.
 - **Dialog** (opens on tap by default): a header in the light colours, scene
   tiles in their colours, group brightness, a colour
   wheel and a colour-temperature bar (limited to the range all lights support),
-  and one tile per light with its own switch. Resolved groups keep their own
+  and one tile per light with its own switch (tap: the light's detail view,
+  drag: dim, hold: Home Assistant's own detail view of that light). Resolved groups keep their own
   block with their own counter and switch. A master switch sits in the header.
   Escape and the browser's back gesture close the dialog (from a light's detail
   view they first return to the group). On a phone (below 450 px width or

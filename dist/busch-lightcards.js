@@ -222,7 +222,7 @@ const BuschUI = (() => {
  * README for why.
  */
 
-const CARD_VERSION = '0.11.1';
+const CARD_VERSION = '0.12.0';
 /** #1011: default entity of getStubConfig per entity registry, see there. */
 const STUB_PICKS = new WeakMap();
 
@@ -3240,8 +3240,7 @@ class BuschLightCard extends HTMLElement {
         }
     }
 
-    _fireMoreInfo() {
-        const entityId = this._opts.entityIds[0];
+    _fireMoreInfo(entityId = this._opts.entityIds[0]) {
         this.dispatchEvent(
             new CustomEvent('hass-more-info', {
                 detail: { entityId },
@@ -3261,6 +3260,7 @@ class BuschLightCard extends HTMLElement {
         this._dialog = dialog;
         dialog.addEventListener('dialog-closed', () => {
             this._dialog = null;
+            if (dialog.moreInfoEntity) this._fireMoreInfo(dialog.moreInfoEntity);
         });
     }
 
@@ -4698,15 +4698,29 @@ class BuschLightDialog extends HTMLElement {
 
         // The switch does on/off, so the tile itself is free for the two things
         // that used to need a long press: drag up/down dims, a plain tap opens
-        // that light's detail view.
+        // that light's detail view. Holding still opens HA's detail view (#1252).
         let moved = false;
         let startY = null;
+        let holding = false;
+        let holdTimer = null;
 
         onDrag(tile, (point, done) => {
             // The start is where the finger went down. Taking it anew on every
             // move made a slow drag (under 8 px per event) never count as one.
-            if (startY === null) startY = point.y;
+            if (startY === null) {
+                startY = point.y;
+                holding = false;
+                clearTimeout(holdTimer);
+                holdTimer = setTimeout(() => {
+                    holding = true;
+                    // This dialog sits on document.body, outside HA's tree: the card fires
+                    // hass-more-info once the dialog is closed.
+                    this.moreInfoEntity = light.entityId;
+                    this.close();
+                }, 500);
+            }
             const delta = Math.abs(point.y - startY);
+            if (moved || delta > 8) clearTimeout(holdTimer);
             if (!done && (moved || delta > 8) && light.supportsBrightness) {
                 moved = true;
                 this._setDragging(true);
@@ -4718,6 +4732,7 @@ class BuschLightDialog extends HTMLElement {
             }
             if (!done) return;
 
+            clearTimeout(holdTimer);
             startY = null;
             tile.classList.remove('dragging');
             this._setDragging(false);
@@ -4728,6 +4743,7 @@ class BuschLightDialog extends HTMLElement {
                 this._flushPendingUpdate();
                 return;
             }
+            if (holding) return;
             this._detailEntity = light.entityId;
             // Its own history entry, so back returns here rather than closing.
             this._push();

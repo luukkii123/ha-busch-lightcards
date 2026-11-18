@@ -153,8 +153,38 @@ test('Dialog (live_update: false): langsames Ziehen auf einer Kachel dimmt (kein
   for (let y = 22; y <= 70; y += 2) kachel.dispatchEvent(e('pointermove', y)); // 2 px je Ereignis
   kachel.dispatchEvent(e('pointerup', 70));
   assert.equal(dialog._detailEntity, null, 'Ziehen ist kein Tippen');
+  assert.equal(dialog.isConnected, true, 'Ziehen öffnet keine Detailansicht');
   assert.equal(haus.rufe.length, 1, 'ein callService beim Loslassen');
   assert.equal(haus.rufe[0].data.brightness_pct, 30);
+});
+
+test('Dialog: Halten einer Lampenkachel öffnet HAs Detailansicht, Tippen weiter die eigene (#1252)', () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const karte = neueKarte(u, haus);
+  const info = [];
+  karte.addEventListener('hass-more-info', (ev) => info.push(ev.detail.entityId));
+  karte._openDialog();
+  const dialog = karte._dialog;
+  const steh = () => Array.from(dialog._sheet.querySelectorAll('.tile')).find((t) => /steh/i.test(t.querySelector('.tname').textContent));
+  const e = (type) => u.neuesEreignis(type, { pointerId: 4, clientX: 50, clientY: 40 });
+  // Tippen: unverändert die karteneigene Detailansicht
+  steh().dispatchEvent(e('pointerdown'));
+  steh().dispatchEvent(e('pointerup'));
+  assert.equal(dialog._detailEntity, 'light.steh', 'Tippen öffnet die eigene Detailansicht');
+  u.uhr.vor(600);
+  assert.deepEqual(info, [], 'Tippen öffnet kein more-info');
+  for (const fn of u.kontext.window.listeners.popstate || []) fn({});
+  assert.equal(dialog._detailEntity, null, 'zurück zur Gruppe');
+  // Halten: Dialog zu, danach HAs more-info
+  const kachel = steh();
+  kachel.dispatchEvent(e('pointerdown'));
+  u.uhr.vor(600);
+  assert.deepEqual(info, [], 'erst nach dem Schließen, sonst schließt der History-Rücksprung HAs Ansicht');
+  for (const fn of u.kontext.window.listeners.popstate || []) fn({});
+  kachel.dispatchEvent(e('pointerup'));
+  assert.deepEqual(info, ['light.steh'], 'ein hass-more-info für die gehaltene Lampe');
+  assert.equal(dialog.isConnected, false, 'eigener Dialog zu, sonst läge er über HAs Detailansicht');
+  assert.equal(dialog._detailEntity, null, 'Loslassen nach dem Halten öffnet nichts');
 });
 
 test('clearOptimistic beendet Vorschauen wie der Fristablauf: Karte zeigt sofort den echten Zustand', () => {
