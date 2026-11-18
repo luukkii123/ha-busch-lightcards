@@ -223,3 +223,72 @@ test('clearOptimistic beendet Vorschauen wie der Fristablauf: Karte zeigt sofort
   assert.ok(n >= 1);
   assert.equal(schalterAn(karte), true, 'ohne weiteres hass-Update wieder echt');
 });
+
+// ── M37: Farbvorschau endet erst bei erreichter Farbe, Abgleich über context ──
+const steh = (attrs, context) => {
+  const s = licht('light.steh', true);
+  s.attributes = Object.assign({}, s.attributes, attrs);
+  if (context) s.context = { id: context, parent_id: null, user_id: null };
+  return s;
+};
+const vorschau = (I, hass) => I.optimisticView(hass).states['light.steh'];
+
+test('Farbvorschau: Zwischenzustand mit alter Farbe beendet sie nicht, erreichte Farbe (±8 je Kanal) schon (M37)', () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const I = u.registry.get('busch-light-card').__internals;
+  I.optimisticCall(haus.hass(), 'light', 'turn_on', { entity_id: 'light.steh', rgb_color: [255, 0, 0] });
+  // Zwischenstand: noch Weißmodus, nur das Leistungsattribut ist neu
+  let s = vorschau(I, haus.setze({ 'light.steh': steh({ power: 7 }) }));
+  assert.deepEqual(Array.from(s.attributes.rgb_color), [255, 0, 0], 'alter Weißmodus: Vorschau bleibt');
+  assert.equal(s.attributes.color_mode, 'rgb');
+  // Zwischenstand im Farbmodus, aber noch weit weg von Rot
+  s = vorschau(I, haus.setze({ 'light.steh': steh({ color_mode: 'xy', rgb_color: [200, 60, 40], color_temp_kelvin: undefined }) }));
+  assert.deepEqual(Array.from(s.attributes.rgb_color), [255, 0, 0], 'Farbe noch nicht erreicht: Vorschau bleibt');
+  // erreicht (Abweichung ≤ 8 je Kanal): echter Zustand gilt
+  const echt = steh({ color_mode: 'xy', rgb_color: [250, 6, 3], color_temp_kelvin: undefined });
+  assert.strictEqual(vorschau(I, haus.setze({ 'light.steh': echt })), echt, 'Zielfarbe erreicht: Vorschau beendet');
+  I.clearOptimistic();
+});
+
+test('Weißvorschau: Kelvin ±50 nur im Farbtemperaturmodus (M37)', () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const I = u.registry.get('busch-light-card').__internals;
+  I.optimisticCall(haus.hass(), 'light', 'turn_on', { entity_id: 'light.steh', color_temp_kelvin: 4000 });
+  let s = vorschau(I, haus.setze({ 'light.steh': steh({ color_temp_kelvin: 2700 }) }));
+  assert.equal(s.attributes.color_temp_kelvin, 4000, 'alte Farbtemperatur: Vorschau bleibt');
+  s = vorschau(I, haus.setze({ 'light.steh': steh({ color_mode: 'xy', color_temp_kelvin: 4000, rgb_color: [255, 210, 170] }) }));
+  assert.equal(s.attributes.color_mode, 'color_temp', 'falscher Modus: Vorschau bleibt, auch bei passendem Kelvinwert');
+  const echt = steh({ color_temp_kelvin: 3960 });
+  assert.strictEqual(vorschau(I, haus.setze({ 'light.steh': echt })), echt, '3960 K liegt in ±50 K: Vorschau beendet');
+  I.clearOptimistic();
+});
+
+test('Abgleich über context: eigenes Echo mit alter Farbe hält die Vorschau, fremder Aufruf beendet sie (M37)', async () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const I = u.registry.get('busch-light-card').__internals;
+  let nr = 0;
+  haus.antwort = () => Promise.resolve({ context: { id: 'eigen-' + (++nr), parent_id: null, user_id: null } });
+  I.optimisticCall(haus.hass(), 'light', 'turn_on', { entity_id: 'light.steh', rgb_color: [0, 0, 255] });
+  await mikro();
+  I.optimisticCall(haus.hass(), 'light', 'turn_on', { entity_id: 'light.steh', rgb_color: [0, 255, 0] });
+  await mikro();
+  // spätes Echo des ersten eigenen Aufrufs und Zwischenstand des zweiten: Vorschau bleibt
+  let s = vorschau(I, haus.setze({ 'light.steh': steh({ color_mode: 'xy', rgb_color: [0, 0, 255] }, 'eigen-1') }));
+  assert.deepEqual(Array.from(s.attributes.rgb_color), [0, 255, 0], 'spätes eigenes Echo: Vorschau bleibt');
+  s = vorschau(I, haus.setze({ 'light.steh': steh({ color_mode: 'xy', rgb_color: [0, 120, 160] }, 'eigen-2') }));
+  assert.deepEqual(Array.from(s.attributes.rgb_color), [0, 255, 0], 'eigener Zwischenstand: Vorschau bleibt');
+  // eine Automation setzt eine andere Farbe: der echte Zustand gewinnt sofort
+  const fremd = steh({ color_mode: 'xy', rgb_color: [255, 120, 0] }, 'automation-9');
+  assert.strictEqual(vorschau(I, haus.setze({ 'light.steh': fremd })), fremd, 'fremder Aufruf beendet die Vorschau');
+  I.clearOptimistic();
+});
+
+test('Abgleich über context: eigenes Echo mit erreichter Farbe beendet die Vorschau (M37)', async () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const I = u.registry.get('busch-light-card').__internals;
+  haus.antwort = () => Promise.resolve({ context: { id: 'eigen-1', parent_id: null, user_id: null } });
+  I.optimisticCall(haus.hass(), 'light', 'turn_on', { entity_id: 'light.steh', rgb_color: [0, 255, 0] });
+  await mikro();
+  const echt = steh({ color_mode: 'hs', rgb_color: [4, 251, 7] }, 'eigen-1');
+  assert.strictEqual(vorschau(I, haus.setze({ 'light.steh': echt })), echt);
+});

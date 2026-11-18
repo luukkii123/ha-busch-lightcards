@@ -1212,8 +1212,21 @@ function scenesForLights(hass, entityIds) {
  * well within a second; after this the real state wins again.
  */
 const OPTIMISTIC_HOLD_MS = 4000;
-/** entityId -> { on, pct?, rgb?, kelvin?, base, timer } — what was just asked for. */
+/** entityId -> { on, pct?, rgb?, kelvin?, contextId?, base, timer } — what was just asked for. */
 const OPTIMISTIC = new Map();
+/**
+ * entityId -> context ids of this page's recent calls. Home Assistant stamps
+ * every state an entity writes for a few seconds after a service call with
+ * that call's context, so a state carrying one of these ids is our own echo
+ * (possibly a late one of the previous call), any other new id is someone
+ * else's change.
+ */
+const OWN_CONTEXTS = new Map();
+const OWN_CONTEXTS_KEPT = 8;
+/** Per-channel rgb and kelvin tolerance for "the light has arrived". */
+const RGB_TOLERANCE = 8;
+const KELVIN_TOLERANCE = 50;
+const RGB_COLOR_MODES = new Set(['rgb', 'rgbw', 'rgbww', 'hs', 'xy']);
 /** Cards and dialogs that redraw when a preview starts or ends. */
 const OPTIMISTIC_VIEWS = new Set();
 /** Colour and brightness of each light's last 'on' state, to preview a switch-on. */
@@ -1306,18 +1319,56 @@ function optimisticCall(hass, domain, service, data) {
         throw e;
     }
     // Home Assistant shows its own error toast; the preview only has to stop.
-    if (result && typeof result.then === 'function') result.then(null, fail);
+    if (result && typeof result.then === 'function') result.then((response) => rememberContext(started, response), fail);
     return result;
 }
 
-function optimisticReached(real, want) {
+/**
+ * Notes the context id Home Assistant returned for a call (2023.x+; older
+ * versions return nothing, then the values alone decide as before).
+ */
+function rememberContext(started, response) {
+    const id = response && response.context && response.context.id;
+    if (typeof id !== 'string' || !id) return;
+    started.forEach(([entityId, entry]) => {
+        const own = (OWN_CONTEXTS.get(entityId) || []).concat(id).slice(-OWN_CONTEXTS_KEPT);
+        OWN_CONTEXTS.set(entityId, own);
+        if (OPTIMISTIC.get(entityId) === entry) entry.contextId = id;
+    });
+}
+
+function contextIdOf(state) {
+    return state && state.context && typeof state.context.id === 'string' ? state.context.id : '';
+}
+
+/** Another app or automation changed the light after our call: its state wins. */
+function foreignChange(entityId, real, want) {
+    const id = contextIdOf(real);
+    if (!want.contextId || !id || id === contextIdOf(want.base)) return false;
+    return !(OWN_CONTEXTS.get(entityId) || []).includes(id);
+}
+
+function optimisticReached(real, want, entityId) {
     if (!real || real.state === 'unavailable') return true;
     if (real === want.base) return false; // nothing new from Home Assistant yet
+    if (foreignChange(entityId, real, want)) return true;
     if ((real.state === 'on') !== want.on) return false;
-    if (want.effect !== undefined && (real.attributes || {}).effect !== want.effect) return false;
-    const brightness = real.attributes ? real.attributes.brightness : undefined;
-    if (want.on && want.pct !== undefined && typeof brightness === 'number') {
-        return Math.abs(Math.round((brightness / 255) * 100) - want.pct) <= 2;
+    const attributes = real.attributes || {};
+    if (want.effect !== undefined && attributes.effect !== want.effect) return false;
+    if (!want.on) return true;
+    const brightness = attributes.brightness;
+    if (want.pct !== undefined && typeof brightness === 'number'
+        && Math.abs(Math.round((brightness / 255) * 100) - want.pct) > 2) return false;
+    // An intermediate state (old colour, a power reading) must not end a colour preview.
+    if (want.rgb) {
+        const rgb = attributes.rgb_color;
+        if (!RGB_COLOR_MODES.has(attributes.color_mode) || !Array.isArray(rgb)) return false;
+        if (want.rgb.some((value, i) => !(Math.abs(Number(rgb[i]) - value) <= RGB_TOLERANCE))) return false;
+    }
+    if (want.kelvin !== undefined) {
+        const kelvin = attributes.color_temp_kelvin;
+        if (attributes.color_mode !== 'color_temp' || typeof kelvin !== 'number') return false;
+        if (Math.abs(kelvin - want.kelvin) > KELVIN_TOLERANCE) return false;
     }
     return true;
 }
@@ -1350,7 +1401,7 @@ function optimisticView(hass) {
     Array.from(OPTIMISTIC.keys()).forEach((entityId) => {
         const want = OPTIMISTIC.get(entityId);
         const real = hass.states[entityId];
-        if (optimisticReached(real, want)) {
+        if (optimisticReached(real, want, entityId)) {
             dropOptimistic(entityId, want);
             return;
         }
@@ -3457,6 +3508,8 @@ BuschLightCard.__internals = {
     litSurface,
     TILE_SHADE,
     clearOptimistic,
+    optimisticCall,
+    optimisticView,
     LiveSession,
     liveIntervalFor,
     liveTransition,
