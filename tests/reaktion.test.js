@@ -142,21 +142,46 @@ test('Dialog: Farbrad wird nur einmal berechnet', () => {
   assert.equal(u.zaehler.createImageData, 1, 'keine neue Pixelberechnung je Neubau');
 });
 
-test('Dialog (live_update: false): langsames Ziehen auf einer Kachel dimmt (kein Öffnen der Detailansicht)', () => {
+test('Dialog: Ziehen über eine Lampenkachel dimmt nicht und öffnet nichts, die Seite scrollt (#1254)', () => {
   const u = neueUmgebung(), haus = neuesHaus({ an: true });
-  const karte = neueKarte(u, haus, { live_update: false });
+  const karte = neueKarte(u, haus);
+  const info = [];
+  karte.addEventListener('hass-more-info', (ev) => info.push(ev.detail.entityId));
   karte._openDialog();
   const dialog = karte._dialog;
   const kachel = dialog._sheet.querySelectorAll('.tile')[0];
   const e = (type, y) => u.neuesEreignis(type, { pointerId: 3, clientX: 50, clientY: y });
   kachel.dispatchEvent(e('pointerdown', 20));
-  for (let y = 22; y <= 70; y += 2) kachel.dispatchEvent(e('pointermove', y)); // 2 px je Ereignis
+  for (let y = 22; y <= 70; y += 2) kachel.dispatchEvent(e('pointermove', y));
   kachel.dispatchEvent(e('pointerup', 70));
+  u.uhr.vor(600);
+  assert.equal(haus.rufe.length, 0, 'kein Dimmen per Ziehen');
   assert.equal(dialog._detailEntity, null, 'Ziehen ist kein Tippen');
-  assert.equal(dialog.isConnected, true, 'Ziehen öffnet keine Detailansicht');
-  assert.equal(haus.rufe.length, 1, 'ein callService beim Loslassen');
-  assert.equal(haus.rufe[0].data.brightness_pct, 30);
+  assert.deepEqual(info, [], 'Ziehen ist kein Halten');
+  assert.equal(dialog.isConnected, true);
+  const css = dialog.shadowRoot.querySelector('style').textContent;
+  assert.match(css, /\.tile \{[^}]*touch-action: manipulation;/, 'Scrollen über Kacheln, kein Doppeltipp-Zoom');
 });
+
+test('Dialog: Doppeltipp auf eine Lampenkachel öffnet HAs Detailansicht, nicht die eigene (#1254)', () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const karte = neueKarte(u, haus);
+  const info = [];
+  karte.addEventListener('hass-more-info', (ev) => info.push(ev.detail.entityId));
+  karte._openDialog();
+  const dialog = karte._dialog;
+  const kachel = Array.from(dialog._sheet.querySelectorAll('.tile')).find((t) => /steh/i.test(t.querySelector('.tname').textContent));
+  const e = (type) => u.neuesEreignis(type, { pointerId: 5, clientX: 50, clientY: 40 });
+  kachel.dispatchEvent(e('pointerdown')); kachel.dispatchEvent(e('pointerup'));
+  u.uhr.vor(150);
+  kachel.dispatchEvent(e('pointerdown')); kachel.dispatchEvent(e('pointerup'));
+  for (const fn of u.kontext.window.listeners.popstate || []) fn({});
+  u.uhr.vor(600);
+  assert.deepEqual(info, ['light.steh'], 'ein hass-more-info');
+  assert.equal(dialog._detailEntity, null, 'keine eigene Detailansicht');
+  assert.equal(dialog.isConnected, false);
+});
+
 
 test('Dialog: Halten einer Lampenkachel öffnet HAs Detailansicht, Tippen weiter die eigene (#1252)', () => {
   const u = neueUmgebung(), haus = neuesHaus({ an: true });
@@ -170,6 +195,8 @@ test('Dialog: Halten einer Lampenkachel öffnet HAs Detailansicht, Tippen weiter
   // Tippen: unverändert die karteneigene Detailansicht
   steh().dispatchEvent(e('pointerdown'));
   steh().dispatchEvent(e('pointerup'));
+  assert.equal(dialog._detailEntity, null, 'wartet erst das Doppeltipp-Fenster ab (#1254)');
+  u.uhr.vor(350);
   assert.equal(dialog._detailEntity, 'light.steh', 'Tippen öffnet die eigene Detailansicht');
   u.uhr.vor(600);
   assert.deepEqual(info, [], 'Tippen öffnet kein more-info');

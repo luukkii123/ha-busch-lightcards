@@ -203,19 +203,3 @@ test('Dialog: Einzellampe (Detail) live mit 5/s, Farbtemperatur ebenso', async (
   assert.ok(ende > 6000, 'Endwert am rechten Rand: ' + ende);
 });
 
-test('Dialog: Kachel-Ziehen dimmt die Lampe live', async () => {
-  const u = neueUmgebung(), haus = neuesHaus({ an: true });
-  haus.antwort = () => Promise.resolve();
-  const karte = neueKarte(u, haus);
-  karte._openDialog();
-  const d = karte._dialog;
-  const kachel = d._sheet.querySelectorAll('.tile')[0];
-  const e = (type, y) => u.neuesEreignis(type, { pointerId: 3, clientX: 50, clientY: y });
-  kachel.dispatchEvent(e('pointerdown', 20));
-  for (let y = 22; y <= 80; y += 1) { u.uhr.vor(16); kachel.dispatchEvent(e('pointermove', y)); await mikro(); }
-  assert.ok(haus.rufe.length >= 3, 'live während des Ziehens: ' + haus.rufe.length);
-  kachel.dispatchEvent(e('pointerup', 80));
-  await laufen(u, 400);
-  assert.equal(helligkeit(haus.rufe.at(-1)), 20);
-  assert.equal(d._detailEntity, null);
-});

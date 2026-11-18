@@ -222,7 +222,7 @@ const BuschUI = (() => {
  * README for why.
  */
 
-const CARD_VERSION = '0.12.0';
+const CARD_VERSION = '0.13.0';
 /** #1011: default entity of getStubConfig per entity registry, see there. */
 const STUB_PICKS = new WeakMap();
 
@@ -3647,7 +3647,7 @@ h3 {
 }
 /* Tap feedback of the Hue tiles: pressed tiles shrink a little. */
 .scene:not([disabled]):active,
-.tile:not(.dead):not(.dragging):active { transform: scale(0.95); }
+.tile:not(.dead):active { transform: scale(0.95); }
 /* Since 0.9.0 the tile carries the scene colour like the Hue app; the label
    colour is chosen per tile for 4.5:1, so it reads on any scene colour. The
    badge is a translucent chip on top. --blc-scene-badge still overrides it. */
@@ -3688,7 +3688,8 @@ h3 {
     align-items: center;
     justify-content: space-between;
     text-align: center;
-    touch-action: none;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
     -webkit-user-select: none;
     user-select: none;
@@ -3709,7 +3710,6 @@ h3 {
     transform: scaleY(0);
     transition: transform 0.3s ease-out;
 }
-.tile.dragging .tfill { transition: none; }
 /* On a coloured tile the theme's accent clashes; the switch borrows the
    tile's own contrast instead. */
 .tile.lit .tsw { background: rgba(0, 0, 0, 0.25); }
@@ -4634,15 +4634,10 @@ class BuschLightDialog extends HTMLElement {
 
         const head = document.createElement('div');
         head.className = 'thead';
-        // Dragging the tile is live too (#715); a rebuilt tile shows what it sent.
-        const session = light.isAvailable
-            ? this._session('tile:' + light.entityId, () => liveIntervalFor(this._hass, [light.entityId]))
-            : null;
-        const held = session ? session.pinned : null;
-        const shownPct = held !== null ? held : light.brightnessPct;
+        const shownPct = light.brightnessPct;
         const pct = document.createElement('span');
         pct.className = 'tpct';
-        pct.textContent = light.isAvailable ? (light.isOn || held !== null ? shownPct + ' %' : '') : '';
+        pct.textContent = light.isAvailable && light.isOn ? shownPct + ' %' : '';
         head.appendChild(pct);
         tile.appendChild(head);
 
@@ -4693,61 +4688,53 @@ class BuschLightDialog extends HTMLElement {
             // height = the darkness, not the brightness
             fill.style.transform = 'scaleY(' + (100 - shownPct) / 100 + ')';
         }
-        const send = (value, live) => optimisticCall(this._hass, 'light', 'turn_on', Object.assign(
-            { entity_id: light.entityId, brightness_pct: value }, live ? liveTransition(this._hass, [light.entityId]) : {}));
-
-        // The switch does on/off, so the tile itself is free for the two things
-        // that used to need a long press: drag up/down dims, a plain tap opens
-        // that light's detail view. Holding still opens HA's detail view (#1252).
-        let moved = false;
-        let startY = null;
+        // The switch does on/off; the tile itself: a tap opens that light's detail view,
+        // a double tap or a hold opens HA's own detail view (#1252, #1254). Dragging
+        // no longer dims (#1254): it fought with the hold, so a drag just scrolls.
+        let start = null;
         let holding = false;
         let holdTimer = null;
-
-        onDrag(tile, (point, done) => {
-            // The start is where the finger went down. Taking it anew on every
-            // move made a slow drag (under 8 px per event) never count as one.
-            if (startY === null) {
-                startY = point.y;
-                holding = false;
-                clearTimeout(holdTimer);
-                holdTimer = setTimeout(() => {
-                    holding = true;
-                    // This dialog sits on document.body, outside HA's tree: the card fires
-                    // hass-more-info once the dialog is closed.
-                    this.moreInfoEntity = light.entityId;
-                    this.close();
-                }, 500);
-            }
-            const delta = Math.abs(point.y - startY);
-            if (moved || delta > 8) clearTimeout(holdTimer);
-            if (!done && (moved || delta > 8) && light.supportsBrightness) {
-                moved = true;
-                this._setDragging(true);
-                tile.classList.add('dragging');
-                const value = clamp(Math.round(((point.height - point.y) / point.height) * 100), 1, 100);
-                fill.style.transform = 'scaleY(' + (100 - value) / 100 + ')';
-                pct.textContent = value + ' %';
-                this._liveStep(session, value, false, send);
-            }
-            if (!done) return;
-
+        let tapTimer = null;
+        const moreInfo = () => {
+            clearTimeout(tapTimer);
+            tapTimer = null;
+            // This dialog sits on document.body, outside HA's tree: the card fires
+            // hass-more-info once the dialog is closed.
+            this.moreInfoEntity = light.entityId;
+            this.close();
+        };
+        const cancel = () => {
             clearTimeout(holdTimer);
-            startY = null;
-            tile.classList.remove('dragging');
-            this._setDragging(false);
-            if (moved) {
-                const value = clamp(Math.round(((point.height - point.y) / point.height) * 100), 1, 100);
-                this._liveStep(session, value, true, send);
-                moved = false;
-                this._flushPendingUpdate();
+            start = null;
+        };
+        tile.addEventListener('pointerdown', (event) => {
+            start = { x: event.clientX, y: event.clientY };
+            holding = false;
+            clearTimeout(holdTimer);
+            holdTimer = setTimeout(() => {
+                holding = true;
+                moreInfo();
+            }, 500);
+        });
+        tile.addEventListener('pointermove', (event) => {
+            if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8) cancel();
+        });
+        tile.addEventListener('pointercancel', cancel);
+        tile.addEventListener('pointerup', () => {
+            const tap = start !== null && !holding;
+            cancel();
+            if (!tap) return;
+            if (tapTimer) {
+                moreInfo();
                 return;
             }
-            if (holding) return;
-            this._detailEntity = light.entityId;
-            // Its own history entry, so back returns here rather than closing.
-            this._push();
-            this._renderSheet();
+            tapTimer = setTimeout(() => {
+                tapTimer = null;
+                this._detailEntity = light.entityId;
+                // Its own history entry, so back returns here rather than closing.
+                this._push();
+                this._renderSheet();
+            }, 300);
         });
 
         return tile;

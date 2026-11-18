@@ -33,7 +33,7 @@ unavailable entities differently.
   `off_color`). Switching and dimming show at once, before Home Assistant
   answers.
 - **Live while dragging**, like the Hue-like card: the lights follow the
-  slider on the card, in the dialog (group, single light, light tiles), the
+  slider on the card, in the dialog (group, single light), the
   colour wheel and the white bar while you drag. At most five steps a second
   for one light and one a second for groups, each only after Home Assistant
   confirmed the previous one; on release exactly the end value is sent. The
@@ -43,7 +43,7 @@ unavailable entities differently.
   tiles in their colours, group brightness, a colour
   wheel and a colour-temperature bar (limited to the range all lights support),
   and one tile per light with its own switch (tap: the light's detail view,
-  drag: dim, hold: Home Assistant's own detail view of that light). Resolved groups keep their own
+  double tap or hold: Home Assistant's own detail view of that light). Resolved groups keep their own
   block with their own counter and switch. A master switch sits in the header.
   Escape and the browser's back gesture close the dialog (from a light's detail
   view they first return to the group). On a phone (below 450 px width or
