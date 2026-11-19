@@ -204,6 +204,8 @@ und ein Test auf doppelte Top-Level-Namen im Bundle.
 
 ## Geprüft
 
+**19.11.2026 · 0.13.3, Buschcheck Etappe F (#1301, Tag `v0.13.3`)** — Farb-/Kelvin-Vorschau endet erst bei erreichtem Wert (rgb ±8, Kelvin ±50, passender `color_mode`) oder nach 4 s; fremder `context` zählt wie keiner (Nutzerentscheid 19.11.) (M37). 104 Node-Tests. Abschlusslauf `karten-20261119-114355-b75c2d` grün (52/52, 1492 Node-Tests, Block `statisch` grün), `--beleg-pruefen` gleich; Bilder gegen den Vorlauf am Bild geprüft (Sonnet), `dialog-white` zeigt gewollt die gehaltene Weißvorschau.
+
 **18.11.2026 · 0.13.2, Buschcheck Etappe C (#1278, Tag `v0.13.2`)** — XSS-Payloadtests für Karte, Dialog und Detailansicht und CI-Schritt Sinks (M19), Shared UI 0.4.0. Sichtbar unverändert. 100 Node-Tests. Abschlusslauf `karten-20261118-143236-199107` grün (55/55, 2159 Node-Tests, Block `statisch` mit `sinks` grün), `--beleg-pruefen` gleich; Bilder gegen Etappe B am Bild geprüft (Sonnet), Abweichungen gewollt oder Rauschen (Uhrzeit, Kacheln, Markenlogo aus dem Netz).
 
 **18.11.2026 · main nach 0.13.1, Buschcheck Etappe B (#1271, kein Tag)** — Testkit `tests/_testkit.cjs` (M5); dist unverändert. 71 Node-Tests. Abschlusslauf `karten-20261118-131312-6dd1c4` grün (51/51, 1003 Node-Tests, Block `statisch` grün), `--beleg-pruefen` gleich; Bilder gegen Etappe A: 1836/1901 bytegleich, Rest Uhrzeit-/Animationsrauschen.
