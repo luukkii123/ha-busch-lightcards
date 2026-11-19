@@ -373,7 +373,7 @@ const BuschUI = (() => {
  * docs/entwicklung.md for why.
  */
 
-const CARD_VERSION = '0.15.0';
+const CARD_VERSION = '0.16.0';
 /**
  * M68: getCardSize's estimate in px, read off the card CSS (.main padding
  * 2 x 16, row gap 4 + one status line, the M27 state block with icon, title
