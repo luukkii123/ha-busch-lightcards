@@ -47,6 +47,12 @@ try:
 except ImportError:
     REGELN_DA = False
 
+# CI mode (job `contracts`, .github/ci-contracts.txt): no /work at all, so no
+# regeln.py by design. The rule judgements are then kein_urteil and do not fail
+# the run; every card, dialog and editor check still counts. With /work present
+# (local runner) a missing regeln.py stays a failure.
+CI_MODUS = not REGELN_DA and not Path("/work").exists()
+
 
 
 def serve(directory, port_holder):
@@ -2913,7 +2919,8 @@ def main():
                        and not report["pageErrors"]
                        and not report["vendorRequests"]
                        and report.get("uiRegelnVerstoesse", 0) == 0
-                       and REGELN_DA)
+                       and (REGELN_DA or CI_MODUS))
+    report["ciModus"] = CI_MODUS
 
     (out_dir / "report.json").write_text(
         json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -2941,7 +2948,9 @@ def main():
                      st.get("ellipsis_nicht_gemeldet"),
                      st.get("ellipsis_als_gekuerzt_gezaehlt")))
     else:
-        print("UI-Regeln: NICHT gemessen — regeln.py fehlt (/work nicht gemountet)")
+        print("UI-Regeln: NICHT gemessen — regeln.py fehlt (/work nicht gemountet)"
+              + (" — CI-Modus: kein_urteil, zaehlt nicht als Fehler" if CI_MODUS
+                 else " — Fehler: /work ist da, regeln.py fehlt"))
     print(f"requests={len(report['requests'])} bad={len(report['badResponses'])} "
           f"failures={len(report['requestFailures'])} "
           f"consoleErrors={len(report['consoleErrors'])} pageErrors={len(report['pageErrors'])}")
