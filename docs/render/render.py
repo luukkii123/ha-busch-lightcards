@@ -211,6 +211,22 @@ RASTER_JS = """() => {
     const gap = parseFloat(style0.columnGap) || 0;
     const columns = [];
     widths.reduce((x, w) => { columns.push(Math.round(x)); return x + w + gap; }, box0.left);
+    // Column edges of every grid in px. The template strings themselves differ
+    // in subpixels (99.1875px vs 99.2031px: the browser hands out the rounding
+    // remainder per grid), so they are compared as edges with a 1 px tolerance;
+    // a real indent or a different column count still fails.
+    const edgesOf = (g) => {
+        const st = getComputedStyle(g), left = g.getBoundingClientRect().left;
+        const gp = parseFloat(st.columnGap) || 0, out = [];
+        st.gridTemplateColumns.split(' ').map(parseFloat)
+            .reduce((x, w) => { out.push(x); return x + w + gp; }, left);
+        return out;
+    };
+    const edges0 = edgesOf(grids[0]);
+    const edgeMismatch = grids.slice(1).map((g, i) => ({ grid: i + 1, edges: edgesOf(g) }))
+        .filter(e => e.edges.length !== edges0.length
+                     || e.edges.some((x, k) => Math.abs(x - edges0[k]) > 1))
+        .map(e => ({ grid: e.grid, edges: e.edges.map(x => Math.round(x * 100) / 100) }));
     const tiles = Array.from(sr.querySelectorAll('.tiles > .tile'));
     const xs = tiles.map(t => Math.round(t.getBoundingClientRect().left));
     const nested = Array.from(sr.querySelectorAll('.group.nested'));
@@ -219,6 +235,7 @@ RASTER_JS = """() => {
         templates: Array.from(new Set(grids.map(g => getComputedStyle(g).gridTemplateColumns))),
         gridLefts: Array.from(new Set(grids.map(g => Math.round(g.getBoundingClientRect().left)))),
         columns,
+        edgeMismatch,
         tiles: xs.length,
         offRaster: xs.filter(x => !columns.some(c => Math.abs(c - x) <= 1)),
         heads: Array.from(sr.querySelectorAll('.group-head')).map(h => h.getBoundingClientRect().height),
@@ -229,7 +246,9 @@ RASTER_JS = """() => {
 
 
 def raster_ok(r):
-    return (r.get("grids", 0) >= 2 and len(r["templates"]) == 1 and len(r["gridLefts"]) == 1
+    # Grids are compared by column edges (±1 px, see RASTER_JS), not by their
+    # template strings, which differ in subpixels between identical grids.
+    return (r.get("grids", 0) >= 2 and not r.get("edgeMismatch", [None]) and len(r["gridLefts"]) == 1
             and r["tiles"] > 0 and not r["offRaster"]
             and r["heads"] and all(h >= 43.5 for h in r["heads"])
             and r["nestedLines"] and all(w == "2px" for w in r["nestedLines"])
