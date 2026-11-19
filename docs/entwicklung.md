@@ -148,6 +148,13 @@ Szenen dieses Attribut; Szenen ohne Mitgliederliste (z. B. Hue-eigene) würden
 nicht erscheinen. Aktiv: zuletzt aktivierte Szene, solange die Lampe sich
 nicht mehr als 10 s danach geändert hat (HA meldet keine aktive Szene).
 Effekte bis 12 als Chips, darüber `<select>` (live bis 504 Einträge).
+Seit M65 (Buschcheck W18) sind die Szenen der Lampe dieselben Kacheln wie die
+konfigurierten Szenen des Gruppendialogs (`_makeSceneTile`, Raster `.scenes`;
+aktiv mit Ring, Häkchen und `aria-pressed`), und beide Ansichten folgen einer
+Reihenfolge: Kopf, Szenen, Helligkeit, Farbe/Weiß, dann Lampen bzw. Effekte.
+Das Farbrad ist 220 CSS-px groß; die 440 px im Befund waren Bildpunkte der
+Aufnahmen mit `device_scale_factor=2`. `render.py` misst Reihenfolge,
+Kachelmaß, Radgröße ≤ 240 px am Handy und abgeschnittene Bedienelemente.
 
 ## Prüfung
 

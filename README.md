@@ -50,11 +50,12 @@ unavailable entities differently.
   500 px height) the dialog fills the screen inside the system bars, above
   that it is centred; its header stays put while the content scrolls, and the
   dashboard behind it does not move.
-- **Light detail view**: brightness, colour and white, plus the Home Assistant
-  scenes that contain this light and the light's own effects (`effect_list`),
-  each only when there is something to show. The scene activated last is
-  marked as long as the light has not changed since; the current effect is
-  marked too. Up to 12 effects are buttons, longer lists (some lights ship
+- **Light detail view**: in the same order as the group view, the Home
+  Assistant scenes that contain this light (the same tiles as the group's
+  scenes), brightness, colour and white, then the light's own effects
+  (`effect_list`), each only when there is something to show. The scene
+  activated last is marked with a ring and a check as long as the light has
+  not changed since; the current effect is marked too. Up to 12 effects are buttons, longer lists (some lights ship
   hundreds) are a drop-down list.
 - **Visual editor** with a live preview of the resolution, one-click import of
   every scene that uses the card's lights, and German and English texts

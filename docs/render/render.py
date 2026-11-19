@@ -2351,11 +2351,34 @@ def main():
                 await new Promise(r => setTimeout(r, 350)); // #1254: double-tap window
             }
             const r = sheet.getBoundingClientRect();
+            // M65: section order, scene tiles and colour wheel, measured.
+            const order = [];
+            const walk = (node) => Array.from(node.children).forEach(c => {
+                if (c.tagName === 'H3') order.push('h3:' + c.textContent.replace(/ \(\d+\)$/, ''));
+                else if (c.classList.contains('scenes')) order.push('scenes');
+                else if (c.classList.contains('dslider')) order.push('slider');
+                else if (c.classList.contains('wheelwrap') || c.classList.contains('tempbar')) order.push('picker');
+                else if (c.classList.contains('detail') || c.tagName === 'DIV' && !c.className) walk(c);
+            });
+            walk(sheet);
+            const wheel = sr.querySelector('canvas.wheel');
+            const sceneTiles = Array.from(sr.querySelectorAll('.scene')).map(t => {
+                const b = t.getBoundingClientRect();
+                return { left: b.left, right: b.right, width: b.width, height: b.height,
+                         radius: getComputedStyle(t).borderRadius, badge: !!t.querySelector('.badge') };
+            });
+            const parts = Array.from(sr.querySelectorAll('.scene, .tile, .dslider, .picker-tabs, canvas.wheel, .tempbar, .chips button, select.pick'));
+            const cut = parts.filter(c => { const b = c.getBoundingClientRect();
+                return b.width > 0 && (b.left < r.left - 1 || b.right > r.right + 1); }).length;
             return { top: r.top, bottom: r.bottom, left: r.left, right: r.right,
                      W: innerWidth, H: innerHeight,
                      scrollHeight: sheet.scrollHeight, clientHeight: sheet.clientHeight,
                      htmlOverflow: getComputedStyle(document.documentElement).overflow,
-                     wheel: !!sr.querySelector('canvas.wheel') };
+                     wheel: !!wheel,
+                     wheelWidth: wheel ? wheel.getBoundingClientRect().width : null,
+                     wheelHeight: wheel ? wheel.getBoundingClientRect().height : null,
+                     order, sceneTiles, cut,
+                     overflowX: sheet.scrollWidth > sheet.clientWidth + 1 };
         }"""
         dialog877 = []
         page.evaluate("""() => {
@@ -2438,6 +2461,30 @@ def main():
                   and x["htmlOverflowNachSchliessen"] != "hidden" for x in dialog877),
               json.dumps([(x["breite"], x["hoehe"], x["view"], x["pageY"], x["htmlOverflow"],
                            x["htmlOverflowNachSchliessen"]) for x in dialog877]))
+        # M65 (Buschcheck W18): one scene tile, one section order, a small wheel.
+        def reihenfolge_ok(x):
+            o = x["order"]
+            want = ["h3:Szenen", "scenes", "h3:Helligkeit", "slider", "picker"]
+            want += ["h3:Lampen"] if x["view"] == "gruppe" else []
+            got = [v for v in o if v in want]
+            return got == want
+        check("M65 both dialogs: header, scenes, brightness, colour, lights (5 sizes)",
+              all(reihenfolge_ok(x) for x in dialog877),
+              json.dumps([(x["breite"], x["hoehe"], x["view"], x["order"]) for x in dialog877
+                          if not reihenfolge_ok(x)], ensure_ascii=False))
+        kacheln = [t for x in dialog877 for t in x["sceneTiles"]]
+        check("M65 group and detail view show the same scene tile (height, radius, badge)",
+              all(x["sceneTiles"] for x in dialog877)
+              and len({(round(t["height"]), t["radius"], t["badge"]) for t in kacheln}) == 1,
+              json.dumps(sorted({(round(t["height"]), t["radius"], t["badge"]) for t in kacheln})))
+        check("M65 colour wheel at most 240 px on a phone",
+              all(x["wheelWidth"] is not None and x["wheelWidth"] <= 240 and x["wheelHeight"] <= 240
+                  for x in dialog877 if x["handy"] and x["wheel"]),
+              json.dumps([(x["breite"], x["hoehe"], x["view"], x["wheelWidth"]) for x in dialog877]))
+        check("M65/T877 nothing cut off: every control inside the sheet, no sideways scroll",
+              all(x["cut"] == 0 and not x["overflowX"] for x in dialog877),
+              json.dumps([(x["breite"], x["hoehe"], x["view"], x["cut"], x["overflowX"])
+                          for x in dialog877 if x["cut"] or x["overflowX"]]))
         check("#877 after turning the phone the dialog fits again",
               abs(gedreht["top"]) <= 1 and abs(gedreht["bottom"] - gedreht["H"]) <= 1,
               json.dumps(gedreht))
@@ -2467,7 +2514,7 @@ def main():
                     const sr = document.querySelector('busch-light-dialog').shadowRoot;
                     const sheet = sr.querySelector('.sheet');
                     const box = sheet.getBoundingClientRect();
-                    const ctrls = Array.from(sr.querySelectorAll('.chips button, select.pick'));
+                    const ctrls = Array.from(sr.querySelectorAll('.chips button, select.pick, .scenes .scene'));
                     const out = {
                         scenes: Array.from(sr.querySelectorAll('.lightscenes button')).map(b => b.textContent),
                         effectChips: sr.querySelectorAll('.effects button').length,

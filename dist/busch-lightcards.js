@@ -3781,6 +3781,8 @@ h3 {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
 }
+.scene.active { box-shadow: inset 0 0 0 3px currentColor; }
+.scene.active > span:last-child::before { content: '\\2713\\00a0'; }
 .scene[disabled] {
     background: var(--blc-d-scene-off);
     color: var(--blc-d-faint);
@@ -4506,6 +4508,11 @@ class BuschLightDialog extends HTMLElement {
             return;
         }
 
+        // M65: the same order as the group view — header, scenes, brightness,
+        // colour — and the same scene tiles. Real Home Assistant scenes that set
+        // this light come first; its own effects follow the colour (#885).
+        this._appendLightScenes(sheet, light);
+
         if (light.supportsBrightness) {
             wrap.appendChild(this._heading(translate(hass, 'brightness')));
             const id = light.entityId;
@@ -4542,34 +4549,6 @@ class BuschLightDialog extends HTMLElement {
             });
         }
 
-        // Real Home Assistant scenes that set this light, then the light's own
-        // effects: two kinds, two headings (#885).
-        const scenes = scenesForLights(hass, [light.entityId]);
-        if (scenes.length) {
-            const wish = this._sceneWish;
-            const wished = wish && wish.light === light.entityId && Date.now() < wish.until
-                && (hass.states[wish.scene] || {}).state === wish.from ? wish.scene : null;
-            const active = wished || activeSceneFor(hass, scenes, light);
-            sheet.appendChild(this._heading(translate(hass, 'scenes')));
-            sheet.appendChild(this._makeChips('lightscenes', scenes.map((id) => ({
-                label: hass.states[id].attributes.friendly_name || id,
-                active: id === active,
-                run: () => {
-                    const wish = { light: light.entityId, scene: id,
-                        from: hass.states[id].state, until: Date.now() + OPTIMISTIC_HOLD_MS };
-                    // Home Assistant shows its own error toast; the mark only has to go.
-                    const fail = () => {
-                        if (this._sceneWish !== wish) return;
-                        this._sceneWish = null;
-                        this._renderSheet();
-                    };
-                    this._sceneWish = wish;
-                    Promise.resolve(this._hass.callService('scene', 'turn_on', { entity_id: id })).then(null, fail);
-                    this._renderSheet();
-                }
-            }))));
-        }
-
         const effects = light.effects;
         if (effects.length) {
             sheet.appendChild(this._heading(translate(hass, 'effects')));
@@ -4580,6 +4559,41 @@ class BuschLightDialog extends HTMLElement {
                     label: effect, active: effect === light.effect, run: () => run(effect)
                 }))));
         }
+    }
+
+    /**
+     * The Home Assistant scenes that set one light, as the group view's scene
+     * tiles (M65). The one activated last is marked (#885): a tap marks at once,
+     * a failed call drops the mark again.
+     */
+    _appendLightScenes(sheet, light) {
+        const hass = this._hass;
+        const scenes = scenesForLights(hass, [light.entityId]);
+        if (!scenes.length) return;
+        const wish = this._sceneWish;
+        const wished = wish && wish.light === light.entityId && Date.now() < wish.until
+            && (hass.states[wish.scene] || {}).state === wish.from ? wish.scene : null;
+        const active = wished || activeSceneFor(hass, scenes, light);
+        sheet.appendChild(this._heading(translate(hass, 'scenes')));
+        const row = document.createElement('div');
+        row.className = 'scenes lightscenes';
+        scenes.forEach((id) => row.appendChild(this._makeSceneTile({ entity: id }, {
+            active: id === active,
+            run: () => {
+                const next = { light: light.entityId, scene: id,
+                    from: hass.states[id].state, until: Date.now() + OPTIMISTIC_HOLD_MS };
+                // Home Assistant shows its own error toast; the mark only has to go.
+                const fail = () => {
+                    if (this._sceneWish !== next) return;
+                    this._sceneWish = null;
+                    this._renderSheet();
+                };
+                this._sceneWish = next;
+                Promise.resolve(this._hass.callService('scene', 'turn_on', { entity_id: id })).then(null, fail);
+                this._renderSheet();
+            }
+        })));
+        sheet.appendChild(row);
     }
 
     /** A long list as the platform's own picker: scrollable on a phone, type-ahead on a desktop. */
@@ -4650,9 +4664,19 @@ class BuschLightDialog extends HTMLElement {
         return button;
     }
 
-    _makeSceneTile(scene) {
+    /**
+     * One scene tile, the only scene look of the dialog (M65): the group view's
+     * configured scenes and a light's own scenes alike. `options.active` marks
+     * the current one beyond colour (ring and check, aria-pressed);
+     * `options.run` replaces the plain activation.
+     */
+    _makeSceneTile(scene, options = {}) {
         const button = document.createElement('button');
         button.className = 'scene';
+        if (options.active !== undefined) {
+            button.setAttribute('aria-pressed', options.active ? 'true' : 'false');
+            if (options.active) button.classList.add('active');
+        }
         const state = this._hass.states ? this._hass.states[scene.entity] : null;
         const missing = !state;
         const color = parseColor(scene.color) || parseColor(WARM_COLOR);
@@ -4685,7 +4709,7 @@ class BuschLightDialog extends HTMLElement {
             button.setAttribute('disabled', '');
             button.title = scene.entity + ' — ' + translate(this._hass, 'unreachable');
         } else {
-            button.addEventListener('click', () => this._model.activateScene(scene.entity));
+            button.addEventListener('click', options.run || (() => this._model.activateScene(scene.entity)));
         }
         return button;
     }
