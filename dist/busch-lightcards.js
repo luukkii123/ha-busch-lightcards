@@ -344,7 +344,11 @@ const BuschUI = (() => {
 /*
  * busch-lightcards — Hue-like light and scene control for Home Assistant.
  *
- * Contains exactly one card: `busch-light-card`.
+ * Cards in this bundle (window.customCards; tests/kopf.test.js keeps this
+ * list equal to the picker entries):
+ *   - `busch-light-card` — a light, switch or group with its scenes.
+ * Further elements, no cards of their own: `busch-light-dialog` (the
+ * control dialog) and `busch-light-card-editor` (the visual editor).
  *
  * Two things set this card apart from lovelace-hue-like-light-card, which
  * inspired its looks:
@@ -357,8 +361,8 @@ const BuschUI = (() => {
  *      calls skip the dead ones, and a missing entity_id renders as
  *      unavailable instead of throwing.
  *
- * No build step: this file is source and delivery in one. See the repository
- * README for why.
+ * No build step: this file is source and delivery in one. See
+ * docs/entwicklung.md for why.
  */
 
 const CARD_VERSION = '0.15.0';
