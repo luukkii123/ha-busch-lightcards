@@ -24,7 +24,7 @@ test('Zurück-Geste gibt die Seite wieder frei', () => {
   const u = neueUmgebung(), karte = neueKarte(u, neuesHaus({ an: true }));
   karte._openDialog();
   const dialog = karte._dialog;
-  for (const fn of u.kontext.window.listeners.popstate || []) fn({});
+  u.zurueck();
   assert.equal(dialog.isConnected, false, 'Dialog ist zu');
   assert.equal(seite(u) || '', '');
 });

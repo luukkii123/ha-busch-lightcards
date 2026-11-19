@@ -88,6 +88,7 @@ function neueUmgebung({ uhr, sprache = 'de' } = {}) {
     setPointerCapture() {} releasePointerCapture() {}
     getContext() { return { createImageData: (w, h) => { zaehler.createImageData++; return { width: w, height: h, data: new Uint8ClampedArray(w * h * 4) }; }, putImageData() {} }; }
     composedPath() { return []; }
+    getRootNode() { let w = this; while (w.parentNode) w = w.parentNode; return w; }
     all() { return [this, ...this.childNodes.flatMap((c) => c.all())]; }
     _passt(sel) {
       sel = sel.trim();
@@ -116,10 +117,29 @@ function neueUmgebung({ uhr, sprache = 'de' } = {}) {
     createElementNS(_ns, tag) { return new Element(tag); },
     addEventListener(t, fn) { (docListeners[t] ||= []).push(fn); },
     removeEventListener(t, fn) { docListeners[t] = (docListeners[t] || []).filter((f) => f !== fn); },
+    dispatchEvent(e) { for (const fn of [...(docListeners[e.type] || [])]) fn(e); return true; },
     querySelector() { return null; },
   };
   const fenster = { customCards: [], listeners: {}, addEventListener(t, fn) { (this.listeners[t] ||= []).push(fn); }, removeEventListener(t, fn) { this.listeners[t] = (this.listeners[t] || []).filter((f) => f !== fn); } };
-  const verlauf = { laenge: 1, pushState() { this.laenge++; }, back() {}, go() {} };
+  // A history stack like the browser's: state is a copy, pushState drops
+  // forward entries. back/go move at once; their popstate is delivered by the
+  // test (`zurueck`, or the listeners called directly), as it arrives later.
+  const verlauf = {
+    eintraege: [null], pos: 0,
+    get state() { return this.eintraege[this.pos]; },
+    get length() { return this.eintraege.length; },
+    pushState(state) {
+      this.eintraege = this.eintraege.slice(0, this.pos + 1);
+      this.eintraege.push(state == null ? null : JSON.parse(JSON.stringify(state)));
+      this.pos += 1;
+    },
+    replaceState(state) { this.eintraege[this.pos] = state == null ? null : JSON.parse(JSON.stringify(state)); },
+    back() { this.go(-1); },
+    go(n) {
+      const ziel = Math.max(0, Math.min(this.eintraege.length - 1, this.pos + (Number(n) || 0)));
+      this.pos = ziel;
+    },
+  };
   const kontext = {
     console: { info() {}, warn() {}, error() {}, log() {} },
     window: fenster, document, history: verlauf, location: { href: 'http://ha/lovelace/0' },
@@ -132,7 +152,11 @@ function neueUmgebung({ uhr, sprache = 'de' } = {}) {
   kontext.globalThis = kontext;
   vm.createContext(kontext);
   vm.runInContext(fs.readFileSync(KARTE, 'utf8'), kontext, { filename: 'busch-lightcards.js' });
-  return { uhr, kontext, document, body, registry, zaehler, neuesEreignis };
+  fenster.history = verlauf; // shared UI reads window.history
+  /** The phone's back gesture: one step back, popstate arrives. */
+  const popstate = () => { for (const fn of [...(fenster.listeners.popstate || [])]) fn({ type: 'popstate', state: verlauf.state }); };
+  const zurueck = () => { verlauf.back(); popstate(); };
+  return { uhr, kontext, document, body, registry, zaehler, neuesEreignis, verlauf, zurueck, popstate };
 }
 
 // ---- hass ---------------------------------------------------------------

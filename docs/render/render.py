@@ -1345,7 +1345,9 @@ def main():
 
                 // --- Escape from the group view closes it
                 openCard(); await wait();
-                out.stateAfterOpen = history.state && history.state.buschLightDialog;
+                // M28: the shared dialog history (BuschUI.dialogHistory) names its entries.
+                out.stateAfterOpen = history.state && history.state.buschUiDialog
+                    ? history.state.buschUiDialog.name : null;
                 esc(); await wait();
                 out.closedByEscape = !dlg();
 
@@ -1358,7 +1360,8 @@ def main():
                 //     and only the next back closes
                 openCard(); await wait();
                 await openDetail(); await wait();
-                out.stateInDetail = history.state && history.state.buschLightDialog;
+                out.stateInDetail = history.state && history.state.buschUiDialog
+                    ? history.state.buschUiDialog.name : null;
                 out.detailTitle = dlg().shadowRoot.querySelector('.head h1').textContent;
                 history.back(); await wait();
                 out.stillOpenAfterFirstBack = !!dlg();
@@ -1396,13 +1399,13 @@ def main():
         report["backButton"] = back
 
         check("the dialog takes a history entry of its own when it opens",
-              back["stateAfterOpen"] == 1, json.dumps(back["stateAfterOpen"]))
+              back["stateAfterOpen"] == "busch-light-dialog", json.dumps(back["stateAfterOpen"]))
         check("Escape closes the dialog",
               back["closedByEscape"] is True, str(back["closedByEscape"]))
         check("the phone's back gesture closes the dialog",
               back["closedByBack"] is True, str(back["closedByBack"]))
         check("back from a light's detail view returns to the group first",
-              back["stateInDetail"] == 2
+              back["stateInDetail"] == "busch-light-dialog-detail"
               and back["detailTitle"] == "Cosy Corner"
               and back["stillOpenAfterFirstBack"] is True
               and back["titleAfterFirstBack"] == "LD Room A All Lights"

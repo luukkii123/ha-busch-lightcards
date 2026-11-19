@@ -169,3 +169,101 @@ test('M61 Dialog: Abschnittsüberschriften sind die eine Stufe-2-Überschrift (B
   assert.doesNotMatch(r, /font-size|font-weight/, 'Größe und Gewicht aus der Stufe 2');
   assert.match(r, /color: var\(--blc-d-text\)/, 'Textfarbe des Blatts, auch im dunklen Hue-Look');
 });
+
+// ── M28: history and focus trap from shared UI, the same X ───────────────────
+
+/** Opens the dialog the way a person does: a tap on the card. */
+function geoeffnet(u, haus) {
+  const karte = neueKarte(u, haus);
+  karte._openDialog();
+  return { karte, dialog: karte._dialog };
+}
+const eigene = (u) => u.verlauf.state && u.verlauf.state.buschUiDialog;
+const tippe = (u, dialog, name = 'light.steh') => {
+  const kachel = dialog._sheet.querySelectorAll('.tile').find((t) => t.querySelector('.tname').textContent === name);
+  const e = (type) => u.neuesEreignis(type, { pointerId: 7, clientX: 40, clientY: 40 });
+  kachel.dispatchEvent(e('pointerdown')); kachel.dispatchEvent(e('pointerup'));
+  u.uhr.vor(350); // #1254: double-tap window
+};
+
+test('M28 kein eigenes pushState/history.go und keine eigene Tab-Falle außerhalb des Shared-Blocks', () => {
+  const familie = QUELLE.slice(QUELLE.indexOf('/* END BUSCH SHARED UI */'));
+  assert.doesNotMatch(familie, /history\.pushState|history\.go\(|DIALOG_HISTORY_KEY/, 'Verlauf nur über BuschUI.dialogHistory');
+  assert.doesNotMatch(familie, /event\.key === 'Tab'/, 'Tab-Falle nur über BuschUI.focusTrap');
+  assert.match(familie, /BuschUI\.dialogHistory\(/);
+  assert.match(familie, /BuschUI\.focusTrap\(/);
+});
+
+test('M28 Verlauf: ein Eintrag je Ebene; Zurück schließt erst die Detailansicht, dann den Dialog, Seite bleibt', () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const vorher = u.verlauf.pos;
+  const { dialog } = geoeffnet(u, haus);
+  assert.equal(u.verlauf.pos, vorher + 1, 'ein Eintrag beim Öffnen');
+  assert.equal(eigene(u).name, 'busch-light-dialog');
+  tippe(u, dialog);
+  assert.equal(dialog._detailEntity, 'light.steh');
+  assert.equal(u.verlauf.pos, vorher + 2, 'Detailansicht mit eigenem Eintrag');
+  u.zurueck();
+  assert.equal(dialog.isConnected, true, 'erstes Zurück: Dialog bleibt');
+  assert.equal(dialog._detailEntity, null, 'zurück in der Gruppe');
+  u.zurueck();
+  assert.equal(dialog.isConnected, false, 'zweites Zurück schließt');
+  assert.equal(u.verlauf.pos, vorher, 'Seite nicht verlassen');
+});
+
+test('M28 Schließen-X aus der Detailansicht nimmt beide Einträge zurück, ohne verwaisten Eintrag', () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const vorher = u.verlauf.pos;
+  const { dialog } = geoeffnet(u, haus);
+  tippe(u, dialog);
+  const x = dialog._sheet.querySelector('.busch-dialog-close');
+  assert.ok(x, 'X trägt .busch-dialog-close');
+  x.click();
+  assert.equal(u.verlauf.pos, vorher + 1, 'erst der Eintrag der Detailansicht');
+  u.popstate();
+  assert.equal(u.verlauf.pos, vorher, 'dann der des Dialogs');
+  assert.equal(dialog.isConnected, true, 'zu erst, wenn der Verlauf angekommen ist (more-info danach)');
+  u.popstate();
+  assert.equal(dialog.isConnected, false);
+});
+
+test('M28 Escape: Detailansicht einen Schritt zurück (Eintrag weg), dann zu; ohne Ankunft schließt die Absicherung', () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const vorher = u.verlauf.pos;
+  const { dialog } = geoeffnet(u, haus);
+  tippe(u, dialog);
+  const esc = () => u.document.dispatchEvent(u.neuesEreignis('keydown', { key: 'Escape' }));
+  esc();
+  assert.equal(dialog._detailEntity, null);
+  assert.equal(dialog.isConnected, true);
+  assert.equal(u.verlauf.pos, vorher + 1, 'Eintrag der Detailansicht verbraucht');
+  u.popstate(); // lands on the dialog's own entry: nothing closes
+  assert.equal(dialog.isConnected, true);
+  esc();
+  assert.equal(u.verlauf.pos, vorher);
+  u.uhr.vor(400); // popstate never delivered: insurance
+  assert.equal(dialog.isConnected, false);
+});
+
+test('M28 Fokus: Tab kreist im Blatt, nach dem Schließen zurück auf die Karte; X steht links vor dem Zurück-Pfeil', () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const karte = neueKarte(u, haus);
+  karte._tap.focus();
+  u.document.activeElement = karte;
+  karte._openDialog();
+  const dialog = karte._dialog;
+  const tab = (shift) => u.document.dispatchEvent(u.neuesEreignis('keydown', { key: 'Tab', shiftKey: !!shift }));
+  const fokus = () => dialog.shadowRoot.activeElement;
+  const erstes = fokus();
+  assert.ok(erstes && klassen(erstes).includes('busch-dialog-close'), 'Fokus beginnt auf dem X');
+  tab(true);
+  assert.notEqual(fokus(), erstes, 'Shift+Tab springt ans Ende');
+  tab();
+  assert.equal(fokus(), erstes, 'Tab kreist zurück zum Anfang');
+  tippe(u, dialog);
+  const kopf = dialog._sheet.querySelector('.head').querySelectorAll('.iconbtn');
+  assert.deepEqual(kopf.map((k) => k.getAttribute('aria-label')), ['Schließen', 'Zurück'], 'X links, dann Zurück (Tab-Reihenfolge = Bild)');
+  kopf[0].click(); u.popstate(); u.popstate();
+  assert.equal(dialog.isConnected, false);
+  assert.equal(karte.shadowRoot.activeElement, karte._tap, 'Fokus zurück auf die Karte');
+});

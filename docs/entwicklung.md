@@ -33,7 +33,13 @@
   umfasst den Schnitt der unterstützten Bereiche aller Mitglieder.
 - Geschlossen wird der Dialog mit Escape und der Zurück-Geste; er legt dafür
   einen eigenen History-Eintrag an. Ein Klick auf den Hintergrund schließt ihn
-  nicht (Steuerungsdialog).
+  nicht (Steuerungsdialog). Seit M28 (Buschcheck Etappe H) kommen Verlauf und
+  Fokusfalle aus Shared UI (`BuschUI.dialogHistory`, je Ebene ein Eintrag:
+  Dialog und Detailansicht; `BuschUI.focusTrap`); das X ist `.busch-dialog-close`
+  oben links in beiden Ansichten, der Zurück-Pfeil steht rechts daneben. Das X
+  nimmt die Einträge nacheinander zurück und schließt erst, wenn der letzte
+  angekommen ist (300 ms Absicherung je Schritt), damit HAs Detailansicht nach
+  einem Halten nicht vom späten Zurück geschlossen wird.
 - Sections-Layout: `getGridOptions()` gibt nur Spalten zurück, keine Zeilen;
   die Höhe misst Home Assistant am Inhalt.
 

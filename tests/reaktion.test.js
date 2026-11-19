@@ -175,7 +175,7 @@ test('Dialog: Doppeltipp auf eine Lampenkachel öffnet HAs Detailansicht, nicht 
   kachel.dispatchEvent(e('pointerdown')); kachel.dispatchEvent(e('pointerup'));
   u.uhr.vor(150);
   kachel.dispatchEvent(e('pointerdown')); kachel.dispatchEvent(e('pointerup'));
-  for (const fn of u.kontext.window.listeners.popstate || []) fn({});
+  u.popstate(); // the close's history step lands
   u.uhr.vor(600);
   assert.deepEqual(info, ['light.steh'], 'ein hass-more-info');
   assert.equal(dialog._detailEntity, null, 'keine eigene Detailansicht');
@@ -200,14 +200,14 @@ test('Dialog: Halten einer Lampenkachel öffnet HAs Detailansicht, Tippen weiter
   assert.equal(dialog._detailEntity, 'light.steh', 'Tippen öffnet die eigene Detailansicht');
   u.uhr.vor(600);
   assert.deepEqual(info, [], 'Tippen öffnet kein more-info');
-  for (const fn of u.kontext.window.listeners.popstate || []) fn({});
+  u.zurueck(); // back gesture
   assert.equal(dialog._detailEntity, null, 'zurück zur Gruppe');
   // Halten: Dialog zu, danach HAs more-info
   const kachel = steh();
   kachel.dispatchEvent(e('pointerdown'));
   u.uhr.vor(600);
   assert.deepEqual(info, [], 'erst nach dem Schließen, sonst schließt der History-Rücksprung HAs Ansicht');
-  for (const fn of u.kontext.window.listeners.popstate || []) fn({});
+  u.popstate(); // the close's history step lands
   kachel.dispatchEvent(e('pointerup'));
   assert.deepEqual(info, ['light.steh'], 'ein hass-more-info für die gehaltene Lampe');
   assert.equal(dialog.isConnected, false, 'eigener Dialog zu, sonst läge er über HAs Detailansicht');

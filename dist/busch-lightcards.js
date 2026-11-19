@@ -360,9 +360,6 @@ const CARD_TAG = 'busch-light-card';
 const DIALOG_TAG = 'busch-light-dialog';
 const EDITOR_TAG = 'busch-light-card-editor';
 
-/** Marks the history entries the dialog pushes for the back gesture. */
-const DIALOG_HISTORY_KEY = 'buschLightDialog';
-
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -4204,51 +4201,23 @@ class BuschLightDialog extends HTMLElement {
         this._pendingUpdate = false;
         this._pickerDraft = null;
         this._pickerContext = null;
-        // How many history entries this dialog has pushed. Back consumes them.
-        this._depth = 0;
+        // M28: the shared dialog history (one entry for the dialog, one for a
+        // light's detail view) and the shared focus trap.
+        this._history = null;
+        this._detailHistory = null;
+        this._trap = null;
         this._closing = false;
         this._closed = false;
-        this._returnFocus = null;
         this._seen = null; // what the last sheet read, see watchSnapshot()
         this._live = new Map(); // one live session per control (#715)
         this._themeKeys = [];
         this._viewKey = undefined;
+        // Tab and Shift+Tab belong to BuschUI.focusTrap; Escape is one step back.
         this._onKey = (event) => {
-            if (event.key === 'Tab') {
-                const controls = this._focusable();
-                const active = this.shadowRoot.activeElement;
-                const index = controls.indexOf(active);
-                if (!controls.length) { event.preventDefault(); this._sheet.focus(); return; }
-                if (event.shiftKey && index <= 0) {
-                    event.preventDefault(); controls[controls.length - 1].focus();
-                } else if (!event.shiftKey && (index < 0 || index === controls.length - 1)) {
-                    event.preventDefault(); controls[0].focus();
-                }
-                return;
-            }
             if (event.key !== 'Escape') return;
             event.preventDefault();
             event.stopPropagation();
             this._goBack();
-        };
-        this._onFocus = (event) => {
-            if (this.isConnected && !event.composedPath().includes(this)) this._focusFirst();
-        };
-        this._onPop = () => {
-            if (this._closing) {
-                this._closing = false;
-                this._dismiss();
-                return;
-            }
-            if (this._detailEntity) {
-                // Back out of one light's detail view, not out of the dialog.
-                this._depth = Math.max(0, this._depth - 1);
-                this._detailEntity = null;
-                this._renderSheet();
-                return;
-            }
-            this._depth = 0;
-            this._dismiss();
         };
     }
 
@@ -4310,51 +4279,61 @@ class BuschLightDialog extends HTMLElement {
     }
 
     connectedCallback() {
-        let active = document.activeElement;
-        while (active && active.shadowRoot && active.shadowRoot.activeElement) active = active.shadowRoot.activeElement;
-        this._returnFocus = active;
+        if (!this._built) this._build();
         document.addEventListener('keydown', this._onKey);
-        document.addEventListener('focusin', this._onFocus, true);
-        window.addEventListener('popstate', this._onPop);
         OPTIMISTIC_VIEWS.add(this);
         // #877: the dashboard behind must not scroll along with the sheet.
         const page = document.documentElement.style;
         this._pageOverflow = page.overflow;
         page.overflow = 'hidden';
-        // The phone's back gesture is a history navigation. Without an entry
-        // of its own the dialog would stay open and the whole dashboard would
-        // be left instead.
-        this._push();
-        this._focusFirst();
+        // M28: the phone's back gesture is a history navigation. The shared
+        // dialog history gives the dialog one entry of its own, so back closes
+        // it instead of leaving the dashboard (private modes: no entry, Escape
+        // and the X still work).
+        this._history = BuschUI.dialogHistory({
+            name: DIALOG_TAG,
+            onClose: () => { if (this.isConnected) this._dismiss(); }
+        });
+        // R04: focus stays in the sheet and returns where it came from.
+        this._trap = BuschUI.focusTrap(this._sheet);
+        if (!this._focusable().length) this._sheet.focus();
     }
 
     disconnectedCallback() {
         document.removeEventListener('keydown', this._onKey);
-        document.removeEventListener('focusin', this._onFocus, true);
-        window.removeEventListener('popstate', this._onPop);
         OPTIMISTIC_VIEWS.delete(this);
         document.documentElement.style.overflow = this._pageOverflow || '';
-        if (this._returnFocus && this._returnFocus.isConnected) this._returnFocus.focus();
+        // Removed from outside: the history stays as it is (a late popstate
+        // finds the dialog disconnected and does nothing).
+        if (this._trap) this._trap.release();
+        this._trap = null;
     }
 
-    /** Adds one history entry, keeping the URL as it is. */
-    _push() {
-        try {
-            history.pushState({ [DIALOG_HISTORY_KEY]: this._depth + 1 }, '', location.href);
-            this._depth += 1;
-        } catch (e) {
-            // Private modes and rate limits can refuse this. Escape and the
-            // close button still work; only the back gesture is lost.
-        }
+    /** A tap on a light tile: that light's detail view, with its own history entry. */
+    _openDetail(entityId) {
+        if (this._detailHistory) this._detailHistory.close();
+        this._detailEntity = entityId;
+        // Back returns to the group view rather than closing the dialog.
+        this._detailHistory = BuschUI.dialogHistory({
+            name: DIALOG_TAG + '-detail',
+            onClose: () => {
+                this._detailHistory = null;
+                if (!this.isConnected || this._closing) return;
+                this._detailEntity = null;
+                this._renderSheet();
+            }
+        });
+        this._renderSheet();
     }
 
     /** Escape and the header's arrow: one step back, not always all the way out. */
     _goBack() {
         if (this._detailEntity) {
-            if (this._depth > 1) {
-                history.back(); // the popstate handler returns to the group view
-                return;
-            }
+            // The detail view's entry goes (history.back only while it is on
+            // top); the dialog's own entry then lies on top again.
+            const detail = this._detailHistory;
+            this._detailHistory = null;
+            if (detail) detail.close();
             this._detailEntity = null;
             this._renderSheet();
             return;
@@ -4362,20 +4341,44 @@ class BuschLightDialog extends HTMLElement {
         this.close();
     }
 
+    /**
+     * The X, Escape in the group view, a hold on a tile: out of the dialog.
+     * Each history entry is taken back in turn, the detail view's first; the
+     * dialog goes once the last step has landed, so an action that follows
+     * (hass-more-info opens HA's dialog with its own entry) is not undone by
+     * a late back. Insurance per step: 300 ms without popstate.
+     */
     close() {
-        if (this._depth > 0) {
-            const steps = this._depth;
-            this._depth = 0;
-            this._closing = true;
-            history.go(-steps);
-            // Insurance: if popstate never arrives, the dialog must not stay
-            // stuck open.
-            setTimeout(() => {
-                if (this.isConnected) this._dismiss();
-            }, 300);
-            return;
-        }
-        this._dismiss();
+        if (this._closing || this._closed) return;
+        this._closing = true;
+        const steps = [this._detailHistory, this._history].filter((handle) => handle && handle.active);
+        this._detailHistory = null;
+        const next = () => {
+            const handle = steps.shift();
+            if (!handle) {
+                this._dismiss();
+                return;
+            }
+            const lands = handle.pushed && (history.state || {}).buschUiDialog?.id === handle.id;
+            if (!lands) {
+                handle.close();
+                next();
+                return;
+            }
+            let done = false;
+            let timer = null;
+            const step = () => {
+                if (done) return;
+                done = true;
+                window.removeEventListener('popstate', step);
+                clearTimeout(timer);
+                next();
+            };
+            window.addEventListener('popstate', step);
+            timer = setTimeout(step, 300);
+            handle.close();
+        };
+        next();
     }
 
     _dismiss() {
@@ -4435,14 +4438,9 @@ class BuschLightDialog extends HTMLElement {
         }
     }
 
+    /** The sheet's controls in tab order, as the focus trap sees them. */
     _focusable() {
-        return Array.from(this._sheet.querySelectorAll('button, input, select, textarea, [tabindex]'))
-            .filter((node) => !node.disabled && node.tabIndex >= 0 && node.getClientRects().length);
-    }
-
-    _focusFirst() {
-        if (!this._sheet || !this.isConnected) return;
-        (this._focusable()[0] || this._sheet).focus();
+        return this._trap ? this._trap.items() : [];
     }
 
     _renderSheet() {
@@ -4477,16 +4475,18 @@ class BuschLightDialog extends HTMLElement {
         const head = document.createElement('div');
         head.className = 'head';
 
+        // Rule 2, anatomy (M28): the close X sits top LEFT, the family's
+        // .busch-dialog-close, in both views. In the detail view the back
+        // arrow follows it, so tab order and picture agree.
+        const closeX = this._makeIconButton('mdi:close', () => this.close());
+        closeX.classList.add('busch-dialog-close');
+        head.appendChild(closeX);
+
         if (this._detailEntity) {
             const back = this._makeIconButton('mdi:arrow-left', () => this._goBack());
             back.title = translate(hass, 'back');
             head.appendChild(back);
         }
-
-        // Rule 2, anatomy: the close X sits top LEFT, ahead of the title. In
-        // the detail view the back arrow keeps the first place — it is the
-        // narrower step, and the X beside it still closes the whole dialog.
-        head.appendChild(this._makeIconButton('mdi:close', () => this.close()));
 
         const who = document.createElement('div');
         who.className = 'who';
@@ -5019,10 +5019,7 @@ class BuschLightDialog extends HTMLElement {
             }
             tapTimer = setTimeout(() => {
                 tapTimer = null;
-                this._detailEntity = light.entityId;
-                // Its own history entry, so back returns here rather than closing.
-                this._push();
-                this._renderSheet();
+                this._openDetail(light.entityId);
             }, 300);
         });
 
