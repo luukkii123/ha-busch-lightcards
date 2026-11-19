@@ -79,6 +79,12 @@
 - Leistung wie 0.8.3+4f0ab11: gemalt wird nur nach eigener Zustandsänderung,
   und dann nur, was sich geändert hat; der Verlauf wird nur bei neuen Farben
   neu gesetzt (Test `tests/farbe.test.js`).
+- Lampenraster (M78, Buschcheck W22): Szenen und Lampen stehen auf einem
+  Raster `repeat(auto-fill, minmax(94px, 1fr))`. Eine Untergruppe wird nicht
+  eingerückt, ihre Kacheln beginnen auf denselben Spalten wie die der
+  Hauptgruppe; markiert ist sie durch eine 2-px-Linie in der 16-px-Rinne des
+  Blatts. Ihr Kopf ist eine 44-px-Zeile (Zielgröße des Schalters).
+  `render.py` misst die x-Lagen aller Kacheln (`lampRaster`).
 
 ## Live-Update und Bediengefühl (seit 0.10.0, #715)
 

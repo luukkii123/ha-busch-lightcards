@@ -4258,8 +4258,20 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 
 /* One block per resolved group, so thirty lamps behind one card stay readable. */
 .group + .group { margin-top: 14px; }
-.group.nested { border-left: 2px solid var(--blc-d-line); padding-left: 12px; }
-.group-head { display: flex; align-items: center; gap: 8px; padding: 4px 0 8px; }
+/* M78 (Buschcheck W22): a nested group is not indented. Its tiles stand on
+   the same auto-fill columns as the root's; a 2 px line in the sheet's 16 px
+   gutter marks it, and its header is one 44 px row (the switch's target). */
+.group.nested { position: relative; }
+.group.nested::before {
+    content: '';
+    position: absolute;
+    left: -9px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--blc-d-line);
+}
+.group-head { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0; margin-bottom: 4px; }
 .group-head ha-icon { --mdc-icon-size: 18px; color: var(--blc-d-muted); flex-shrink: 0; }
 .group-head .gname {
     flex: 1; min-width: 0; font-size: ${BuschUI.tokens.fontSizeM}; font-weight: var(--ha-font-weight-medium, 500);

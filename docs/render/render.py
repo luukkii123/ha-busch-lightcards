@@ -196,6 +196,42 @@ PAGE = """<!doctype html>
 """
 
 
+# M78: the dialog's lamp raster, measured in the open busch-light-dialog.
+RASTER_JS = """() => {
+    const sr = document.querySelector('busch-light-dialog').shadowRoot;
+    const grids = Array.from(sr.querySelectorAll('.tiles'));
+    if (!grids.length) return { grids: 0 };
+    const style0 = getComputedStyle(grids[0]);
+    const box0 = grids[0].getBoundingClientRect();
+    const widths = style0.gridTemplateColumns.split(' ').map(parseFloat);
+    const gap = parseFloat(style0.columnGap) || 0;
+    const columns = [];
+    widths.reduce((x, w) => { columns.push(Math.round(x)); return x + w + gap; }, box0.left);
+    const tiles = Array.from(sr.querySelectorAll('.tiles > .tile'));
+    const xs = tiles.map(t => Math.round(t.getBoundingClientRect().left));
+    const nested = Array.from(sr.querySelectorAll('.group.nested'));
+    return {
+        grids: grids.length,
+        templates: Array.from(new Set(grids.map(g => getComputedStyle(g).gridTemplateColumns))),
+        gridLefts: Array.from(new Set(grids.map(g => Math.round(g.getBoundingClientRect().left)))),
+        columns,
+        tiles: xs.length,
+        offRaster: xs.filter(x => !columns.some(c => Math.abs(c - x) <= 1)),
+        heads: Array.from(sr.querySelectorAll('.group-head')).map(h => h.getBoundingClientRect().height),
+        nestedLines: nested.map(b => getComputedStyle(b, '::before').width),
+        nestedPadding: nested.map(b => getComputedStyle(b).paddingLeft),
+    };
+}"""
+
+
+def raster_ok(r):
+    return (r.get("grids", 0) >= 2 and len(r["templates"]) == 1 and len(r["gridLefts"]) == 1
+            and r["tiles"] > 0 and not r["offRaster"]
+            and r["heads"] and all(h >= 43.5 for h in r["heads"])
+            and r["nestedLines"] and all(w == "2px" for w in r["nestedLines"])
+            and all(p == "0px" for p in r["nestedPadding"]))
+
+
 def deep_merge(base, override):
     """Merges the scenario overrides onto the captured states."""
     out = json.loads(json.dumps(base))
@@ -1039,9 +1075,17 @@ def main():
               and grouped["bareTiles"] == 4,
               json.dumps({"names": grouped["names"],
                           "bare": grouped["bareTiles"]}, ensure_ascii=False))
-        check("a nested group is indented and marked as nested",
+        check("a nested group is marked as nested",
               grouped["depths"] == ["1"] and grouped["nested"] == [True],
               json.dumps({"depths": grouped["depths"], "nested": grouped["nested"]}))
+        # M78 (Buschcheck W22): measured, not looked at. Every tile of every
+        # grid stands on a column of the first grid, all grids share one column
+        # template and one left edge, the nested group carries its 2 px line
+        # and every group header is a 44 px row.
+        raster = page.evaluate(RASTER_JS)
+        report["lampRaster"] = raster
+        check("M78 all lamp tiles on one x raster, nested group not indented, header 44 px",
+              raster_ok(raster), json.dumps(raster))
         check("the group header counts only its own reachable lights",
               grouped["counts"] == ["2/2"],
               json.dumps(grouped["counts"]))
