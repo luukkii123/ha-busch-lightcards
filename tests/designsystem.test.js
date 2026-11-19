@@ -361,6 +361,19 @@ test('M26 Renderbeleg vorbereitet: Kontrast/Touch für Karte und Dialog (Thema u
   }
 });
 
+// #1323 M76: at 844 px the full-screen sheet scrolls; rule 1 must use the sheet's scroll area as its frame
+// (as regel1_dialog does with a taller window), not the visible 844 px, or tiles below the fold read "ausserhalb".
+test('M76 Renderbeleg: Regel 1 der Handydialoge misst am ganzen Blatt (Scrollfläche), Breite bleibt', () => {
+  const render = fs.readFileSync(path.join(__dirname, '..', 'docs', 'render', 'render.py'), 'utf8');
+  const fn = render.slice(render.indexOf('def m76_regel1('), render.indexOf('return text, rahmen'));
+  assert.ok(fn.length > 0, 'm76_regel1 fehlt');
+  assert.match(fn, /set_viewport_size\(\{"width": breite, "height": int\(hoehe\)\}\)/, 'nur die Höhe wächst');
+  assert.match(fn, /messe_text\(pg, "\.sheet"\)/);
+  assert.match(fn, /"ganzesBlatt": s\["scrollHeight"\] <= s\["clientHeight"\] \+ 1/);
+  assert.match(render, /"text": text,\s*"regel1Rahmen": rahmen/);
+  assert.match(render, /check\("M76 rule 1 measured on the whole sheet/);
+});
+
 // Etappe H follow-up (#1312), remaining findings of the computation: editor add button (primary text 2.6:1), warning note
 // (2.0:1) and the fallback message in dark (red on a dark card 4.0:1 or less) reach 4.5:1. Same formula as
 // hacs/scripts/kontrast_touch.py; themes of regeln.py THEMA_CSS and the dark variant of docs/render/render.py.

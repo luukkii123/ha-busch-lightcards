@@ -2812,16 +2812,54 @@ def main():
                     shot = out_dir / f"m76-dialog-{view}-{breite}-{thema}.png"
                     pg.screenshot(path=str(shot))
                     report["screenshots"].append(shot.name)
+                    kontrast = messe_kontrast_touch_hier(pg, ".sheet", ausnahmen=HERE / "kontrast-ausnahmen.json")
+                    text, rahmen = m76_regel1(pg, breite)
                     return {
-                        "text": messe_text(pg, ".sheet"),
+                        "text": text,
+                        "regel1Rahmen": rahmen,
                         "geometrie": {k: g[k] for k in ("top", "bottom", "left", "right", "W", "H",
                                                         "cut", "overflowX", "order")},
                         "vollbild": (abs(g["top"]) <= 1 and abs(g["bottom"] - g["H"]) <= 1
                                      and abs(g["left"]) <= 1 and abs(g["right"] - g["W"]) <= 1),
                         "raster": pg.evaluate(RASTER_JS) if view == "gruppe" else None,
-                        **messe_kontrast_touch_hier(pg, ".sheet", ausnahmen=HERE / "kontrast-ausnahmen.json"),
+                        **kontrast,
                     }
                 return messen
+
+            # Rule 1 frame for M76, the same one regel1_dialog uses at
+            # 320/480/960: the sheet with nothing scrolled out of sight. At
+            # 844 px the full-screen sheet scrolls (rule 2), and a tile below
+            # the fold reports a rectangle under the sheet's visible box
+            # without any text having left its box: a false "ausserhalb"
+            # (e.g. "Helicopter Lamp" +28 px). regel1_dialog solves this with
+            # a taller window; here the window grows to the sheet's own
+            # scrollHeight, so the frame is exactly the scroll area. The width
+            # stays, so sideways overhang and real overflow still count; if
+            # the sheet still scrolls, whatever lies below stays a violation.
+            M76_SHEET_JS = """() => {
+                const s = document.querySelector('busch-light-dialog').shadowRoot.querySelector('.sheet');
+                return { scrollHeight: s.scrollHeight, clientHeight: s.clientHeight };
+            }"""
+
+            def m76_regel1(pg, breite):
+                hoehe_vorher = pg.viewport_size["height"]
+                s = pg.evaluate(M76_SHEET_JS)
+                hoehe = hoehe_vorher
+                for _ in range(3):  # the sheet may grow with the window once
+                    if s["scrollHeight"] <= s["clientHeight"] + 1:
+                        break
+                    hoehe = max(hoehe + 1, hoehe + s["scrollHeight"] - s["clientHeight"])
+                    pg.set_viewport_size({"width": breite, "height": int(hoehe)})
+                    pg.wait_for_timeout(300)
+                    s = pg.evaluate(M76_SHEET_JS)
+                text = messe_text(pg, ".sheet")
+                rahmen = {"fensterHoehe": int(hoehe), "scrollHeight": s["scrollHeight"],
+                          "clientHeight": s["clientHeight"],
+                          "ganzesBlatt": s["scrollHeight"] <= s["clientHeight"] + 1}
+                if hoehe != hoehe_vorher:
+                    pg.set_viewport_size({"width": breite, "height": int(hoehe_vorher)})
+                    pg.wait_for_timeout(300)
+                return text, rahmen
 
             for view in ("gruppe", "detail"):
                 report["uiRegeln"]["m76_dialog_" + view] = lauf_breiten(
@@ -2845,6 +2883,10 @@ def main():
                       for v in m76.values() for x in v),
                   json.dumps([(view, x["breite"], x["thema"], x["messung"]["vollbild"],
                                x["messung"]["geometrie"]["cut"], x["messung"]["geometrie"]["overflowX"])
+                              for view, v in m76.items() for x in v]))
+            check("M76 rule 1 measured on the whole sheet (nothing scrolled out of sight)",
+                  all(x["messung"]["regel1Rahmen"]["ganzesBlatt"] for v in m76.values() for x in v),
+                  json.dumps([(view, x["breite"], x["thema"], x["messung"]["regel1Rahmen"])
                               for view, v in m76.items() for x in v]))
             check("M78 lamp raster also holds at 360/390 px",
                   all(raster_ok(x["messung"]["raster"]) for x in m76["gruppe"]),
