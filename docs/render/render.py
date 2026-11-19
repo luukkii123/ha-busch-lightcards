@@ -774,6 +774,10 @@ def main():
         check("M68 getCardSize keeps the Masonry units of the real height (estimate and cached)",
               all(x["estimate"] == x["units"] and x["measured"] == x["units"] for x in card_size),
               json.dumps(card_size))
+        # The M68 probe leaves a card without scenes in the stack; the dialog
+        # below opens from the first card, so put the lit card with its scenes
+        # back (run karten-20261119-223927: scene row measured on that probe).
+        build_card(lit_states, "lit")
 
         # ------------------------------------------------------------------
         # 7. The dialog
