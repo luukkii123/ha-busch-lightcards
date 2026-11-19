@@ -3608,6 +3608,9 @@ class BuschLightCard extends HTMLElement {
     // -- rendering ----------------------------------------------------------
 
     _render() {
+        // hass may arrive before setConfig: without options and without an
+        // error there is nothing to build yet (M74 reads _opts in _build).
+        if (!this._opts && !this._error) return;
         if (!this._built) this._build();
         this._seen = null;
         if (this._error || !this._opts) return;

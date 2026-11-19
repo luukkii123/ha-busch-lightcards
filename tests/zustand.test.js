@@ -40,6 +40,28 @@ test('M27 Karte: Konfigurationsfehler ist ein stateBlock error (role=alert), Tit
   }
 });
 
+// Run karten-20261119-220723 (38-render): with hass set BEFORE setConfig — the
+// render script's fix-1 probe does it that way — _render built the card without
+// options and M74's hold-key check read `holdAction` of null (TypeError).
+test('M27/M74 Karte: hass vor setConfig wirft nicht, danach Fehlerblock bzw. normale Karte', () => {
+  for (const sprache of ['de', 'en']) {
+    const u = neueUmgebung({ sprache }), haus = neuesHaus({ sprache });
+    const t = texte(u)[sprache].texte;
+    const fehler = u.document.createElement('busch-light-card');
+    assert.doesNotThrow(() => { fehler.hass = haus.hass(); }, sprache + ': hass ohne Konfiguration');
+    fehler.setConfig({ type: 'custom:busch-light-card' });
+    u.body.appendChild(fehler);
+    assert.equal(block(fehler.shadowRoot, 'error').hinweis, t.fehlerKeineEntitaet, sprache + ': Satz');
+    const karte = u.document.createElement('busch-light-card');
+    assert.doesNotThrow(() => { karte.hass = haus.hass(); }, sprache + ': hass ohne Konfiguration');
+    karte.setConfig({ type: 'custom:busch-light-card', entity: 'light.steh' });
+    u.body.appendChild(karte);
+    karte.hass = haus.hass();
+    assert.ok(karte.shadowRoot.querySelector('.tap'), sprache + ': Karte gebaut');
+    assert.equal(bloecke(karte.shadowRoot).length, 0, sprache + ': kein Zustandsblock');
+  }
+});
+
 test('M27 Karte: leere Gruppe zeigt stateBlock empty statt Statuszeile, Texte de/en', () => {
   for (const sprache of ['de', 'en']) {
     const u = neueUmgebung({ sprache }), haus = neuesHaus({ sprache });
