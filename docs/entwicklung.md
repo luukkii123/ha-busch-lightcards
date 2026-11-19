@@ -230,6 +230,15 @@ Stapelung gegenüber hohen z-index-Werten), Zigbee2MQTT, Szenenimport und den
 Editor (Optionsabdeckung, Labels und Helfer in beiden Sprachen, Live-Vorschau,
 minimale Ausgabe, camelCase-Faltung, Szenenzeilen).
 
+Handybreiten (M76, Buschcheck F14): Editor bei 320/360/390/480/960 px,
+Regel 2 des Dialogs bei denselben Breiten, beide Dialogansichten (Gruppe und
+Detail) zusätzlich bei 360 und 390 px in hell und dunkel, 844 px hoch:
+Regel 1, Vollbild, nichts abgeschnitten, Lampenraster (M78), Kontrast und
+Touch (`uiRegeln.m76_dialog_gruppe`/`_detail`, Bilder
+`m76-dialog-<ansicht>-<breite>-<thema>.png`). `report.json` fasst die Breiten
+je Ansicht unter `handyBreiten` zusammen. Kontrast/Touch des Editors bei
+360/390 steht nur zur Information in `editorLayout` (Attrappen-Felder).
+
 Grenzen: Der Editor wird im Renderer mit einer `ha-form`-Attrappe geprüft. Das
 belegt Verdrahtung, Schema und erzeugte Konfiguration, nicht die Darstellung
 der echten Home-Assistant-Selektoren.

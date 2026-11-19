@@ -42,7 +42,7 @@ for _kandidat in ("/work", str(HERE)):
         sys.path.insert(0, _kandidat)
 try:
     from regeln import (messe_text, messe_popup, lauf_breiten, selbsttest,
-                        bewerte, zaehle, messe_kontrast_touch)
+                        bewerte, zaehle, messe_kontrast_touch, messe_kontrast_touch_hier)
     REGELN_DA = True
 except ImportError:
     REGELN_DA = False
@@ -195,6 +195,10 @@ PAGE = """<!doctype html>
 </body></html>
 """
 
+
+# M76 (Buschcheck F14): phone widths beside rule 1's 320/480/960.
+HANDY_BREITEN = (360, 390)
+EDITOR_BREITEN = (320, 360, 390, 480, 960)
 
 # M78: the dialog's lamp raster, measured in the open busch-light-dialog.
 RASTER_JS = """() => {
@@ -2086,7 +2090,8 @@ def main():
         # The browser stub cannot judge HA's native selectors, but it can
         # catch our own editor/scene-row overflow at the required widths.
         editor_layout = []
-        for breite in (320, 480, 960):
+        # M76 (Buschcheck F14): the phone widths 360 and 390 as well.
+        for breite in EDITOR_BREITEN:
             for thema in ("hell", "dunkel"):
                 page.set_viewport_size({"width": breite, "height": 1200})
                 page.evaluate("""(dark) => {
@@ -2120,9 +2125,14 @@ def main():
                         }).map(el => el.className || el.tagName);
                     return { width, scrollWidth: host.scrollWidth, bad };
                 }""")
+                # M76: contrast/touch at the new phone widths, for information
+                # only: the fields are this harness's ha-form stand-in, not HA's.
+                if REGELN_DA and breite in HANDY_BREITEN:
+                    messung["kontrastTouchInfo"] = messe_kontrast_touch_hier(
+                        page, "busch-light-card-editor", ausnahmen=HERE / "kontrast-ausnahmen.json")
                 editor_layout.append({"breite": breite, "thema": thema, **messung})
         report["editorLayout"] = editor_layout
-        check("editor and scene rows fit 320, 480 and 960 px in both themes",
+        check("editor and scene rows fit 320, 360, 390, 480 and 960 px in both themes",
               all(x["scrollWidth"] <= x["width"] + 1 and not x["bad"]
                   for x in editor_layout), json.dumps(editor_layout, ensure_ascii=False))
         page.evaluate("""() => {
@@ -2742,7 +2752,7 @@ def main():
             # close button (without an orphaned history entry) and who is on
             # top in the middle of the popup.
             report["uiRegeln"]["regel2_dialog"] = lauf_breiten(
-                page, hoehe=2000,
+                page, hoehe=2000, breiten=(320, 360, 390, 480, 960),  # M76
                 messung=lambda pg: messe_popup(
                     pg, oeffne_dialog, ".sheet", ".head .iconbtn", dialog_typ="bearbeitung"),
                 vor_messung=lambda pg: (schliesse_dialog(), baue_karte()))
@@ -2756,6 +2766,66 @@ def main():
             page.emulate_media(reduced_motion="reduce")
             report["uiRegeln"]["kontrast_touch_karte"] = messe_kontrast_touch(page, "busch-light-card", ausnahmen=HERE / "kontrast-ausnahmen.json", vor_messung=lambda pg: (schliesse_dialog(), build_card(base_states, "kontrast")))  # M26
             report["uiRegeln"]["kontrast_touch_dialog"] = {v: messe_kontrast_touch(page, ".sheet", ausnahmen=HERE / "kontrast-ausnahmen.json", hoehe=2000, vor_messung=lambda pg, v=v: (schliesse_dialog(), build_card(lit_states, "kontrast", dialog_theme=None if v == "theme" else v), oeffne_dialog())) for v in ("theme", "dark")}  # M26
+
+            # M76 (Buschcheck F14): both dialog views at the phone widths 360
+            # and 390 px, light and dark, 844 px tall (a phone): rule 1 on the
+            # sheet, full screen, nothing cut off or scrolling sideways, the
+            # M78 lamp raster (group view), contrast and touch targets.
+            # Screenshot per case: m76-dialog-<view>-<width>-<theme>.png.
+            def m76_oeffnen(view):
+                schliesse_dialog()
+                build_card(lit_states, "m76")
+                oeffne_dialog()
+                page.wait_for_timeout(400)
+                if view == "detail":
+                    page.evaluate(geometrie_js, "detail")
+                    page.wait_for_timeout(400)
+
+            def m76_messen(view):
+                def messen(pg):
+                    breite = pg.viewport_size["width"]
+                    thema = pg.evaluate("() => document.documentElement.dataset.theme || ''")
+                    g = pg.evaluate(geometrie_js, "")
+                    shot = out_dir / f"m76-dialog-{view}-{breite}-{thema}.png"
+                    pg.screenshot(path=str(shot))
+                    report["screenshots"].append(shot.name)
+                    return {
+                        "text": messe_text(pg, ".sheet"),
+                        "geometrie": {k: g[k] for k in ("top", "bottom", "left", "right", "W", "H",
+                                                        "cut", "overflowX", "order")},
+                        "vollbild": (abs(g["top"]) <= 1 and abs(g["bottom"] - g["H"]) <= 1
+                                     and abs(g["left"]) <= 1 and abs(g["right"] - g["W"]) <= 1),
+                        "raster": pg.evaluate(RASTER_JS) if view == "gruppe" else None,
+                        **messe_kontrast_touch_hier(pg, ".sheet", ausnahmen=HERE / "kontrast-ausnahmen.json"),
+                    }
+                return messen
+
+            for view in ("gruppe", "detail"):
+                report["uiRegeln"]["m76_dialog_" + view] = lauf_breiten(
+                    page, breiten=HANDY_BREITEN, hoehe=844,
+                    messung=m76_messen(view),
+                    vor_messung=lambda pg, view=view: m76_oeffnen(view))
+                schliesse_dialog()
+            m76 = {view: report["uiRegeln"]["m76_dialog_" + view]["laeufe"] for view in ("gruppe", "detail")}
+            report["handyBreiten"] = {
+                "dialog-gruppe": sorted({x["breite"] for x in m76["gruppe"]}),
+                "dialog-detail": sorted({x["breite"] for x in m76["detail"]}),
+                "regel2-dialog": sorted({x["breite"] for x in report["uiRegeln"]["regel2_dialog"]["laeufe"]}),
+                "editor": sorted({x["breite"] for x in report["editorLayout"]}),
+            }
+            check("M76 every dialog view and the editor rendered at 360 and 390 px",
+                  all(set(HANDY_BREITEN) <= set(b) for b in report["handyBreiten"].values()),
+                  json.dumps(report["handyBreiten"]))
+            check("M76 dialogs at 360/390: full screen, nothing cut off, no sideways scroll",
+                  all(x["messung"]["vollbild"] and x["messung"]["geometrie"]["cut"] == 0
+                      and not x["messung"]["geometrie"]["overflowX"]
+                      for v in m76.values() for x in v),
+                  json.dumps([(view, x["breite"], x["thema"], x["messung"]["vollbild"],
+                               x["messung"]["geometrie"]["cut"], x["messung"]["geometrie"]["overflowX"])
+                              for view, v in m76.items() for x in v]))
+            check("M78 lamp raster also holds at 360/390 px",
+                  all(raster_ok(x["messung"]["raster"]) for x in m76["gruppe"]),
+                  json.dumps([x["messung"]["raster"] for x in m76["gruppe"]]))
             page.emulate_media(reduced_motion="no-preference")
             schliesse_dialog()
 
