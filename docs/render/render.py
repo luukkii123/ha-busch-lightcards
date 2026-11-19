@@ -42,7 +42,7 @@ for _kandidat in ("/work", str(HERE)):
         sys.path.insert(0, _kandidat)
 try:
     from regeln import (messe_text, messe_popup, lauf_breiten, selbsttest,
-                        bewerte, zaehle)
+                        bewerte, zaehle, messe_kontrast_touch)
     REGELN_DA = True
 except ImportError:
     REGELN_DA = False
@@ -559,7 +559,7 @@ def main():
         # ------------------------------------------------------------------
         # 6. Render the card and read back what it actually shows
         # ------------------------------------------------------------------
-        def build_card(states, scenario, scenes=True):
+        def build_card(states, scenario, scenes=True, dialog_theme=None):
             return page.evaluate(
                 """(payload) => {
                     window.freshStep();
@@ -568,6 +568,7 @@ def main():
                     const card = document.createElement('busch-light-card');
                     const config = { type: 'custom:busch-light-card', entity: payload.root };
                     if (payload.scenes) config.scenes = payload.scenes;
+                    if (payload.dialogTheme) config.dialog_theme = payload.dialogTheme;
                     card.setConfig(config);
                     stack.appendChild(card);
                     const hass = window.makeHass(payload.states);
@@ -598,7 +599,8 @@ def main():
                     };
                 }""",
                 {"root": fixture["root"], "states": states,
-                 "scenes": fixture["scenesConfig"] if scenes else None},
+                 "scenes": fixture["scenesConfig"] if scenes else None,
+                 "dialogTheme": dialog_theme},
             )
 
         card_off = build_card(base_states, "off")
@@ -2635,6 +2637,17 @@ def main():
                 messung=lambda pg: messe_popup(
                     pg, oeffne_dialog, ".sheet", ".head .iconbtn", dialog_typ="bearbeitung"),
                 vor_messung=lambda pg: (schliesse_dialog(), baue_karte()))
+            schliesse_dialog()
+
+            # M26: contrast (4.5:1, large 3:1) and touch targets (44 px) at
+            # 320/480/960 in both themes. The card off (theme surface; a lit
+            # card is a gradient, no judgement there), the dialog lit, in the
+            # theme look and in dialog_theme: dark. Reduced motion, so the
+            # opening fade does not dim the text being measured.
+            page.emulate_media(reduced_motion="reduce")
+            report["uiRegeln"]["kontrast_touch_karte"] = messe_kontrast_touch(page, "busch-light-card", ausnahmen=HERE / "kontrast-ausnahmen.json", vor_messung=lambda pg: (schliesse_dialog(), build_card(base_states, "kontrast")))  # M26
+            report["uiRegeln"]["kontrast_touch_dialog"] = {v: messe_kontrast_touch(page, ".sheet", ausnahmen=HERE / "kontrast-ausnahmen.json", hoehe=2000, vor_messung=lambda pg, v=v: (schliesse_dialog(), build_card(lit_states, "kontrast", dialog_theme=None if v == "theme" else v), oeffne_dialog())) for v in ("theme", "dark")}  # M26
+            page.emulate_media(reduced_motion="no-preference")
             schliesse_dialog()
 
             report["uiRegeln"]["zaehlung"] = zaehle(report["uiRegeln"])

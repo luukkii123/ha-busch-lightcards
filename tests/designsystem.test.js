@@ -88,9 +88,14 @@ function blatt(name) {
   return QUELLE.slice(auf + 1, QUELLE.indexOf('`;', auf));
 }
 const BLAETTER = ['CARD_STYLES', 'DIALOG_STYLES', 'EDITOR_STYLES'];
+/** One rule of a source stylesheet; a `${...}` interpolation does not end it. */
 const blattRegel = (css, selektor) => {
   const i = css.indexOf('\n' + selektor + ' {');
-  return i < 0 ? '' : css.slice(i, css.indexOf('}', i) + 1);
+  if (i < 0) return '';
+  for (let j = css.indexOf('{', i) + 1, tiefe = 0; j < css.length; j++) {
+    if (css[j] === '$' && css[j + 1] === '{') { tiefe++; j++; } else if (css[j] === '}') { if (!tiefe) return css.slice(i, j + 1); tiefe--; }
+  }
+  return css.slice(i);
 };
 
 test('M63 keine feste font-size: Npx und kein --ha-font-size-xs (10 px in HA) in den Familienstilen', () => {
@@ -291,4 +296,60 @@ test('M42 zweites Laden (zweite Ressourcen-URL): kein NotSupportedError, erste K
   assert.equal(u.kontext.window.customCards.filter((c) => c.type === 'busch-light-card').length, 1);
   const karte = neueKarte(u, neuesHaus({ an: true }));
   assert.equal(karte._title.textContent.length > 0, true, 'die Karte arbeitet nach dem zweiten Laden');
+});
+
+// ── M26: contrast and touch targets, computed before the measured run ────────
+
+const I = () => neueUmgebung().registry.get('busch-light-card').__internals;
+const hex = (h) => ({ r: parseInt(h.slice(1, 3), 16), g: parseInt(h.slice(3, 5), 16), b: parseInt(h.slice(5, 7), 16), a: 1 });
+// The theme values the render harness measures with (hacs/docs/render/regeln.py, THEMA_CSS).
+const HELL = { karte: '#ffffff', text: '#212121', warnung: '#ffa600', fehler: '#db4437', erfolg: '#43a047' };
+const DUNKEL = { karte: '#1c1c1c', text: '#e1e1e1', warnung: '#ffa600', fehler: '#db4437', erfolg: '#43a047' };
+
+test('M26 gerechnet: Statusfarben als Text verfehlen 4,5:1, die Textfarbe hält es', () => {
+  const k = I().contrastRatio;
+  assert.ok(k(hex(HELL.warnung), hex(HELL.karte)) < 4.5, 'Warnorange auf Weiß');
+  assert.ok(k(hex(HELL.erfolg), hex(HELL.karte)) < 4.5, 'Grün auf Weiß');
+  assert.ok(k(hex(DUNKEL.fehler), hex(DUNKEL.karte)) < 4.5, 'Rot auf Dunkel');
+  for (const t of [HELL, DUNKEL]) assert.ok(k(hex(t.text), hex(t.karte)) >= 4.5);
+  const css = blatt('CARD_STYLES');
+  for (const ton of ['success', 'warning', 'unavailable', 'error']) {
+    const r = [...css.matchAll(/\.desc\[data-tone='(\w+)'\] \.dtext[^{]*\{([^}]*)\}/g)]
+      .concat([...css.matchAll(/([^{}]*)\{([^}]*)\}/g)].filter((m) => m[1].includes(".desc[data-tone='" + ton + "'] .dtext")));
+    for (const m of r) assert.doesNotMatch(m[2], /color:\s*var\(--(warning|success|error)-color/, ton + ': Text nicht in der Statusfarbe');
+  }
+  assert.doesNotMatch(blattRegel(css, '.error'), /\n\s*color:\s*var\(--error-color/, 'Konfigurationsfehler: Text in der Textfarbe, Rot am Symbol');
+});
+
+test('M26 Prozentlabel: volle Deckkraft der berechneten Kachelschrift (keine 0,75)', () => {
+  assert.doesNotMatch(blattRegel(blatt('DIALOG_STYLES'), '.tile .tpct'), /opacity/);
+  // The tile colour is chosen for 4.5:1 also under the shade; 0.75 opacity took that back.
+  const k = I(), farbe = { r: 255, g: 210, b: 140, a: 1 };
+  const s = k.readableSurface([farbe], { shade: 0.68 });
+  assert.ok(s.ratio >= 4.5, 'Kachelschrift hält 4,5:1');
+});
+
+test('M26 Touchziele: Dialogschalter messen 44 × 44 px (Bahn bleibt, Rand durchsichtig)', () => {
+  const d = blatt('DIALOG_STYLES');
+  const g = blattRegel(d, '.gtoggle');
+  assert.match(g, /box-sizing: content-box/);
+  assert.match(g, /width: 34px; height: 20px/);
+  assert.match(g, /border-width: 12px 5px/, '34 + 2 × 5 = 44, 20 + 2 × 12 = 44');
+  assert.match(g, /background-clip: padding-box/, 'die Bahn malt nur innen');
+  assert.match(g, /margin: -12px -5px/, 'Platz im Layout wie vorher');
+  const h = blattRegel(d, '.head .headsw');
+  assert.match(h, /width: 42px; height: 24px/);
+  assert.match(h, /border-width: 10px 1px/, '42 + 2 = 44, 24 + 20 = 44');
+  assert.match(h, /margin: -10px -1px/);
+});
+
+test('M26 Renderbeleg vorbereitet: Kontrast/Touch für Karte und Dialog (Thema und dialog_theme: dark), Ausnahmen mit Grund', () => {
+  const render = fs.readFileSync(path.join(__dirname, '..', 'docs', 'render', 'render.py'), 'utf8');
+  assert.match(render, /messe_kontrast_touch\(page, "busch-light-card"/);
+  assert.match(render, /messe_kontrast_touch\(page, "\.sheet"[^\n]*for v in \("theme", "dark"\)/);
+  const liste = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'docs', 'render', 'kontrast-ausnahmen.json'), 'utf8'));
+  for (const bereich of ['kontrast', 'touch']) {
+    assert.ok(Array.isArray(liste[bereich]), bereich);
+    for (const a of liste[bereich]) assert.ok(a.selektor && a.grund, JSON.stringify(a));
+  }
 });

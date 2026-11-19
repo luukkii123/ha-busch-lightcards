@@ -2812,10 +2812,13 @@ ha-card.fg-dark {
 .desc[data-tone='unavailable']::before { background: var(--error-color, var(--secondary-text-color)); }
 .desc[data-tone='unknown']::before { background: var(--secondary-text-color); }
 .desc[data-tone='neutral']::before { background: var(--secondary-text-color); }
-.desc[data-tone='success'] .dtext { color: var(--success-color, var(--primary-text-color)); }
-.desc[data-tone='warning'] .dtext { color: var(--warning-color, var(--primary-text-color)); }
-.desc[data-tone='unavailable'] .dtext { color: var(--error-color, var(--primary-text-color)); }
-.desc[data-tone='error'] .dtext { color: var(--error-color, var(--primary-text-color)); }
+/* M26 (E6, text colour swapped): the theme's status colours miss 4.5:1 as
+   text (warning on white 2.0:1, success 3.3:1, error on dark 3.1:1). The dot
+   carries the tone; the words say it in the text colour. */
+.desc[data-tone='success'] .dtext, .desc[data-tone='warning'] .dtext,
+.desc[data-tone='unavailable'] .dtext, .desc[data-tone='error'] .dtext {
+    color: var(--blc-text-color, var(--primary-text-color));
+}
 .desc[data-tone='neutral'] .dtext { color: var(--blc-text-color, var(--secondary-text-color)); }
 .desc[data-tone='unknown'] .dtext { color: var(--secondary-text-color); }
 .desc[data-tone='unavailable'] .warn { display: none; }
@@ -3020,11 +3023,12 @@ ha-card.fg-dark {
     align-items: flex-start;
     gap: var(--ha-space-3, 12px);
     padding: var(--ha-space-4, 16px);
-    color: var(--error-color, #db4437);
+    /* M26: red as text is 3.1:1 on a dark card; it stays on the icon. */
+    color: var(--primary-text-color);
     font-size: ${BuschUI.tokens.fontSizeS};
     overflow-wrap: anywhere;
 }
-.error ha-icon { flex: 0 0 24px; }
+.error ha-icon { flex: 0 0 24px; color: var(--error-color, #db4437); }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; }
 }
@@ -3828,8 +3832,8 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
 .head.lit .iconbtn { color: inherit; }
 .head.lit.fg-light .iconbtn { background: rgba(0, 0, 0, 0.24); }
 .head.lit.fg-dark .iconbtn { background: rgba(255, 255, 255, 0.45); }
-.head.lit .headsw.on { background: rgba(0, 0, 0, 0.35); }
-.head.lit.fg-dark .headsw.on { background: rgba(0, 0, 0, 0.62); }
+.head.lit .headsw.on { background-color: rgba(0, 0, 0, 0.35); }
+.head.lit.fg-dark .headsw.on { background-color: rgba(0, 0, 0, 0.62); }
 .head.lit .headsw .gknob { background: var(--blc-knob-color, rgb(255, 255, 255)); }
 .head h1 {
     font-size: var(--ha-font-size-xl, 20px);
@@ -3968,9 +3972,9 @@ h3 {
 }
 /* On a coloured tile the theme's accent clashes; the switch borrows the
    tile's own contrast instead. */
-.tile.lit .tsw { background: rgba(0, 0, 0, 0.25); }
-.tile.lit .tsw.on { background: rgba(0, 0, 0, 0.45); }
-.tile.lit.fg-dark .tsw.on { background: rgba(0, 0, 0, 0.62); }
+.tile.lit .tsw { background-color: rgba(0, 0, 0, 0.25); }
+.tile.lit .tsw.on { background-color: rgba(0, 0, 0, 0.45); }
+.tile.lit.fg-dark .tsw.on { background-color: rgba(0, 0, 0, 0.62); }
 .tile .thead { position: relative; width: 100%; display: flex; justify-content: flex-end; min-height: 14px; }
 .tile .tmid { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .tile .ticon { --mdc-icon-size: 26px; }
@@ -3985,11 +3989,11 @@ h3 {
     -webkit-box-orient: vertical;
 }
 /* currentColor, not a fixed white: a lit tile flips its text to dark. */
-/* M63: at least 12 px (it was 11). */
+/* M63: at least 12 px (it was 11). M26: full opacity — the tile colour is
+   chosen for 4.5:1 under the shade as well; 0.75 opacity gave that back. */
 .tile .tpct {
     font-size: ${BuschUI.tokens.fontSizeS};
     color: currentColor;
-    opacity: 0.75;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -4157,22 +4161,28 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+/* M26 (touch 44 px): the button is 44 x 44; a transparent border around the
+   34 x 20 track (background-clip) takes the rest, a negative margin keeps the
+   place it had in the layout. */
 .gtoggle {
-    flex-shrink: 0; width: 34px; height: 20px; border-radius: var(--ha-border-radius-pill, 9999px); border: none;
+    flex-shrink: 0; box-sizing: content-box; width: 34px; height: 20px;
+    border: 0 solid transparent; border-width: 12px 5px; margin: -12px -5px;
+    background-clip: padding-box; border-radius: var(--ha-border-radius-pill, 9999px);
     padding: 0; position: relative; cursor: pointer;
-    background: var(--blc-d-switch-off); transition: background 0.2s ease-out;
+    background-color: var(--blc-d-switch-off); transition: background 0.2s ease-out;
 }
 .gtoggle .gknob {
     position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
     border-radius: 50%; background: var(--blc-knob-color, #fff);
     transition: transform 0.2s ease-out;
 }
-.gtoggle.on { background: var(--primary-color, #03a9f4); }
+/* background-color only: the shorthand would reset background-clip (M26). */
+.gtoggle.on { background-color: var(--primary-color, #03a9f4); }
 .gtoggle.on .gknob { transform: translateX(14px); }
 .gtoggle[disabled] { opacity: 0.4; cursor: default; }
 /* The master switch, in the header where it is always reachable — the card's
    own switch is behind the dialog. */
-.head .headsw { width: 42px; height: 24px; border-radius: var(--ha-border-radius-pill, 9999px); }
+.head .headsw { width: 42px; height: 24px; border-width: 10px 1px; margin: -10px -1px; }
 .head .headsw .gknob { width: 20px; height: 20px; }
 .head .headsw.on .gknob { transform: translateX(18px); }
 @media (prefers-reduced-motion: reduce) {

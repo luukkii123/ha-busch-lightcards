@@ -236,7 +236,8 @@ test('Kachelschalter auf heller Kachel: dunklere Spur wie auf der Karte', () => 
   const u = neueUmgebung();
   const css = u.registry.get('busch-light-dialog') && require('node:fs')
     .readFileSync(require('node:path').join(__dirname, '..', 'dist', 'busch-lightcards.js'), 'utf8');
-  assert.match(css, /\.tile\.lit\.fg-dark \.tsw\.on \{ background: rgba\(0, 0, 0, 0\.62\); \}/);
+  // M26: background-color, so the 44 px switch keeps its track clipped to the padding box.
+  assert.match(css, /\.tile\.lit\.fg-dark \.tsw\.on \{ background-color: rgba\(0, 0, 0, 0\.62\); \}/);
   const haus = farbHaus([{ kelvin: 6500 }, null, null]);
   const karte = neueKarte(u, haus);
   karte._openDialog();
