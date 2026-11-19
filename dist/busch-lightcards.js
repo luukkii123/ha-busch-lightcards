@@ -2750,7 +2750,7 @@ ha-card.fg-dark {
     display: grid;
     place-items: center;
     overflow: hidden;
-    border-radius: var(--ha-card-border-radius, 12px);
+    border-radius: ${BuschUI.tokens.radiusInner};
     background: var(--blc-background, var(--card-background-color));
 }
 .media::after {
@@ -2793,7 +2793,7 @@ ha-card.fg-dark {
 .desc {
     grid-area: status;
     margin-left: calc(var(--blc-media) + var(--ha-space-3, 12px));
-    font-size: var(--ha-font-size-s, 14px);
+    font-size: ${BuschUI.tokens.fontSizeS};
     display: flex;
     align-items: center;
     gap: var(--ha-space-2, 8px);
@@ -2840,7 +2840,7 @@ ha-card.fg-dark {
 .warn {
     /* M62: .busch-chip[data-tone=warning]; compact enough for the status line. */
     min-height: 18px;
-    font-size: var(--ha-font-size-xs, 12px);
+    font-size: ${BuschUI.tokens.fontSizeS};
     line-height: 18px;
     /* The count stays visible while the neighboring long description yields. */
     flex-shrink: 0;
@@ -2862,7 +2862,7 @@ ha-card.fg-dark {
     flex-shrink: 0;
     width: 44px;
     height: 44px;
-    border-radius: 22px;
+    border-radius: var(--ha-border-radius-pill, 9999px);
     border: none;
     padding: 0;
     position: relative;
@@ -2876,7 +2876,7 @@ ha-card.fg-dark {
     top: 10px;
     width: 42px;
     height: 24px;
-    border-radius: 12px;
+    border-radius: var(--ha-border-radius-pill, 9999px);
     background: var(--blc-toggle-off, var(--divider-color));
     transition: background 0.2s ease-out;
 }
@@ -2909,7 +2909,7 @@ ha-card.fg-dark {
     position: relative;
     height: 44px;
     margin: 0 var(--blc-margin) var(--blc-margin);
-    border-radius: var(--ha-card-border-radius, 12px);
+    border-radius: ${BuschUI.tokens.radiusInner};
     background: var(--secondary-background-color, var(--divider-color));
     overflow: hidden;
     cursor: pointer;
@@ -2952,7 +2952,8 @@ ha-card.fg-dark {
     right: 0;
     top: 8px;
     bottom: 8px;
-    border-radius: 12px;
+    /* The Mushroom control radius (#715 emulates that look), as HA's token. */
+    border-radius: var(--ha-border-radius-lg, 12px);
     overflow: hidden;
     background: var(--secondary-background-color, var(--divider-color));
 }
@@ -2976,7 +2977,7 @@ ha-card.fg-dark {
     bottom: 7px;
     right: 6px;
     width: 3px;
-    border-radius: 2px;
+    border-radius: var(--ha-border-radius-pill, 9999px);
     background: var(--card-background-color);
     opacity: 0.85;
 }
@@ -3008,7 +3009,7 @@ ha-card.fg-dark {
     box-sizing: border-box;
     line-height: 44px;
     padding: 0 12px;
-    font-size: var(--ha-font-size-s, 14px);
+    font-size: ${BuschUI.tokens.fontSizeS};
     font-weight: var(--ha-font-weight-medium, 500);
     color: var(--primary-text-color);
     min-width: 0;
@@ -3022,7 +3023,7 @@ ha-card.fg-dark {
     gap: var(--ha-space-3, 12px);
     padding: var(--ha-space-4, 16px);
     color: var(--error-color, #db4437);
-    font-size: var(--ha-font-size-s, 14px);
+    font-size: ${BuschUI.tokens.fontSizeS};
     overflow-wrap: anywhere;
 }
 .error ha-icon { flex: 0 0 24px; }
@@ -3788,7 +3789,7 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     overflow-x: hidden;
     background: var(--blc-d-bg);
     color: var(--blc-d-text);
-    border-radius: 16px;
+    border-radius: var(--ha-dialog-border-radius, var(--ha-card-border-radius, 12px));
     padding: 16px;
     box-sizing: border-box;
     animation: grow 0.3s ease-out;
@@ -3814,7 +3815,7 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     z-index: 2;
     margin: -16px -16px 14px;
     padding: 16px;
-    border-radius: 16px 16px 0 0;
+    border-radius: var(--ha-dialog-border-radius, var(--ha-card-border-radius, 12px)) var(--ha-dialog-border-radius, var(--ha-card-border-radius, 12px)) 0 0;
     background: var(--blc-d-bg);
 }
 .head .who { flex-grow: 1; min-width: 0; }
@@ -3838,7 +3839,7 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     white-space: nowrap;
 }
 .head .sub {
-    font-size: 13px;
+    font-size: ${BuschUI.tokens.fontSizeS};
     color: var(--blc-d-muted);
     min-width: 0;
     overflow: hidden;
@@ -3855,11 +3856,10 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     background: var(--blc-d-tile);
     color: var(--blc-d-text);
 }
+/* M63: sentence case, no letter spacing, as every other family. */
 h3 {
-    font-size: 13px;
+    font-size: ${BuschUI.tokens.fontSizeM};
     font-weight: var(--ha-font-weight-medium, 500);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
     color: var(--blc-d-muted);
     margin: 18px 0 8px;
     min-width: 0;
@@ -3876,7 +3876,7 @@ h3 {
 }
 .scene {
     height: 106px;
-    border-radius: 12px;
+    border-radius: ${BuschUI.tokens.radiusInner};
     border: none;
     cursor: pointer;
     color: var(--blc-d-text);
@@ -3888,7 +3888,7 @@ h3 {
     padding: 10px;
     box-sizing: border-box;
     text-align: left;
-    font-size: var(--ha-font-size-xs, 12px);
+    font-size: ${BuschUI.tokens.fontSizeS};
     line-height: 1.25;
     overflow: hidden;
     transition: transform 0.15s ease-out;
@@ -3931,7 +3931,7 @@ h3 {
 .tile {
     position: relative;
     height: 118px;
-    border-radius: 12px;
+    border-radius: ${BuschUI.tokens.radiusInner};
     padding: 8px;
     box-sizing: border-box;
     cursor: pointer;
@@ -3974,7 +3974,7 @@ h3 {
 .tile .tmid { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .tile .ticon { --mdc-icon-size: 26px; }
 .tile .tname {
-    font-size: var(--ha-font-size-xs, 12px);
+    font-size: ${BuschUI.tokens.fontSizeS};
     line-height: 1.2;
     overflow: hidden;
     overflow-wrap: anywhere;
@@ -3984,8 +3984,9 @@ h3 {
     -webkit-box-orient: vertical;
 }
 /* currentColor, not a fixed white: a lit tile flips its text to dark. */
+/* M63: at least 12 px (it was 11). */
 .tile .tpct {
-    font-size: 11px;
+    font-size: ${BuschUI.tokens.fontSizeS};
     color: currentColor;
     opacity: 0.75;
     min-width: 0;
@@ -4010,10 +4011,10 @@ h3 {
     display: block;
     flex: 1;
     border: none;
-    border-radius: 9px;
+    border-radius: ${BuschUI.tokens.radiusInner};
     background: var(--blc-d-tile);
     color: var(--blc-d-dim);
-    font-size: 13px;
+    font-size: ${BuschUI.tokens.fontSizeM};
     font-weight: inherit;
     min-width: 0;
     overflow: hidden;
@@ -4031,7 +4032,7 @@ h3 {
     padding: 0 16px;
     background: var(--blc-d-tile);
     color: var(--blc-d-dim);
-    font-size: 14px;
+    font-size: ${BuschUI.tokens.fontSizeM};
 }
 .chips .busch-chip.active {
     background: var(--blc-d-text);
@@ -4041,11 +4042,11 @@ h3 {
     width: 100%;
     min-height: 44px;
     border: none;
-    border-radius: 9px;
+    border-radius: ${BuschUI.tokens.radiusInner};
     padding: 0 12px;
     background: var(--blc-d-tile);
     color: var(--blc-d-text);
-    font-size: 14px;
+    font-size: ${BuschUI.tokens.fontSizeM};
 }
 .chips .busch-chip.active::before { content: '\\2713\\00a0'; }
 .wheelwrap { display: flex; justify-content: center; padding: 6px 0 2px; }
@@ -4053,7 +4054,7 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 .tempbar {
     position: relative;
     height: 44px;
-    border-radius: 22px;
+    border-radius: var(--ha-border-radius-pill, 9999px);
     margin: 10px 0 4px;
     touch-action: pan-y;
     -webkit-user-select: none;
@@ -4078,7 +4079,7 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 .dslider {
     position: relative;
     height: 44px;
-    border-radius: 22px;
+    border-radius: var(--ha-border-radius-pill, 9999px);
     background: var(--blc-d-tile);
     overflow: hidden;
     margin: 8px 0;
@@ -4114,7 +4115,7 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     box-sizing: border-box;
     line-height: 44px;
     padding: 0 14px;
-    font-size: 13px;
+    font-size: ${BuschUI.tokens.fontSizeM};
     font-weight: var(--ha-font-weight-medium, 500);
     color: var(--blc-d-label);
     mix-blend-mode: var(--blc-d-label-blend);
@@ -4125,12 +4126,12 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 }
 .empty {
     color: var(--blc-d-faint);
-    font-size: 13px;
+    font-size: ${BuschUI.tokens.fontSizeM};
     padding: 8px 0;
     overflow-wrap: anywhere;
 }
 .deadlist {
-    font-size: var(--ha-font-size-xs, 12px);
+    font-size: ${BuschUI.tokens.fontSizeS};
     color: var(--blc-d-faint);
     margin-top: 10px;
     line-height: 1.5;
@@ -4143,11 +4144,11 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 .group-head { display: flex; align-items: center; gap: 8px; padding: 4px 0 8px; }
 .group-head ha-icon { --mdc-icon-size: 18px; color: var(--blc-d-muted); flex-shrink: 0; }
 .group-head .gname {
-    flex: 1; min-width: 0; font-size: 13px; font-weight: var(--ha-font-weight-medium, 500);
+    flex: 1; min-width: 0; font-size: ${BuschUI.tokens.fontSizeM}; font-weight: var(--ha-font-weight-medium, 500);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .group-head .gcount {
-    font-size: var(--ha-font-size-xs, 12px);
+    font-size: ${BuschUI.tokens.fontSizeS};
     color: var(--blc-d-muted);
     flex-shrink: 0;
     min-width: 0;
@@ -4156,7 +4157,7 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     white-space: nowrap;
 }
 .gtoggle {
-    flex-shrink: 0; width: 34px; height: 20px; border-radius: 10px; border: none;
+    flex-shrink: 0; width: 34px; height: 20px; border-radius: var(--ha-border-radius-pill, 9999px); border: none;
     padding: 0; position: relative; cursor: pointer;
     background: var(--blc-d-switch-off); transition: background 0.2s ease-out;
 }
@@ -4170,7 +4171,7 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 .gtoggle[disabled] { opacity: 0.4; cursor: default; }
 /* The master switch, in the header where it is always reachable — the card's
    own switch is behind the dialog. */
-.head .headsw { width: 42px; height: 24px; border-radius: 12px; }
+.head .headsw { width: 42px; height: 24px; border-radius: var(--ha-border-radius-pill, 9999px); }
 .head .headsw .gknob { width: 20px; height: 20px; }
 .head .headsw.on .gknob { transform: translateX(18px); }
 @media (prefers-reduced-motion: reduce) {
@@ -5328,7 +5329,7 @@ const EDITOR_STYLES = BuschUI.editorStyles + `
 .ed { display: flex; flex-direction: column; gap: 12px; }
 details {
     border: 1px solid var(--divider-color, #e0e0e0);
-    border-radius: 10px;
+    border-radius: ${BuschUI.tokens.radiusInner};
     padding: 0 12px;
 }
 details[open] { padding-bottom: 12px; }
@@ -5345,9 +5346,9 @@ summary {
 }
 .preview {
     border: 1px solid var(--divider-color, #e0e0e0);
-    border-radius: 10px;
+    border-radius: ${BuschUI.tokens.radiusInner};
     padding: 10px 12px;
-    font-size: 13px;
+    font-size: ${BuschUI.tokens.fontSizeM};
     color: var(--primary-text-color);
     overflow-wrap: anywhere;
 }
@@ -5366,10 +5367,10 @@ summary {
 }
 .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
 .chip {
-    font-size: 11px;
+    font-size: ${BuschUI.tokens.fontSizeS};
     line-height: 20px;
     padding: 0 8px;
-    border-radius: 10px;
+    border-radius: var(--ha-border-radius-pill, 9999px);
     background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
     color: var(--primary-text-color);
     /* One entity name per chip, so it is cut rather than wrapped — but never
@@ -5388,14 +5389,14 @@ summary {
 }
 .note {
     margin-top: 8px;
-    font-size: var(--ha-font-size-xs, 12px);
+    font-size: ${BuschUI.tokens.fontSizeS};
     color: var(--secondary-text-color);
     overflow-wrap: anywhere;
 }
 .note.warn { color: var(--warning-color, #ffa600); }
 .scene-row {
     border: 1px solid var(--divider-color, #e0e0e0);
-    border-radius: 10px;
+    border-radius: ${BuschUI.tokens.radiusInner};
     padding: 8px 10px;
     margin-bottom: 8px;
 }
@@ -5421,13 +5422,13 @@ summary {
     border: 1px dashed var(--divider-color, #bdbdbd);
     background: none;
     color: var(--primary-color, #03a9f4);
-    border-radius: 10px;
+    border-radius: ${BuschUI.tokens.radiusInner};
     padding: 10px;
     min-height: 44px;
     box-sizing: border-box;
     width: 100%;
     cursor: pointer;
-    font-size: 13px;
+    font-size: ${BuschUI.tokens.fontSizeM};
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -5440,7 +5441,7 @@ summary {
 }
 .fallback {
     color: var(--error-color, #db4437);
-    font-size: 13px;
+    font-size: ${BuschUI.tokens.fontSizeM};
     padding: 8px 0;
     overflow-wrap: anywhere;
 }

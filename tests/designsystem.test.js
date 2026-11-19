@@ -74,3 +74,62 @@ test('M62 CSS: keine eigene Knopfgeometrie mehr für X, Reiter und Effekte', () 
   assert.doesNotMatch(regel(css, '.picker-tabs button') || '', /padding: 8px/, 'Reiter-Höhe aus .busch-btn');
   assert.equal(regel(css, '.chips button'), null, 'Effekte ohne eigene Knopfregel');
 });
+
+// ── M63: type scale and radii from tokens, sentence case, percent label ≥ 12 px ──
+
+const fs = require('node:fs');
+const path = require('node:path');
+const QUELLE = fs.readFileSync(path.join(__dirname, '..', 'dist', 'busch-lightcards.js'), 'utf8');
+/** The family stylesheet as written in the source (template text, interpolations unresolved). */
+function blatt(name) {
+  const start = QUELLE.indexOf('const ' + name + ' = ');
+  assert.ok(start > 0, name + ' gefunden');
+  const auf = QUELLE.indexOf('`', start);
+  return QUELLE.slice(auf + 1, QUELLE.indexOf('`;', auf));
+}
+const BLAETTER = ['CARD_STYLES', 'DIALOG_STYLES', 'EDITOR_STYLES'];
+const blattRegel = (css, selektor) => {
+  const i = css.indexOf('\n' + selektor + ' {');
+  return i < 0 ? '' : css.slice(i, css.indexOf('}', i) + 1);
+};
+
+test('M63 keine feste font-size: Npx und kein --ha-font-size-xs (10 px in HA) in den Familienstilen', () => {
+  for (const name of BLAETTER) {
+    const css = blatt(name);
+    const fest = [...css.matchAll(/font-size:\s*\d+(?:\.\d+)?px/g)].map((m) => m[0]);
+    assert.deepEqual(fest, [], name + ': feste Schriftgrößen');
+    assert.doesNotMatch(css, /--ha-font-size-xs/, name + ': xs ist in HA 10 px, unter der 12-px-Grenze');
+  }
+});
+
+test('M63 Prozentlabel der Lampenkacheln mindestens 12 px (Stufe s)', () => {
+  const r = blattRegel(blatt('DIALOG_STYLES'), '.tile .tpct');
+  assert.match(r, /font-size: \$\{BuschUI\.tokens\.fontSizeS\}/);
+  assert.match(QUELLE, /fontSizeS:'var\(--busch-font-size-s,var\(--ha-font-size-s,12px\)\)'/, 'Stufe s fällt auf 12 px zurück');
+});
+
+test('M63 Abschnittsüberschriften in Satzschreibweise: keine Versalien, keine Sperrung', () => {
+  for (const name of BLAETTER) {
+    assert.doesNotMatch(blatt(name), /text-transform:\s*uppercase/, name);
+    assert.doesNotMatch(blatt(name), /letter-spacing/, name);
+  }
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const dialog = offen(u, haus, { scenes: [{ entity: 'scene.abend' }] });
+  for (const h of dialog._sheet.querySelectorAll('h3')) {
+    const t = h.textContent;
+    assert.equal(t[0], t[0].toUpperCase(), t + ' beginnt groß');
+    assert.notEqual(t, t.toUpperCase(), t + ' ist nicht in Versalien geschrieben');
+  }
+});
+
+test('M63 Radien nur aus Token: Kreis, Pille, Dialog- oder Innenradius', () => {
+  for (const name of BLAETTER) {
+    const werte = [...blatt(name).matchAll(/border-radius:\s*([^;]+);/g)].map((m) => m[1].trim());
+    const fest = werte.filter((w) => w.split(/\s+(?![^(]*\))/).some((teil) => /^\d+(?:\.\d+)?px$/.test(teil)));
+    assert.deepEqual(fest, [], name + ': feste Radien');
+  }
+  const d = blatt('DIALOG_STYLES');
+  for (const sel of ['.scene', '.tile', '.picker-tabs .busch-btn', '.pick']) {
+    assert.match(blattRegel(d, sel), /border-radius: \$\{BuschUI\.tokens\.radiusInner\}/, sel + ' nimmt die eine Innenradius-Stufe');
+  }
+});
