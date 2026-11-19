@@ -263,7 +263,7 @@ test('Weißvorschau: Kelvin ±50 nur im Farbtemperaturmodus (M37)', () => {
   I.clearOptimistic();
 });
 
-test('Abgleich über context: eigenes Echo mit alter Farbe hält die Vorschau, fremder Aufruf beendet sie (M37)', async () => {
+test('Abgleich über context: eigenes Echo mit alter Farbe hält die Vorschau, fremder context zählt wie keiner (M37)', async () => {
   const u = neueUmgebung(), haus = neuesHaus({ an: true });
   const I = u.registry.get('busch-light-card').__internals;
   let nr = 0;
@@ -277,9 +277,17 @@ test('Abgleich über context: eigenes Echo mit alter Farbe hält die Vorschau, f
   assert.deepEqual(Array.from(s.attributes.rgb_color), [0, 255, 0], 'spätes eigenes Echo: Vorschau bleibt');
   s = vorschau(I, haus.setze({ 'light.steh': steh({ color_mode: 'xy', rgb_color: [0, 120, 160] }, 'eigen-2') }));
   assert.deepEqual(Array.from(s.attributes.rgb_color), [0, 255, 0], 'eigener Zwischenstand: Vorschau bleibt');
-  // eine Automation setzt eine andere Farbe: der echte Zustand gewinnt sofort
-  const fremd = steh({ color_mode: 'xy', rgb_color: [255, 120, 0] }, 'automation-9');
-  assert.strictEqual(vorschau(I, haus.setze({ 'light.steh': fremd })), fremd, 'fremder Aufruf beendet die Vorschau');
+  // fremder context (z. B. Polling-Integration meldet mit neuem context): wie kein context
+  const fremd = steh({ color_mode: 'xy', rgb_color: [255, 120, 0] }, 'polling-9');
+  s = vorschau(I, haus.setze({ 'light.steh': fremd }));
+  assert.deepEqual(Array.from(s.attributes.rgb_color), [0, 255, 0], 'fremder context, andere Farbe: Vorschau bleibt');
+  u.uhr.vor(4000);
+  assert.strictEqual(vorschau(I, haus.hass()), fremd, 'nach der Frist gilt der echte Zustand');
+  // fremder context mit erreichter Farbe beendet sie wie ohne context
+  I.optimisticCall(haus.hass(), 'light', 'turn_on', { entity_id: 'light.steh', rgb_color: [0, 0, 255] });
+  await mikro();
+  const erreicht = steh({ color_mode: 'xy', rgb_color: [3, 2, 250] }, 'polling-10');
+  assert.strictEqual(vorschau(I, haus.setze({ 'light.steh': erreicht })), erreicht, 'fremder context, Zielfarbe erreicht: Vorschau beendet');
   I.clearOptimistic();
 });
 

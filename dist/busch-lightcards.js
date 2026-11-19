@@ -1214,15 +1214,6 @@ function scenesForLights(hass, entityIds) {
 const OPTIMISTIC_HOLD_MS = 4000;
 /** entityId -> { on, pct?, rgb?, kelvin?, contextId?, base, timer } — what was just asked for. */
 const OPTIMISTIC = new Map();
-/**
- * entityId -> context ids of this page's recent calls. Home Assistant stamps
- * every state an entity writes for a few seconds after a service call with
- * that call's context, so a state carrying one of these ids is our own echo
- * (possibly a late one of the previous call), any other new id is someone
- * else's change.
- */
-const OWN_CONTEXTS = new Map();
-const OWN_CONTEXTS_KEPT = 8;
 /** Per-channel rgb and kelvin tolerance for "the light has arrived". */
 const RGB_TOLERANCE = 8;
 const KELVIN_TOLERANCE = 50;
@@ -1325,33 +1316,22 @@ function optimisticCall(hass, domain, service, data) {
 
 /**
  * Notes the context id Home Assistant returned for a call (2023.x+; older
- * versions return nothing, then the values alone decide as before).
+ * versions return nothing). It does not change when a preview ends: an own
+ * echo and a state under a new context (polling integrations report the
+ * result of our own call that way) both end it only once the values match,
+ * otherwise the hold runs out.
  */
 function rememberContext(started, response) {
     const id = response && response.context && response.context.id;
     if (typeof id !== 'string' || !id) return;
     started.forEach(([entityId, entry]) => {
-        const own = (OWN_CONTEXTS.get(entityId) || []).concat(id).slice(-OWN_CONTEXTS_KEPT);
-        OWN_CONTEXTS.set(entityId, own);
         if (OPTIMISTIC.get(entityId) === entry) entry.contextId = id;
     });
 }
 
-function contextIdOf(state) {
-    return state && state.context && typeof state.context.id === 'string' ? state.context.id : '';
-}
-
-/** Another app or automation changed the light after our call: its state wins. */
-function foreignChange(entityId, real, want) {
-    const id = contextIdOf(real);
-    if (!want.contextId || !id || id === contextIdOf(want.base)) return false;
-    return !(OWN_CONTEXTS.get(entityId) || []).includes(id);
-}
-
-function optimisticReached(real, want, entityId) {
+function optimisticReached(real, want) {
     if (!real || real.state === 'unavailable') return true;
     if (real === want.base) return false; // nothing new from Home Assistant yet
-    if (foreignChange(entityId, real, want)) return true;
     if ((real.state === 'on') !== want.on) return false;
     const attributes = real.attributes || {};
     if (want.effect !== undefined && attributes.effect !== want.effect) return false;
@@ -1401,7 +1381,7 @@ function optimisticView(hass) {
     Array.from(OPTIMISTIC.keys()).forEach((entityId) => {
         const want = OPTIMISTIC.get(entityId);
         const real = hass.states[entityId];
-        if (optimisticReached(real, want, entityId)) {
+        if (optimisticReached(real, want)) {
             dropOptimistic(entityId, want);
             return;
         }

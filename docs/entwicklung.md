@@ -95,10 +95,11 @@ Verhalten, nachgebaut ohne kopierten Code:
   wenn HA An/Aus, Effekt, Helligkeit (±2 %) und die gewünschte Farbe meldet,
   rgb ±8 je Kanal im Farbmodus (`rgb`, `rgbw`, `rgbww`, `hs`, `xy`), Kelvin
   ±50 K nur im Modus `color_temp`. Ein Zwischenstand mit alter Farbe beendet
-  sie nicht (M37). Die `context.id` aus der Antwort von `callService` wird je
-  Lampe gemerkt (die letzten 8). Ein neuer Zustand mit einer fremden `context.id`
-  (andere App, Automation) beendet die Vorschau sofort. Fehlt `context`, zählen
-  nur die Werte.
+  sie nicht (M37). Die `context.id` aus der Antwort von `callService` wird am
+  Vorschau-Eintrag gemerkt. Eigenes Echo, fremder und fehlender `context`
+  zählen gleich: Die Vorschau endet bei erreichtem Wert oder nach der Frist
+  (Nutzerentscheid 19.11.2026: Polling-Integrationen melden das Ergebnis des
+  eigenen Aufrufs mit neuem `context`).
 
 Bewusste Abweichungen von Hue: `%s` in `description` setzt auf Wunsch des
 Nutzers die Standardzeile ein (bei Hue die Zahl der leuchtenden Lampen);
