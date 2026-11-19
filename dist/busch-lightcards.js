@@ -407,6 +407,7 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             effects: 'Effekte',
             lights: 'Lampen',
             brightness: 'Helligkeit',
+            percentValue: '{pct} Prozent',
             colour: 'Farbe',
             white: 'Weiß',
             back: 'Zurück',
@@ -543,6 +544,7 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             effects: 'Effects',
             lights: 'Lights',
             brightness: 'Brightness',
+            percentValue: '{pct} percent',
             colour: 'Colour',
             white: 'White',
             back: 'Back',
@@ -2646,6 +2648,13 @@ ha-card.fg-dark {
     --mdc-icon-size: var(--blc-icon-size);
 }
 .text {
+    /* M57: beside the button in the DOM, over it on screen. */
+    grid-area: identity;
+    align-self: center;
+    margin-left: calc(var(--blc-media) + var(--ha-space-3, 12px));
+    position: relative;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
     min-width: 0;
     line-height: normal;
     color: var(--blc-text-color, var(--primary-text-color));
@@ -3122,10 +3131,17 @@ class BuschLightCard extends HTMLElement {
         main.className = 'main';
         this._main = main;
 
+        // M57 (Buschcheck F6): the button holds the icon only. The title is
+        // its sibling and names it through aria-labelledby: children of a
+        // button are presentational, so an h2 inside it was lost to screen
+        // readers. The title still overlays the same grid cell, so the tap
+        // area and the focus ring look as before.
         const tap = document.createElement('div');
         tap.className = 'tap';
         tap.setAttribute('role', 'button');
         tap.tabIndex = 0;
+        tap.setAttribute('aria-labelledby', 'blc-title');
+        tap.setAttribute('aria-describedby', 'blc-status');
         this._tap = tap;
 
         const media = document.createElement('div');
@@ -3138,10 +3154,13 @@ class BuschLightCard extends HTMLElement {
         const text = document.createElement('div');
         text.className = 'text';
         this._title = document.createElement('h2');
+        this._title.id = 'blc-title';
+        this._text = text;
+        // The status line does what the button does: one tab stop, not two.
         this._desc = document.createElement('div');
         this._desc.className = 'desc';
-        this._desc.setAttribute('role', 'button');
-        this._desc.tabIndex = 0;
+        this._desc.id = 'blc-status';
+        this._desc.tabIndex = -1;
         this._descText = document.createElement('span');
         this._descText.className = 'dtext';
         this._warn = document.createElement('span');
@@ -3154,9 +3173,9 @@ class BuschLightCard extends HTMLElement {
         this._desc.appendChild(this._descText);
         this._desc.appendChild(this._warn);
         text.appendChild(this._title);
-        tap.appendChild(text);
 
         main.appendChild(tap);
+        main.appendChild(text);
         main.appendChild(this._desc);
 
         this._toggle = document.createElement('button');
@@ -3206,9 +3225,9 @@ class BuschLightCard extends HTMLElement {
             this._model.toggle();
         });
 
-        // Both lines of the header retain the card's tap and hold actions.
+        // Icon, title and status line all keep the card's tap and hold actions.
         const cancelHold = () => clearTimeout(this._holdTimer);
-        [this._tap, this._desc].forEach((target) => {
+        [this._tap, this._text, this._desc].forEach((target) => {
             target.addEventListener('pointerdown', () => {
                 this._held = false;
                 clearTimeout(this._holdTimer);
@@ -3255,7 +3274,7 @@ class BuschLightCard extends HTMLElement {
             event.stopPropagation();
             this._showPct(pct);
             this._sliderLabel.textContent = pct + ' %';
-            this._slider.setAttribute('aria-valuenow', String(pct));
+            this._setSliderValue(pct);
             // Through the session as well: fast key repeats collapse into the
             // newest value instead of queueing one call per key.
             this._live.commit(pct, (value) => this._model.setBrightness(value));
@@ -3270,7 +3289,7 @@ class BuschLightCard extends HTMLElement {
             this._slider.classList.toggle('dragging', !done);
             this._showPct(pct);
             this._sliderLabel.textContent = pct + ' %';
-            this._slider.setAttribute('aria-valuenow', String(pct));
+            this._setSliderValue(pct);
             const live = this._live;
             if (!done) {
                 // 0 is never sent while sliding (it would switch lights off
@@ -3347,7 +3366,6 @@ class BuschLightCard extends HTMLElement {
         this._icon.setAttribute('icon', BuschUI.resolveMedia({display_mode:'icon',icon:model.icon},{},'mdi:lightbulb').icon);
         this._title.textContent = model.title;
         this._descText.textContent = model.description;
-        this._tap.setAttribute('aria-label', model.title);
         this._desc.dataset.tone = BuschUI.statusSemantic(model.isEmpty ? 'unknown'
             : model.isAllUnavailable ? 'unavailable'
                 : model.deadCount > 0 ? 'warning'
@@ -3403,10 +3421,16 @@ class BuschLightCard extends HTMLElement {
             const pinned = this._live ? this._live.pinned : null;
             const pct = pinned !== null ? pinned : model.brightnessPct;
             this._showPct(pct);
-            this._slider.setAttribute('aria-valuenow', String(pct));
+            this._setSliderValue(pct);
             this._sliderLabel.textContent = model.isOn || pinned !== null
                 ? pct + ' %' : translate(this._hass, 'brightness');
         }
+    }
+
+    /** The slider's value for assistive technology: number and words (M57). */
+    _setSliderValue(pct) {
+        this._slider.setAttribute('aria-valuenow', String(pct));
+        this._slider.setAttribute('aria-valuetext', translate(this._hass, 'percentValue', { pct }));
     }
 
     /** Slider position as transform only: no layout work per drag step. */

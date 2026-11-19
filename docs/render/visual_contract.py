@@ -473,6 +473,8 @@ def main():
         }""", {"root": root, "states": on})
         page.keyboard.press("Enter")
         tap_calls = page.evaluate("window.__serviceCalls.length")
+        # M57: the status line is no tab stop any more (tabindex -1, same action
+        # as the title button); focused by script it still answers the key.
         page.evaluate("document.querySelector('busch-light-card').shadowRoot.querySelector('.desc').focus()")
         page.keyboard.press("Space")
         status_calls = page.evaluate("window.__serviceCalls.length")
@@ -492,11 +494,62 @@ def main():
         page.evaluate("document.querySelector('busch-light-card').shadowRoot.querySelector('.toggle').focus()")
         page.keyboard.press("Space")
         toggle_calls = page.evaluate("window.__serviceCalls.length")
+        # M57 (Buschcheck F6): real Tab presses through one card, off and on.
+        # The header has two stops (title button, switch); the slider is the
+        # third only while it can act. No heading may sit inside a button.
+        tab_stops = {}
+        for label, states in (("off", off), ("on", on)):
+            page.evaluate("""(payload) => {
+                window.freshStep();
+                const stack = document.getElementById('stack');
+                stack.replaceChildren();
+                const before = document.createElement('button');
+                before.id = 'tab-start'; before.textContent = 'start';
+                stack.appendChild(before);
+                const card = document.createElement('busch-light-card');
+                card.setConfig({type:'custom:busch-light-card', entity:payload.root});
+                stack.appendChild(card);
+                card.hass = window.makeHass(payload.states);
+                const after = document.createElement('button');
+                after.id = 'tab-end'; after.textContent = 'end';
+                stack.appendChild(after);
+                before.focus();
+            }""", {"root": root, "states": states})
+            stops = []
+            for _ in range(8):
+                page.keyboard.press("Tab")
+                where = page.evaluate("""() => {
+                    const a = document.activeElement;
+                    if (a && a.id === 'tab-end') return 'end';
+                    const inner = a && a.shadowRoot && a.shadowRoot.activeElement;
+                    return inner ? inner.className.split(' ')[0] : (a ? a.tagName : null);
+                }""")
+                if where == "end":
+                    break
+                stops.append(where)
+            roles = page.evaluate("""() => {
+                const sr = document.querySelector('busch-light-card').shadowRoot;
+                const buttons = Array.from(sr.querySelectorAll('button, [role=button]'));
+                const tap = sr.querySelector('.tap');
+                const label = tap.getAttribute('aria-labelledby');
+                return { headingsInButtons: buttons.reduce((n, b) =>
+                            n + b.querySelectorAll('h1, h2, h3, h4, h5, h6, [role=heading]').length, 0),
+                         labelledBy: label, labelText: label && sr.getElementById(label)
+                            ? sr.getElementById(label).textContent : null,
+                         valuetext: sr.querySelector('.slider').getAttribute('aria-valuetext') };
+            }""")
+            tab_stops[label] = {"stops": stops, **roles}
+        tab_ok = (tab_stops["off"]["stops"] == ["tap", "toggle"]
+                  and tab_stops["on"]["stops"] == ["tap", "toggle", "slider"]
+                  and all(v["headingsInButtons"] == 0 and v["labelText"] == "Demo-Lichtgruppe"
+                          for v in tab_stops.values())
+                  and str(tab_stops["on"]["valuetext"]).endswith(" Prozent"))
         report["keyboard"] = {"tapCalls": tap_calls, "statusCalls": status_calls,
-                              "slider": slider_result, "toggleCalls": toggle_calls}
+                              "slider": slider_result, "toggleCalls": toggle_calls,
+                              "tabStops": tab_stops, "tabOk": tab_ok}
         report["keyboard"]["ok"] = (tap_calls > 0 and status_calls > tap_calls
              and slider_result["calls"] > status_calls and slider_result["value"] == "78"
-             and toggle_calls > slider_result["calls"])
+             and toggle_calls > slider_result["calls"] and tab_ok)
         browser.close()
     server.shutdown()
     report["passed"] = sum(case["ok"] for case in report["cases"])

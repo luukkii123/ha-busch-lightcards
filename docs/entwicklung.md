@@ -127,6 +127,20 @@ Bedeutung nur über Farbe. Ersatzprüfung: berechnete Textfarbe mit 4,5:1 je
 Stufe (Node-Tests und Browserlauf messen die Quote), Zustand immer als Text,
 Layout, Kopf und Bedienelemente bleiben die des UI-Vertrags.
 
+## Kartenkopf und Tastatur (M57, Buschcheck F6)
+
+Der Button `.tap` (`role=button`) enthält nur das Symbol und heißt über
+`aria-labelledby` wie der Titel; das `h2` steht als Geschwister daneben und
+liegt per Grid in derselben Zelle, Tippfläche und Fokusring bleiben gleich.
+Kinder eines Buttons sind für Screenreader nur Darstellung, die Überschrift
+ging dort verloren. Die Statuszeile `.desc` löst dasselbe aus, ist also kein
+eigener Tab-Stopp mehr (`tabindex=-1`, keine Rolle) und beschreibt den Button
+(`aria-describedby`). Tippen und Halten hängen an Symbol, Titel und
+Statuszeile wie vorher. Tab-Stopps: Titel-Button und Schalter, dazu der Regler,
+solange er wirkt (R03). Der Regler trägt `aria-valuetext` („75 Prozent“).
+`visual_contract.py` drückt echte Tabs durch die Karte (aus/an) und zählt
+Überschriften in Buttons.
+
 ## Dialog am Handy (seit 0.11.0, #877)
 
 Bis 0.10.0 war der Dialog unter 700 px ein unten angedocktes Sheet mit
