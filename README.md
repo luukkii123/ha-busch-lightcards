@@ -135,7 +135,7 @@ copied from the upstream card working; the editor folds it into snake_case.
 | `allow_zero` | boolean | `false` | Let the slider reach 0, which turns the group off (otherwise it stops at 1 %). |
 | `off_shadow` | boolean | `true` | Inset shadow while everything is off. |
 | `tap_action` | `dialog` / `toggle` / `more-info` / `none` | `dialog` | Short tap on the card. |
-| `hold_action` | `dialog` / `toggle` / `more-info` / `none` | `more-info` | Holding the card for half a second. |
+| `hold_action` | `dialog` / `toggle` / `more-info` / `none` | `more-info` | Holding the card for half a second; on a keyboard Shift+Enter or the context menu key. |
 | `theme` | string | dashboard theme | A Home Assistant theme for this card and its dialog only. |
 | `dialog_theme` | `theme` / `dark` | `theme` | Colours of the dialog: `theme` follows the Home Assistant theme (light or dark), `dark` keeps the black Hue-style dialog of versions up to 0.13.3 in both themes. |
 | `api_id` | string (letters, digits, `_`, `-`) | - | Makes the dialog openable from elsewhere, see [API](#api). |

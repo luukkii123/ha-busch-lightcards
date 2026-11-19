@@ -368,6 +368,8 @@ const CARD_VERSION = '0.15.0';
  * and a one-line hint, the 44 px slider with its 16 px margin).
  */
 const CARD_SIZE_PX = Object.freeze({ padding: 32, status: 24, state: 88, slider: 60 });
+/** M74: the keyboard's hold on the card button (aria-keyshortcuts syntax). */
+const HOLD_KEYS = 'Shift+Enter ContextMenu';
 /** #1011: default entity of getStubConfig per entity registry, see there. */
 const STUB_PICKS = new WeakMap();
 
@@ -520,7 +522,7 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             dialog_theme: 'Wie das Thema übernimmt die hellen oder dunklen Farben von Home Assistant; Dunkel zeigt den Dialog immer schwarz wie in der Hue-App. Vorgabe: wie das Thema.',
             is_visible: 'Aus versteckt die Karte; über die API-Kennung lässt sich ihr Dialog trotzdem öffnen. Vorgabe an.',
             tap_action: 'Was ein kurzer Tipp auf die Karte auslöst. Vorgabe: Dialog öffnen.',
-            hold_action: 'Was ein halbe Sekunde langes Halten auf der Karte auslöst. Vorgabe: Mehr Informationen.',
+            hold_action: 'Was eine halbe Sekunde langes Halten auf der Karte auslöst, per Tastatur Umschalt+Enter oder die Kontextmenütaste. Vorgabe: Mehr Informationen.',
             api_id: 'Mit einer Kennung öffnet window.busch_light_card.<Kennung>_openHueScreen() oder ein Link auf #busch_light_card:<Kennung>_openHueScreen den Dialog; erlaubt sind Buchstaben, Ziffern, _ und -. Vorgabe leer.',
             scenes: 'Die Kacheln oben im Dialog, eine je Szene oder Skript. Ein Knopf übernimmt in einem Zug jede Szene, die diese Lampen benutzt; entfernen lässt sich jede einzeln wieder. Vorgabe: keine.',
             scene_entity: 'Die Szene oder das Skript, das diese Kachel im Dialog auslöst. Pflichtfeld.',
@@ -663,7 +665,7 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             dialog_theme: 'Follow the theme takes the light or dark colours of Home Assistant; Dark always shows the dialog black as in the Hue app. Default: follow the theme.',
             is_visible: 'Off hides the card; its dialog still opens through the API id. Default on.',
             tap_action: 'What a short tap on the card does. Default: open dialog.',
-            hold_action: 'What holding the card for half a second does. Default: more info.',
+            hold_action: 'What holding the card for half a second does, on a keyboard Shift+Enter or the context menu key. Default: more info.',
             api_id: 'With an id, window.busch_light_card.<id>_openHueScreen() or a link to #busch_light_card:<id>_openHueScreen opens the dialog; letters, digits, _ and - only. Default empty.',
             scenes: 'The tiles at the top of the dialog, one per scene or script. One button adds every scene using these lights at once, and each one can be removed again. Default: none.',
             scene_entity: 'The scene or script this tile triggers in the dialog. Required.',
@@ -3093,6 +3095,7 @@ class BuschLightCard extends HTMLElement {
         this._error = null;
         this._holdTimer = null;
         this._held = false;
+        this._menuKeyAt = null; // M74: when the context menu key ran the hold
         this._seen = null; // what the last render read, see watchSnapshot()
         this._live = null; // the slider's live session (#715)
         this._apiId = null;
@@ -3337,6 +3340,8 @@ class BuschLightCard extends HTMLElement {
         tap.tabIndex = 0;
         tap.setAttribute('aria-labelledby', 'blc-title');
         tap.setAttribute('aria-describedby', 'blc-status');
+        // M74: the hold action's keyboard way, announced where there is one.
+        if (this._opts.holdAction !== 'none') tap.setAttribute('aria-keyshortcuts', HOLD_KEYS);
         this._tap = tap;
 
         const media = document.createElement('div');
@@ -3454,10 +3459,21 @@ class BuschLightCard extends HTMLElement {
                 this._runAction(this._opts.tapAction);
             });
             target.addEventListener('keydown', (event) => {
-                if (event.key !== 'Enter' && event.key !== ' ') return;
+                // M74 (Buschcheck F11): Shift+Enter or the context menu key
+                // is the keyboard's hold; Enter and Space stay the tap.
+                const hold = event.key === 'ContextMenu' || (event.key === 'Enter' && event.shiftKey);
+                if (!hold && event.key !== 'Enter' && event.key !== ' ') return;
                 event.preventDefault();
                 event.stopPropagation();
-                this._runAction(this._opts.tapAction);
+                if (event.key === 'ContextMenu') this._menuKeyAt = Date.now();
+                this._runAction(hold ? this._opts.holdAction : this._opts.tapAction);
+            });
+            // The menu the context menu key opens right after its keydown
+            // stays shut; a right click keeps the browser's menu.
+            target.addEventListener('contextmenu', (event) => {
+                if (this._menuKeyAt === null || Date.now() - this._menuKeyAt > 1000) return;
+                this._menuKeyAt = null;
+                event.preventDefault();
             });
         });
 

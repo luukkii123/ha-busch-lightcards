@@ -76,3 +76,61 @@ test('M57 Regler: aria-valuetext in Worten, folgt Tastatur und Zustand', () => {
   const k2 = neueKarte(en, haus2);
   assert.match(k2._slider.getAttribute('aria-valuetext'), /^\d+ percent$/);
 });
+
+// M74 (Buschcheck F11): the hold action has a keyboard way as well.
+test('M74 Umschalt+Enter auf dem Kartenknopf löst die Halte-Aktion aus, nicht das Tippen', () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const karte = neueKarte(u, haus, { tap_action: 'none', hold_action: 'toggle' });
+  const vorher = haus.rufe.length;
+  const e = ereignis(u, 'keydown', { key: 'Enter', shiftKey: true });
+  karte._tap.dispatchEvent(e);
+  assert.equal(haus.rufe.length, vorher + 1, 'hold_action (toggle) lief');
+  assert.equal(haus.rufe.at(-1).service, 'turn_off');
+  assert.ok(e.defaultPrevented);
+  // Plain Enter stays the tap action (none here): nothing more.
+  karte._tap.dispatchEvent(ereignis(u, 'keydown', { key: 'Enter' }));
+  assert.equal(haus.rufe.length, vorher + 1, 'Enter ohne Umschalt = tap_action');
+  // Shift+Space is no hold: only Enter carries it.
+  karte._tap.dispatchEvent(ereignis(u, 'keydown', { key: ' ', shiftKey: true }));
+  assert.equal(haus.rufe.length, vorher + 1);
+});
+
+test('M74 Kontextmenütaste löst die Halte-Aktion aus, das Browsermenü danach nicht', () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const karte = neueKarte(u, haus, { tap_action: 'none', hold_action: 'toggle' });
+  const vorher = haus.rufe.length;
+  const taste = ereignis(u, 'keydown', { key: 'ContextMenu' });
+  karte._tap.dispatchEvent(taste);
+  assert.equal(haus.rufe.length, vorher + 1, 'hold_action lief');
+  assert.ok(taste.defaultPrevented);
+  const menue = ereignis(u, 'contextmenu', { button: 0 });
+  karte._tap.dispatchEvent(menue);
+  assert.ok(menue.defaultPrevented, 'das Menü der Taste bleibt zu');
+  assert.equal(haus.rufe.length, vorher + 1, 'contextmenu löst nichts zweites aus');
+  // A right click is not the key: the browser menu stays the browser's.
+  const rechts = ereignis(u, 'contextmenu', { button: 2 });
+  karte._tap.dispatchEvent(rechts);
+  assert.equal(rechts.defaultPrevented, false);
+});
+
+test('M74 Halte-Aktion more-info per Tastatur, aria-keyshortcuts nur mit Halte-Aktion', () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const karte = neueKarte(u, haus);
+  const gefeuert = [];
+  karte.dispatchEvent = (e) => { gefeuert.push(e.type); return true; };
+  karte._tap.dispatchEvent(ereignis(u, 'keydown', { key: 'Enter', shiftKey: true }));
+  assert.deepEqual(gefeuert, ['hass-more-info'], 'Vorgabe more-info');
+  assert.equal(karte._tap.getAttribute('aria-keyshortcuts'), 'Shift+Enter ContextMenu');
+  const ohne = neueKarte(u, neuesHaus({ an: true }), { hold_action: 'none' });
+  assert.equal(ohne._tap.getAttribute('aria-keyshortcuts'), null, 'ohne Halte-Aktion kein Kürzel');
+});
+
+test('M74 Wörterbuch nennt den Tastaturweg im Hilfetext (de und en)', () => {
+  const u = neueUmgebung();
+  const T = u.registry.get('busch-light-card').__internals.TEXTE;
+  const de = JSON.stringify(T.de || T), en = JSON.stringify(T.en || T);
+  assert.match(de, /Umschalt\+Enter/);
+  assert.match(de, /Kontextmenütaste/);
+  assert.match(en, /Shift\+Enter/);
+  assert.match(en, /context menu key/);
+});

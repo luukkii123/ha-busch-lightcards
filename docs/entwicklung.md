@@ -153,6 +153,13 @@ solange er wirkt (R03). Der Regler trägt `aria-valuetext` („75 Prozent“).
 `visual_contract.py` drückt echte Tabs durch die Karte (aus/an) und zählt
 Überschriften in Buttons.
 
+Halten per Tastatur (M74, Buschcheck F11): Umschalt+Enter oder die
+Kontextmenütaste auf dem Titel-Button lösen `hold_action` aus; Enter und
+Leertaste bleiben `tap_action`. Das Browsermenü, das die Kontextmenütaste
+gleich danach öffnen würde, bleibt zu (1 s), ein Rechtsklick behält es. Der
+Button trägt `aria-keyshortcuts`, solange eine Halte-Aktion gesetzt ist; der
+Hilfetext von `hold_action` nennt den Weg (Wörterbuch de/en).
+
 ## Dialog am Handy (seit 0.11.0, #877)
 
 Bis 0.10.0 war der Dialog unter 700 px ein unten angedocktes Sheet mit
