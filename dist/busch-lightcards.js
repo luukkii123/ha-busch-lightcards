@@ -2857,7 +2857,9 @@ ha-card.fg-dark {
     background: var(--secondary-text-color);
 }
 .desc[data-tone='success']::before { background: var(--success-color, var(--primary-color)); }
-.desc[data-tone='warning']::before { background: var(--warning-color, var(--primary-color)); }
+/* M79 (#1320): the warning dot is the warning colour 60 % with the text colour (>= 3:1 on the card, was 1.96:1);
+   success and error already reach 3:1. */
+.desc[data-tone='warning']::before { background: color-mix(in srgb, var(--warning-color, #ffa600) 60%, var(--primary-text-color, #212121)); }
 .desc[data-tone='error']::before { background: var(--error-color, var(--primary-color)); }
 .desc[data-tone='unavailable']::before { background: var(--error-color, var(--secondary-text-color)); }
 .desc[data-tone='unknown']::before { background: var(--secondary-text-color); }
@@ -2905,7 +2907,8 @@ ha-card.fg-dark {
 .warn ha-icon {
     --mdc-icon-size: 13px;
     flex-shrink: 0;
-    color: var(--warning-color, var(--primary-text-color));
+    /* M79 (#1320): warning 60 % with the text colour, >= 3:1 on the warning chip (was 1.73:1). */
+    color: color-mix(in srgb, var(--warning-color, #ffa600) 60%, var(--primary-text-color, #212121));
 }
 .lit .warn ha-icon, .tinted .warn ha-icon { color: inherit; }
 .toggle {

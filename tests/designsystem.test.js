@@ -393,3 +393,29 @@ test('M26 Editor: Hinzufügen-Knopf, Warnhinweis und Fallback-Meldung halten 4,5
     }
   }
 });
+
+// ── M79 (#1320, user decision 19.11.): coloured symbols reach 3:1 on their surface, also next to a text ──
+// The tone dot of the status line sits on the card, the warning icon on the warning chip (18 % warning over the card).
+test('M79 Tonpunkte der Statuszeile und Warnsymbol im Abzeichen halten 3:1 hell und dunkel', () => {
+  const css = blatt('CARD_STYLES'), faelle = [];
+  const misch = (a, b, p) => a.map((v, i) => v * p + b[i] * (1 - p));
+  const farbeVon = (regelText, prop) => (regelText.match(new RegExp('(?:^|[{;\\s])' + prop + ':\\s*([^;]+);')) || [])[1];
+  for (const [name, t0] of Object.entries(KT_THEMEN)) {
+    const t = { 'success-color': '#43a047', ...t0 }, karte = ktRgb(t['card-background-color']);
+    const chip = misch(ktRgb(t['warning-color']), karte, 0.18);
+    const liste = [
+      ...['success', 'warning', 'error'].map((ton) => [".desc[data-tone='" + ton + "']::before", 'background', karte]),
+      ['.warn ha-icon', 'color', chip],
+    ];
+    for (const [sel, prop, flaeche] of liste) {
+      const regelText = blattRegel(css, sel) || (css.match(new RegExp('\\n' + sel.replace(/[.[\]()']/g, '\\$&') + ' \\{[^}]*\\}')) || [''])[0];
+      const wert = farbeVon(regelText, prop);
+      assert.ok(wert, sel + ' hat ' + prop);
+      // The status colour falls back to the primary colour in the card; the theme always sets it, so its own value counts.
+      const q = ktQuote(ktFarbe(wert.replace(/,\s*var\(--(primary-color|primary-text-color|secondary-text-color)\)\)/, ')'), t), flaeche);
+      faelle.push(`${sel} ${name}: ${q.toFixed(2)}:1`);
+      assert.ok(q >= 3, faelle.at(-1));
+    }
+  }
+  assert.equal(faelle.length, 12);
+});
