@@ -230,7 +230,7 @@ const BuschUI = (() => {
  * README for why.
  */
 
-const CARD_VERSION = '0.13.3';
+const CARD_VERSION = '0.14.0';
 /** #1011: default entity of getStubConfig per entity registry, see there. */
 const STUB_PICKS = new WeakMap();
 
