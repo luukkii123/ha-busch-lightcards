@@ -1,9 +1,14 @@
 name: Release
 
+# Generated from hacs/scripts/ci-vorlage/release.yml (M45); only the bundle name differs per repo.
+# A tag push is enough: this workflow creates the release itself and attaches the card as asset (HACS
+# prefers the asset and falls back to dist/busch-lightcards.js in the repo). workflow_dispatch re-runs an
+# existing tag when the tag is chosen as ref; on a branch the release job is skipped (S8).
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,30 +18,46 @@ jobs:
     uses: ./.github/workflows/validate.yml
 
   release:
+    name: Release
     needs: tests
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-    runs-on: ubuntu-latest
+      id-token: write
+      attestations: write
+    env:
+      BUNDLE: busch-lightcards.js
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
       - name: Check CARD_VERSION against the tag
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          FILE_VERSION="$(grep -m1 -oP "^const CARD_VERSION = '\K[^']+" dist/busch-lightcards.js)"
-          echo "tag=$TAG file=$FILE_VERSION"
-          if [ "$TAG" != "$FILE_VERSION" ]; then
-            echo "::error::CARD_VERSION ($FILE_VERSION) does not match the tag ($TAG)."
+          tag="${GITHUB_REF_NAME#v}"
+          card="$(grep -m1 -oP "^const CARD_VERSION = [\"']\K[^\"']+" "dist/$BUNDLE")"
+          echo "tag=$tag CARD_VERSION=$card"
+          if [ -z "$card" ] || [ "$tag" != "$card" ]; then
+            echo "::error::CARD_VERSION ($card) does not match the tag ($tag)."
             exit 1
           fi
 
       - name: SHA-256 checksum
-        run: cd dist && sha256sum busch-lightcards.js > busch-lightcards.js.sha256 && cat busch-lightcards.js.sha256
+        working-directory: dist
+        run: sha256sum "$BUNDLE" > "$BUNDLE.sha256" && cat "$BUNDLE.sha256"
+
+      - name: Attest build provenance
+        # Verify: gh attestation verify dist/busch-lightcards.js -R luukkii123/<repo>
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/busch-lightcards.js
 
       - name: Create release with the card as asset
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
           files: |
             dist/busch-lightcards.js
             dist/busch-lightcards.js.sha256
-          generate_release_notes: true
