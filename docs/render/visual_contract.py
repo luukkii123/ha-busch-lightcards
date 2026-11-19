@@ -54,6 +54,48 @@ def recolored(states, looks):
     return out
 
 
+# M28: the dialog's close X, measured where it is drawn - in the group view and
+# in a light's detail view, at every width and theme: present, first in the
+# header, mdi:close, at least 44 x 44 px, inside the sheet and the viewport,
+# visible and the topmost element at its centre. Animations are finished first,
+# so the sheet's grow-in scale does not shrink the measured box.
+CLOSE_X_JS = """(view) => {
+    const dlg = document.querySelector('busch-light-dialog');
+    if (view === 'detail') { dlg._detailEntity = 'light.demo_2'; dlg._renderSheet(); }
+    const sr = dlg.shadowRoot;
+    sr.getAnimations().forEach(a => a.finish());
+    const sheet = sr.querySelector('.sheet').getBoundingClientRect();
+    const head = sr.querySelector('.head');
+    const x = head.querySelector('.busch-dialog-close');
+    if (!x) return { view, present: false };
+    const r = x.getBoundingClientRect();
+    const cs = getComputedStyle(x);
+    const hit = sr.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return { view, present: true, first: head.firstElementChild === x,
+        icon: x.querySelector('ha-icon') ? x.querySelector('ha-icon').getAttribute('icon') : null,
+        label: x.getAttribute('aria-label'), width: x.offsetWidth, height: x.offsetHeight,
+        rect: { left: r.left, top: r.top, right: r.right, bottom: r.bottom },
+        sheet: { left: sheet.left, top: sheet.top, right: sheet.right, bottom: sheet.bottom },
+        inSheet: r.left >= sheet.left - 0.5 && r.top >= sheet.top - 0.5
+            && r.right <= sheet.right + 0.5 && r.bottom <= sheet.bottom + 0.5,
+        inViewport: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight,
+        visible: cs.display !== 'none' && cs.visibility === 'visible' && Number(cs.opacity) >= 0.99,
+        hit: !!hit && (hit === x || x.contains(hit)),
+        order: Array.from(head.querySelectorAll('.iconbtn')).map(b => b.getAttribute('aria-label')) };
+}"""
+
+
+def close_x_ok(measured):
+    """True when the X of one view passes every M28 measurement."""
+    ok = (measured.get("present") is True and measured["first"] and measured["icon"] == "mdi:close"
+          and measured["width"] >= 44 and measured["height"] >= 44
+          and measured["inSheet"] and measured["inViewport"] and measured["visible"] and measured["hit"])
+    if measured.get("view") == "detail":
+        # X left, the back arrow after it (picture order = tab order).
+        ok = ok and len(measured["order"]) == 2 and measured["order"][0] == measured["label"]
+    return bool(ok)
+
+
 def main():
     card_file = Path(sys.argv[1]).resolve()
     result = Path(sys.argv[2]).resolve()
@@ -359,9 +401,12 @@ def main():
                                  clientWidth: sr.querySelector('.sheet').clientWidth };
                     }""", {"root": root, "states": scenarios[dialog_case]["states"], "look": look})
                     page.wait_for_timeout(300)
+                    x_group = page.evaluate(CLOSE_X_JS, "group")
                     shot = (f"dialog-{dialog_case}-{width}-{theme}.png" if not look
                             else f"dialog-{dialog_case}-darklook-{width}-{theme}.png")
                     page.screenshot(path=str(result / shot))
+                    x_detail = page.evaluate(CLOSE_X_JS, "detail")
+                    dialog_metrics["closeX"] = [x_group, x_detail]
                     ok = (dialog_metrics["headLit"] and dialog_metrics["minRatio"] >= 4.5
                           and dialog_metrics["checked"] >= 4
                           and dialog_metrics["scrollWidth"] <= dialog_metrics["clientWidth"] + 1)
@@ -370,6 +415,8 @@ def main():
                     measured = dialog_metrics["look"]
                     # The missing scene keeps 3:1 and is not dimmed by opacity (M29).
                     ok = ok and measured["goneContrast"] >= 3 and measured["goneOpacity"] == "1"
+                    # M28: the same X, top left, in both views (measured above).
+                    ok = ok and close_x_ok(x_group) and close_x_ok(x_detail)
                     if look == "dark":
                         # The 0.13.3 picture: #171717 sheet, white text, #363636 tiles.
                         ok = ok and measured["attribute"] == "dark"

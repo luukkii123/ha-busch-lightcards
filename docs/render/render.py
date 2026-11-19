@@ -151,6 +151,13 @@ PAGE = """<!doctype html>
       root.innerHTML = '<style>:host{display:inline-block;width:var(--mdc-icon-size,24px);' +
         'height:var(--mdc-icon-size,24px);vertical-align:middle;}' +
         'i{display:block;width:100%;height:100%;border-radius:22%;background:currentColor;opacity:.85;}' +
+        // Every other icon is a square; the dialog's close X and back arrow get
+        // their own shape, so a picture shows which button is which (M28).
+        ':host([icon="mdi:close"]) i{border-radius:0;opacity:1;background:' +
+        'linear-gradient(45deg,transparent 41%,currentColor 41% 59%,transparent 59%),' +
+        'linear-gradient(-45deg,transparent 41%,currentColor 41% 59%,transparent 59%);}' +
+        ':host([icon="mdi:arrow-left"]) i{border-radius:0;opacity:1;' +
+        'clip-path:polygon(0 50%,45% 8%,45% 38%,100% 38%,100% 62%,45% 62%,45% 92%);}' +
         '</style><i></i>';
     }
     attributeChangedCallback(name, _old, value) {
