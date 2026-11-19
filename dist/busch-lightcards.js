@@ -2781,9 +2781,10 @@ ha-card.fg-dark {
     line-height: normal;
     color: var(--blc-text-color, var(--primary-text-color));
 }
+/* M61: size and weight from the family's step 1 (BuschUI.header level 1:
+   --ha-card-header-font-size, medium); the colour stays the surface's. */
 .text h2 {
-    font-size: var(--ha-font-size-m, 16px);
-    font-weight: var(--ha-font-weight-semibold, 600);
+    color: inherit;
     margin: 0;
     min-width: 0;
     overflow: hidden;
@@ -3293,6 +3294,8 @@ class BuschLightCard extends HTMLElement {
         this._desc.appendChild(this._descText);
         this._desc.appendChild(this._warn);
         text.appendChild(this._title);
+        // M61: the card title on the family's step 1, as a labelled group.
+        BuschUI.header({ node: text, titleNode: this._title, level: 1 });
 
         main.appendChild(tap);
         main.appendChild(text);
@@ -3471,6 +3474,7 @@ class BuschLightCard extends HTMLElement {
         this.style.display = this._opts.isVisible ? '' : 'none';
         if (!this._hass) {
             this._title.textContent = (!this._opts.titleParts && this._opts.title) || this._opts.entityIds[0];
+            BuschUI.header({ node: this._text, titleNode: this._title, level: 1 });
             this._descText.textContent = translate(null, 'loading');
             this._desc.dataset.tone = 'unknown';
             this._warn.style.display = 'none';
@@ -3485,6 +3489,7 @@ class BuschLightCard extends HTMLElement {
 
         this._icon.setAttribute('icon', BuschUI.resolveMedia({display_mode:'icon',icon:model.icon},{},'mdi:lightbulb').icon);
         this._title.textContent = model.title;
+        BuschUI.header({ node: this._text, titleNode: this._title, level: 1 });
         this._descText.textContent = model.description;
         this._desc.dataset.tone = BuschUI.statusSemantic(model.isEmpty ? 'unknown'
             : model.isAllUnavailable ? 'unavailable'
@@ -3856,11 +3861,10 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     background: var(--blc-d-tile);
     color: var(--blc-d-text);
 }
-/* M63: sentence case, no letter spacing, as every other family. */
+/* M61/M63: the family's one level-2 heading (BuschUI.sectionHeading: 14 px,
+   medium, sentence case); colour and spacing stay the sheet's. */
 h3 {
-    font-size: ${BuschUI.tokens.fontSizeM};
-    font-weight: var(--ha-font-weight-medium, 500);
-    color: var(--blc-d-muted);
+    color: var(--blc-d-text);
     margin: 18px 0 8px;
     min-width: 0;
     overflow: hidden;
@@ -4508,7 +4512,7 @@ class BuschLightDialog extends HTMLElement {
         who.appendChild(h1);
         who.appendChild(sub);
         head.appendChild(who);
-        BuschUI.header({node:head,titleNode:h1});
+        BuschUI.header({node:head,titleNode:h1,subtitleNode:sub});
 
         // Lit header in the colours of whatever it names (#712).
         const headColors = detail
@@ -4773,9 +4777,7 @@ class BuschLightDialog extends HTMLElement {
     // -- building blocks ----------------------------------------------------
 
     _heading(text) {
-        const h3 = document.createElement('h3');
-        h3.textContent = text;
-        return h3;
+        return BuschUI.sectionHeading({ node: document.createElement('h3'), text });
     }
 
     _makeHeadSwitch(isOn, disabled, onClick) {

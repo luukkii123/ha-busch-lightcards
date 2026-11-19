@@ -133,3 +133,39 @@ test('M63 Radien nur aus Token: Kreis, Pille, Dialog- oder Innenradius', () => {
     assert.match(blattRegel(d, sel), /border-radius: \$\{BuschUI\.tokens\.radiusInner\}/, sel + ' nimmt die eine Innenradius-Stufe');
   }
 });
+
+// ── M61: card title on the family step 1, one level-2 section heading ─────────
+
+test('M61 Kartentitel über BuschUI.header({level:1}): Stufe 1, beschriftete Gruppe mit dem Titel', () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const karte = neueKarte(u, haus);
+  const titel = karte._title;
+  assert.ok(klassen(titel).includes('busch-ui-title'));
+  assert.equal(titel.getAttribute('data-level'), '1');
+  assert.equal(titel.tagName, 'H2', 'echte Überschrift bleibt');
+  const kopf = titel.parentNode;
+  assert.ok(klassen(kopf).includes('busch-ui-header'));
+  assert.equal(kopf.getAttribute('aria-label'), titel.textContent, 'Gruppe heißt wie der Titel');
+  karte.hass = haus.setze({ 'light.wohnzimmer': Object.assign({}, haus.states['light.wohnzimmer'], {
+    attributes: Object.assign({}, haus.states['light.wohnzimmer'].attributes, { friendly_name: 'Salon' }) }) });
+  assert.equal(titel.textContent, 'Salon');
+  assert.equal(kopf.getAttribute('aria-label'), 'Salon', 'folgt dem neuen Titel');
+});
+
+test('M61 CSS: Titelgröße und -gewicht kommen aus der Familienstufe, die Farbe bleibt die der Fläche', () => {
+  const r = blattRegel(blatt('CARD_STYLES'), '.text h2');
+  assert.ok(r, '.text h2 vorhanden');
+  assert.doesNotMatch(r, /font-size|font-weight/, 'Stufe 1 aus BuschUI (--ha-card-header-font-size, medium)');
+  assert.match(r, /color: inherit/, 'Lichtfarbe der Karte: Schrift der Fläche, nicht die Themafarbe');
+});
+
+test('M61 Dialog: Abschnittsüberschriften sind die eine Stufe-2-Überschrift (BuschUI.sectionHeading)', () => {
+  const u = neueUmgebung(), haus = neuesHaus({ an: true });
+  const dialog = offen(u, haus, { scenes: [{ entity: 'scene.abend' }] });
+  const h3 = dialog._sheet.querySelectorAll('h3');
+  assert.ok(h3.length >= 3, 'Szenen, Helligkeit, Lampen');
+  for (const h of h3) assert.ok(klassen(h).includes('busch-ui-heading2'), h.textContent);
+  const r = blattRegel(blatt('DIALOG_STYLES'), 'h3');
+  assert.doesNotMatch(r, /font-size|font-weight/, 'Größe und Gewicht aus der Stufe 2');
+  assert.match(r, /color: var\(--blc-d-text\)/, 'Textfarbe des Blatts, auch im dunklen Hue-Look');
+});

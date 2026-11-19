@@ -591,6 +591,8 @@ def main():
                         cardClass: sr.querySelector('ha-card').className,
                         transform: sr.querySelector('.slider .fill').style.transform,
                         titleColor: getComputedStyle(sr.querySelector('.text h2')).color,
+                        titleFont: getComputedStyle(sr.querySelector('.text h2')).fontSize,
+                        titleWeight: getComputedStyle(sr.querySelector('.text h2')).fontWeight,
                         surface: card._surface ? { fg: card._surface.fg, css: card._surface.css,
                             ratio: card._surface.ratio } : null
                     };
@@ -631,6 +633,11 @@ def main():
               and card_lit["titleColor"] == card_lit["surface"]["css"]
               and card_lit["surface"]["ratio"] >= 4.5,
               json.dumps(card_lit["surface"]))
+        # M61: the card title sits on the family's step 1 (--ha-card-header-font-size,
+        # 24 px without a theme value, weight medium), lit or off alike.
+        check("M61 card title on the family step 1 (24 px, medium), lit and off",
+              all(c["titleFont"] == "24px" and c["titleWeight"] == "500" for c in (card_off, card_lit)),
+              json.dumps({k: (c["titleFont"], c["titleWeight"]) for k, c in (("off", card_off), ("lit", card_lit))}))
         check("off card keeps the theme surface",
               card_off["background"] == card_off["themeBackground"]
               and "lit" not in card_off["cardClass"].split(),
