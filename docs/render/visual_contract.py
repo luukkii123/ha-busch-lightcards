@@ -85,6 +85,41 @@ CLOSE_X_JS = """(view) => {
 }"""
 
 
+# M27: one state block for error, empty and offline (BuschUI.stateBlock), the
+# same build in card and dialog: kind, role/aria-live, title and hint, symbol,
+# centred column, inside its surface. `scope` is the shadow root to search.
+STATE_JS = """(scope) => {
+    const blocks = Array.from(scope.querySelectorAll('.busch-state'));
+    const regions = Array.from(scope.querySelectorAll('[role=status], [role=alert]'))
+        .filter(el => el.getAttribute('aria-live'));
+    const b = blocks[0];
+    if (!b) return { count: 0, regions: regions.length };
+    const surface = (scope.querySelector('.sheet') || scope.querySelector('ha-card')).getBoundingClientRect();
+    const r = b.getBoundingClientRect();
+    const cs = getComputedStyle(b);
+    const icon = b.querySelector('.busch-state-icon');
+    return { count: blocks.length, regions: regions.length, kind: b.getAttribute('data-kind'),
+        role: b.getAttribute('role'), live: b.getAttribute('aria-live'),
+        title: b.querySelector('.busch-state-title') ? b.querySelector('.busch-state-title').textContent : null,
+        hint: b.querySelector('.busch-state-hint') ? b.querySelector('.busch-state-hint').textContent : null,
+        icon: icon ? icon.getAttribute('icon') : null,
+        iconSize: icon ? icon.getBoundingClientRect().width : 0,
+        column: cs.display === 'flex' && cs.flexDirection === 'column' && cs.alignItems === 'center'
+            && cs.textAlign === 'center',
+        inside: r.left >= surface.left - 0.5 && r.right <= surface.right + 0.5
+            && r.top >= surface.top - 0.5 && r.bottom <= surface.bottom + 0.5 };
+}"""
+
+
+def state_ok(measured, kind):
+    """True when exactly one state block of `kind` is drawn the shared way."""
+    return bool(measured.get("count") == 1 and measured["kind"] == kind
+                and measured["role"] == ("alert" if kind == "error" else "status")
+                and measured["live"] == ("assertive" if kind == "error" else "polite")
+                and measured["title"] and measured["hint"] and measured["icon"]
+                and measured["iconSize"] >= 20 and measured["column"] and measured["inside"])
+
+
 def close_x_ok(measured):
     """True when the X of one view passes every M28 measurement."""
     ok = (measured.get("present") is True and measured["first"] and measured["icon"] == "mdi:close"
@@ -255,7 +290,7 @@ def main():
                             statusDisplay: status ? getComputedStyle(status).display : null,
                             tapRole: sr.querySelector('.tap')?.getAttribute('role'),
                             tapTabIndex: sr.querySelector('.tap')?.tabIndex,
-                            error: sr.querySelector('.error')?.textContent,
+                            error: sr.querySelector('.busch-state[data-kind=error]')?.textContent,
                             background: card && getComputedStyle(card).backgroundColor,
                             backgroundImage: card && getComputedStyle(card).backgroundImage,
                             accent: getComputedStyle(host).getPropertyValue('--blc-accent').trim(),
@@ -272,6 +307,8 @@ def main():
                                 stops: host._surface.colors.length } : null
                         };
                     }""")
+                    metrics["state"] = page.evaluate("(scope) => (" + STATE_JS + ")(document"
+                        ".querySelector('busch-light-card').shadowRoot)", None)
                     valid = (metrics["width"] == width
                              and metrics["scrollWidth"] <= width + 1
                              and metrics["pageScroll"] <= width + 1
@@ -282,7 +319,8 @@ def main():
                         valid = valid and metrics["tapRole"] == "button" and metrics["tapTabIndex"] == 0
                         valid = valid and metrics["tone"] == expected_tones[name]
                         valid = valid and metrics["toggle"] is not None and metrics["toggle"]["height"] >= 44
-                        if width == 320 and metrics["toggle"] and name != "no_description":
+                        if (width == 320 and metrics["toggle"]
+                                and name not in ("no_description", "empty", "unavailable")):
                             valid = valid and abs(metrics["toggle"]["center"]
                                 - metrics["statusCenter"]) <= 22
                         if name == "long":
@@ -323,6 +361,14 @@ def main():
                                 valid = valid and bool(metrics["slider"]["label"])
                     if name == "loading":
                         valid = valid and bool(metrics["status"])
+                    # M27: error, empty and offline are the same state block; every
+                    # card has a live region, empty while nothing is to be told.
+                    state_kind = {"error": "error", "empty": "empty", "unavailable": "offline"}.get(name)
+                    if state_kind:
+                        valid = valid and state_ok(metrics["state"], state_kind)
+                    else:
+                        valid = valid and metrics["state"].get("count") == 0
+                        valid = valid and metrics["state"]["regions"] >= 1
                     if name == "error":
                         valid = valid and bool(metrics["error"])
                     report["cases"].append({"width": width, "theme": theme, "state": name,
@@ -436,6 +482,40 @@ def main():
                         .forEach(d => d.close ? d.close() : d.remove())""")
                     page.wait_for_timeout(120)
                     page.evaluate("() => document.querySelectorAll('busch-light-dialog').forEach(d => d.remove())")
+                # M27: no member reachable - the dialog shows the offline state
+                # block where the controls were, the detail view of an
+                # unreachable light likewise; the X is measured in both (M28).
+                page.evaluate("""(payload) => {
+                    window.freshStep();
+                    document.querySelectorAll('busch-light-dialog').forEach(d => d.remove());
+                    const stack = document.getElementById('stack');
+                    stack.replaceChildren();
+                    const card = document.createElement('busch-light-card');
+                    card.setConfig({ type: 'custom:busch-light-card', entity: payload.root });
+                    stack.appendChild(card);
+                    card.hass = window.makeHass(payload.states);
+                    card._openDialog();
+                }""", {"root": root, "states": scenarios["unavailable"]["states"]})
+                page.wait_for_timeout(300)
+                off_group = page.evaluate("() => (" + STATE_JS + ")(document"
+                                          ".querySelector('busch-light-dialog').shadowRoot)")
+                off_x_group = page.evaluate(CLOSE_X_JS, "group")
+                shot = f"dialog-offline-{width}-{theme}.png"
+                page.screenshot(path=str(result / shot))
+                off_x_detail = page.evaluate(CLOSE_X_JS, "detail")
+                off_detail = page.evaluate("() => (" + STATE_JS + ")(document"
+                                           ".querySelector('busch-light-dialog').shadowRoot)")
+                off_ok = (state_ok(off_group, "offline") and state_ok(off_detail, "offline")
+                          and off_group["title"] != off_detail["title"]
+                          and close_x_ok(off_x_group) and close_x_ok(off_x_detail))
+                report["cases"].append({"width": width, "theme": theme, "state": "dialog-offline",
+                    "ok": bool(off_ok), "metrics": {"group": off_group, "detail": off_detail,
+                                                    "closeX": [off_x_group, off_x_detail]},
+                    "screenshot": shot})
+                page.evaluate("""() => document.querySelectorAll('busch-light-dialog')
+                    .forEach(d => d.close ? d.close() : d.remove())""")
+                page.wait_for_timeout(120)
+                page.evaluate("() => document.querySelectorAll('busch-light-dialog').forEach(d => d.remove())")
                 page.set_viewport_size({"width": width, "height": 1000})
 
                 page.evaluate("""() => {

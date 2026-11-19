@@ -318,7 +318,14 @@ test('M26 gerechnet: Statusfarben als Text verfehlen 4,5:1, die Textfarbe hält 
       .concat([...css.matchAll(/([^{}]*)\{([^}]*)\}/g)].filter((m) => m[1].includes(".desc[data-tone='" + ton + "'] .dtext")));
     for (const m of r) assert.doesNotMatch(m[2], /color:\s*var\(--(warning|success|error)-color/, ton + ': Text nicht in der Statusfarbe');
   }
-  assert.doesNotMatch(blattRegel(css, '.error'), /\n\s*color:\s*var\(--error-color/, 'Konfigurationsfehler: Text in der Textfarbe, Rot am Symbol');
+  // M27: the configuration error is the shared state block; its text keeps the text colour, red is on the symbol only.
+  const u = neueUmgebung();
+  const fehlerKarte = u.document.createElement('busch-light-card');
+  fehlerKarte.setConfig({ type: 'custom:busch-light-card' });
+  const voll = kartenCss(fehlerKarte);
+  assert.match(voll, /\.busch-state\{[^}]*color:var\(--primary-text-color/, 'Zustandsblock in der Textfarbe');
+  assert.match(voll, /\.busch-state\[data-kind=error\] \.busch-state-icon\{color:color-mix\(in srgb,var\(--error-color/, 'Rot am Symbol');
+  assert.doesNotMatch(voll, /\.busch-state-(title|hint|text)[^{]*\{[^}]*color:\s*var\(--error-color/, 'kein roter Text');
 });
 
 test('M26 Prozentlabel: volle Deckkraft der berechneten Kachelschrift (keine 0,75)', () => {

@@ -73,6 +73,7 @@ function neueUmgebung({ uhr, sprache = 'de' } = {}) {
     get innerHTML() { return this._text; }
     appendChild(n) { if (n.parentNode) n.remove(); n.parentNode = this; this.childNodes.push(n); if (this === body && n.connectedCallback) n.connectedCallback(); return n; }
     append(...n) { for (const x of n) this.appendChild(x); }
+    replaceChildren(...n) { for (const c of [...this.childNodes]) c.remove(); this._text = ''; this._innerHTML = ''; this.append(...n); }
     remove() { const p = this.parentNode; if (!p) return; p.childNodes = p.childNodes.filter((c) => c !== this); this.parentNode = null; if (p === body && this.disconnectedCallback) this.disconnectedCallback(); }
     setAttribute(k, v) { this.attributes[k] = String(v); if (k === 'class') this.className = String(v); if (k === 'tabindex') this._tabIndex = Number(v); }
     getAttribute(k) { return k in this.attributes ? this.attributes[k] : null; }

@@ -530,6 +530,12 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             unavailable: '{n} nicht erreichbar',
             allUnavailable: 'Keine Lampe erreichbar',
             noEntities: 'Keine Lampe aufgelöst',
+            // M27: the state blocks' titles and hints (BuschUI.stateBlock).
+            errorTitle: 'Karte nicht richtig eingerichtet',
+            noEntitiesHint: 'Die gewählte Entität enthält keine Lampe und keinen Schalter. Im Editor eine Lampe, einen Schalter oder eine Gruppe mit Lampen wählen.',
+            allUnavailableHint: 'Home Assistant erreicht keine Lampe dieser Gruppe. Strom und Verbindung der Lampen prüfen.',
+            lightUnreachable: 'Lampe nicht erreichbar',
+            lightUnreachableHint: 'Home Assistant erreicht diese Lampe nicht. Strom und Verbindung prüfen.',
             loading: 'Lampen werden geladen',
             scenes: 'Szenen',
             effects: 'Effekte',
@@ -667,6 +673,11 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             unavailable: '{n} unavailable',
             allUnavailable: 'No member reachable',
             noEntities: 'No light resolved',
+            errorTitle: 'Card is not set up correctly',
+            noEntitiesHint: 'The chosen entity contains no light and no switch. Pick a light, a switch or a group with lights in the editor.',
+            allUnavailableHint: 'Home Assistant cannot reach any light of this group. Check the power and connection of the lights.',
+            lightUnreachable: 'Light unreachable',
+            lightUnreachableHint: 'Home Assistant cannot reach this light. Check its power and connection.',
             loading: 'Loading lights',
             scenes: 'Scenes',
             effects: 'Effects',
@@ -761,6 +772,21 @@ function fillVars(text, vars) {
         out = out.split('{' + name + '}').join(String(vars[name]));
     });
     return out;
+}
+
+/**
+ * M27: fills the card's live region with BuschUI.stateBlock, or, with no spec,
+ * empties it back to a polite status region without a box.
+ */
+function cardState(node, spec) {
+    if (spec) return BuschUI.stateBlock({ node, ...spec });
+    node.replaceChildren();
+    node.className = 'state';
+    node.removeAttribute('data-kind');
+    node.removeAttribute('aria-busy');
+    node.setAttribute('role', 'status');
+    node.setAttribute('aria-live', 'polite');
+    return node;
 }
 
 /** One of the `ui` strings: buttons, headings, counters, errors, empty states. */
@@ -3027,17 +3053,10 @@ ha-card.fg-dark {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.error {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--ha-space-3, 12px);
-    padding: var(--ha-space-4, 16px);
-    /* M26: red as text is 3.1:1 on a dark card; it stays on the icon. */
-    color: var(--primary-text-color);
-    font-size: ${BuschUI.tokens.fontSizeS};
-    overflow-wrap: anywhere;
-}
-.error ha-icon { flex: 0 0 24px; color: var(--error-color, #db4437); }
+/* M27: error, empty and offline are BuschUI.stateBlock (cardStyles); the
+   card only places it. The unfilled region is an empty div: no box, still
+   in the tree, so what appears in it is announced. */
+.state.busch-state { padding-top: 0; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; }
 }
@@ -3232,15 +3251,12 @@ class BuschLightCard extends HTMLElement {
             }
             const card = document.createElement('ha-card');
             card.dataset.uiContract = 'Busch HA UI 0.1.0';
-            const box = document.createElement('div');
-            box.className = 'error';
-            const icon = document.createElement('ha-icon');
-            icon.setAttribute('icon', 'mdi:alert-circle-outline');
-            const message = document.createElement('span');
-            message.textContent = this._error;
-            box.appendChild(icon);
-            box.appendChild(message);
-            card.appendChild(box);
+            // M27: the family's state block (role=alert), the sentence as its hint.
+            card.appendChild(BuschUI.stateBlock({
+                kind: 'error',
+                title: translate(this._hass, 'errorTitle'),
+                hint: this._error
+            }));
             root.appendChild(card);
             this._built = true;
             return;
@@ -3321,6 +3337,14 @@ class BuschLightCard extends HTMLElement {
         main.appendChild(this._toggle);
 
         card.appendChild(main);
+
+        // M27 (Buschcheck F4): the card's live region, there from the first
+        // render and empty until the group is empty or unreachable; then
+        // BuschUI.stateBlock fills this same node, so the change is announced.
+        this._state = document.createElement('div');
+        this._state.id = 'blc-state';
+        cardState(this._state, null);
+        card.appendChild(this._state);
 
         // brightness slider
         this._slider = document.createElement('div');
@@ -3517,9 +3541,19 @@ class BuschLightCard extends HTMLElement {
               model.dead.map((l) => l.name).join(', ')
             : '';
 
+        // M27: an empty or unreachable group is told by the state block, not
+        // by the status line (which would only repeat its title).
+        const stateKind = model.isEmpty ? 'empty' : model.isAllUnavailable ? 'offline' : null;
+        cardState(this._state, stateKind && {
+            kind: stateKind,
+            title: translate(this._hass, stateKind === 'empty' ? 'noEntities' : 'allUnavailable'),
+            hint: translate(this._hass, stateKind === 'empty' ? 'noEntitiesHint' : 'allUnavailableHint')
+        });
+        this._tap.setAttribute('aria-describedby', stateKind ? 'blc-state' : 'blc-status');
+
         // description: false hides the line; a badge for unreachable members
         // keeps its place, only the text goes.
-        const hideText = this._opts.description === false;
+        const hideText = this._opts.description === false || !!stateKind;
         this._descText.style.display = hideText ? 'none' : '';
         this._desc.style.display = hideText && !showWarn ? 'none' : '';
         this._main.classList.toggle('nodesc', hideText && !showWarn);
@@ -4138,11 +4172,13 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.empty {
-    color: var(--blc-d-faint);
-    font-size: ${BuschUI.tokens.fontSizeM};
-    padding: 8px 0;
-    overflow-wrap: anywhere;
+/* M27: the shared state block on the sheet's own colours (dialog_theme: dark
+   too); the offline symbol mixes the warning colour with the sheet text as
+   the shared rule does with the theme text. */
+.sheet .busch-state { color: var(--blc-d-text); }
+.sheet .busch-state-hint, .sheet .busch-state[data-kind=empty] .busch-state-icon { color: var(--blc-d-muted); }
+.sheet .busch-state[data-kind=offline] .busch-state-icon {
+    color: color-mix(in srgb, var(--warning-color, #ffa600) 70%, var(--blc-d-text));
 }
 .deadlist {
     font-size: ${BuschUI.tokens.fontSizeS};
@@ -4574,6 +4610,11 @@ class BuschLightDialog extends HTMLElement {
             sheet.appendChild(row);
         }
 
+        // M27: no member reachable - the state block where the controls were.
+        if (model.isAllUnavailable) {
+            sheet.appendChild(this._stateBlock('offline', 'allUnavailable', 'allUnavailableHint'));
+        }
+
         // ---- master brightness
         if (model.supportsBrightness && !model.isAllUnavailable) {
             sheet.appendChild(this._heading(translate(hass, 'brightness')));
@@ -4603,10 +4644,7 @@ class BuschLightDialog extends HTMLElement {
         // ---- the resolved lights
         sheet.appendChild(this._heading(translate(hass, 'lights') + ' (' + model.lights.length + ')'));
         if (!model.lights.length) {
-            const empty = document.createElement('div');
-            empty.className = 'empty';
-            empty.textContent = translate(hass, 'noEntities');
-            sheet.appendChild(empty);
+            sheet.appendChild(this._stateBlock('empty', 'noEntities', 'noEntitiesHint'));
         } else if (this._opts.groupDisplay === 'flat' || model.sections.length < 2) {
             // One group, or the user asked for a plain pile: headings would be
             // noise rather than orientation.
@@ -4659,10 +4697,7 @@ class BuschLightDialog extends HTMLElement {
         wrap.className = 'detail';
 
         if (!light.isAvailable) {
-            const empty = document.createElement('div');
-            empty.className = 'empty';
-            empty.textContent = translate(hass, 'unreachable');
-            wrap.appendChild(empty);
+            wrap.appendChild(this._stateBlock('offline', 'lightUnreachable', 'lightUnreachableHint'));
             sheet.appendChild(wrap);
             return;
         }
@@ -4809,6 +4844,20 @@ class BuschLightDialog extends HTMLElement {
         if (disabled) toggle.setAttribute('disabled', '');
         else toggle.addEventListener('click', onClick);
         return toggle;
+    }
+
+    /**
+     * M27: the family's state block in the sheet. One node for the dialog's
+     * life, refilled in place on every rebuild, so it stays the same live
+     * region (role=status; the sheet never shows an error block).
+     */
+    _stateBlock(kind, titleKey, hintKey) {
+        if (!this._stateNode) this._stateNode = document.createElement('div');
+        return BuschUI.stateBlock({
+            node: this._stateNode, kind,
+            title: translate(this._hass, titleKey),
+            hint: translate(this._hass, hintKey)
+        });
     }
 
     _makeIconButton(icon, onClick) {

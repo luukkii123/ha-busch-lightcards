@@ -2057,7 +2057,8 @@ def main():
                     card.setConfig(config);
                     stack.appendChild(card);
                     if (!hassZuerst) card.hass = hass;
-                    const box = card.shadowRoot.querySelector('.error');
+                    // M27: the sentence is the hint of the error state block.
+                    const box = card.shadowRoot.querySelector('.busch-state-hint');
                     return box ? box.textContent : null;
                 }};
                 const typ = 'custom:busch-light-card';
