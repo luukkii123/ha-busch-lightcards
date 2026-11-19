@@ -2353,12 +2353,16 @@ def main():
             const r = sheet.getBoundingClientRect();
             // M65: section order, scene tiles and colour wheel, measured.
             const order = [];
+            // A plain wrapper (the picker body) carries no class of its own; on
+            // a switch into or out of the detail view every sheet child gets the
+            // slide-in class 'enter' (#715), which is no section and is ignored.
+            const plain = (c) => c.tagName === 'DIV' && Array.from(c.classList).every(k => k === 'enter');
             const walk = (node) => Array.from(node.children).forEach(c => {
                 if (c.tagName === 'H3') order.push('h3:' + c.textContent.replace(/ \(\d+\)$/, ''));
                 else if (c.classList.contains('scenes')) order.push('scenes');
                 else if (c.classList.contains('dslider')) order.push('slider');
                 else if (c.classList.contains('wheelwrap') || c.classList.contains('tempbar')) order.push('picker');
-                else if (c.classList.contains('detail') || c.tagName === 'DIV' && !c.className) walk(c);
+                else if (c.classList.contains('detail') || plain(c)) walk(c);
             });
             walk(sheet);
             const wheel = sr.querySelector('canvas.wheel');
