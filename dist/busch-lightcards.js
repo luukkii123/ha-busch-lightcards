@@ -6237,9 +6237,23 @@ class BuschLightCardEditor extends BuschUI.EditorBase {
 // Registration
 // ---------------------------------------------------------------------------
 
-if (!customElements.get(CARD_TAG)) customElements.define(CARD_TAG, BuschLightCard);
-if (!customElements.get(DIALOG_TAG)) customElements.define(DIALOG_TAG, BuschLightDialog);
-if (!customElements.get(EDITOR_TAG)) customElements.define(EDITOR_TAG, BuschLightCardEditor);
+// M42: BuschUI.register defines each element only once and adds the card
+// picker entry only once, so a second copy of this file (two resource URLs,
+// a cache parameter) keeps the first classes instead of throwing.
+// The picker reads its entry at load time, long before `hass` exists — so the
+// language cannot come from `hass.locale.language` here. `textTable(null)`
+// falls through to `navigator.language`, which is what the frontend itself
+// uses at this point.
+const PICKER_TEXT = textTable(null);
+BuschUI.register(CARD_TAG, BuschLightCard, {
+    type: CARD_TAG,
+    name: PICKER_TEXT.name,
+    description: PICKER_TEXT.description,
+    preview: false,
+    documentationURL: 'https://github.com/luukkii123/ha-busch-lightcards'
+});
+BuschUI.register(DIALOG_TAG, BuschLightDialog);
+BuschUI.register(EDITOR_TAG, BuschLightCardEditor);
 
 // Editor internals, exposed for the browser test harness the same way the
 // card's are.
@@ -6255,22 +6269,6 @@ BuschLightCard.__internals.sliceSchema = sliceSchema;
 BuschLightCard.__internals.fieldLabel = fieldLabel;
 BuschLightCard.__internals.fieldHelper = fieldHelper;
 BuschLightCard.__internals.DIALOG_STYLES = DIALOG_STYLES;
-
-window.customCards = window.customCards || [];
-if (!window.customCards.some((c) => c.type === CARD_TAG)) {
-    // The picker reads this at load time, long before `hass` exists — so the
-    // language cannot come from `hass.locale.language` here. `textTable(null)`
-    // falls through to `navigator.language`, which is what the frontend
-    // itself uses at this point.
-    const picker = textTable(null);
-    window.customCards.push({
-        type: CARD_TAG,
-        name: picker.name,
-        description: picker.description,
-        preview: false,
-        documentationURL: 'https://github.com/luukkii123/ha-busch-lightcards'
-    });
-}
 
 console.info(
     `%c BUSCH-LIGHTCARDS %c ${CARD_VERSION} `,

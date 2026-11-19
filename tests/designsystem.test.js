@@ -267,3 +267,28 @@ test('M28 Fokus: Tab kreist im Blatt, nach dem Schließen zurück auf die Karte;
   assert.equal(dialog.isConnected, false);
   assert.equal(karte.shadowRoot.activeElement, karte._tap, 'Fokus zurück auf die Karte');
 });
+
+// ── M42: double-load safe registration through BuschUI.register ──────────────
+
+test('M42 Registrierung nur über BuschUI.register (kein eigenes define/push)', () => {
+  const familie = QUELLE.slice(QUELLE.indexOf('/* END BUSCH SHARED UI */'));
+  assert.doesNotMatch(familie, /customElements\.define\(/);
+  assert.doesNotMatch(familie, /customCards\.push\(/);
+  assert.equal((familie.match(/BuschUI\.register\(/g) || []).length, 3, 'Karte, Dialog, Editor');
+});
+
+test('M42 zweites Laden (zweite Ressourcen-URL): kein NotSupportedError, erste Klassen bleiben, ein Wählereintrag', () => {
+  const vm = require('node:vm');
+  const u = neueUmgebung();
+  const ce = u.kontext.customElements;
+  // Like the browser: a second define of a name throws.
+  ce.define = (name, cls) => { if (u.registry.has(name)) throw new Error('NotSupportedError: ' + name); u.registry.set(name, cls); };
+  const vorher = ['busch-light-card', 'busch-light-dialog', 'busch-light-card-editor'].map((n) => u.registry.get(n));
+  assert.ok(vorher.every(Boolean), 'erstes Laden registriert alle drei');
+  // A second copy of the module: its own module scope, same window.
+  assert.doesNotThrow(() => vm.runInContext('(function () {\n' + QUELLE + '\n})();', u.kontext, { filename: 'busch-lightcards.js?v=2' }));
+  assert.deepEqual(['busch-light-card', 'busch-light-dialog', 'busch-light-card-editor'].map((n) => u.registry.get(n)), vorher);
+  assert.equal(u.kontext.window.customCards.filter((c) => c.type === 'busch-light-card').length, 1);
+  const karte = neueKarte(u, neuesHaus({ an: true }));
+  assert.equal(karte._title.textContent.length > 0, true, 'die Karte arbeitet nach dem zweiten Laden');
+});
