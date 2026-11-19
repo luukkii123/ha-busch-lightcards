@@ -353,3 +353,36 @@ test('M26 Renderbeleg vorbereitet: Kontrast/Touch für Karte und Dialog (Thema u
     for (const a of liste[bereich]) assert.ok(a.selektor && a.grund, JSON.stringify(a));
   }
 });
+
+// Etappe H follow-up (#1312), remaining findings of the computation: editor add button (primary text 2.6:1), warning note
+// (2.0:1) and the fallback message in dark (red on a dark card 4.0:1 or less) reach 4.5:1. Same formula as
+// hacs/scripts/kontrast_touch.py; themes of regeln.py THEMA_CSS and the dark variant of docs/render/render.py.
+const KT_THEMEN = {
+  hell: { 'card-background-color': '#ffffff', 'primary-text-color': '#212121', 'primary-color': '#03a9f4', 'warning-color': '#ffa600', 'error-color': '#db4437' },
+  dunkel: { 'card-background-color': '#1c1c1c', 'primary-text-color': '#e1e1e1', 'primary-color': '#03a9f4', 'warning-color': '#ffa600', 'error-color': '#db4437' },
+  'render-dunkel': { 'card-background-color': '#1c1c1c', 'primary-text-color': '#eeeeee', 'primary-color': '#7ac8ff', 'warning-color': '#ffa600', 'error-color': '#db4437' },
+};
+const ktRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+function ktFarbe(wert, t) {
+  wert = wert.trim(); let m;
+  if ((m = wert.match(/^var\(--([\w-]+)(?:,\s*([^()]*))?\)$/))) return t[m[1]] ? ktRgb(t[m[1]]) : ktFarbe(m[2], t);
+  if ((m = wert.match(/^color-mix\(in srgb,\s*(var\([^()]*\))\s+(\d+)%,\s*(var\([^()]*\))\)$/))) {
+    const a = ktFarbe(m[1], t), b = ktFarbe(m[3], t), p = m[2] / 100; return a.map((v, i) => v * p + b[i] * (1 - p));
+  }
+  if (/^#[0-9a-f]{6}$/i.test(wert)) return ktRgb(wert);
+  throw new Error('Farbe nicht verstanden: ' + wert);
+}
+const ktLum = (c) => { const l = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]; };
+const ktQuote = (a, b) => (Math.max(ktLum(a), ktLum(b)) + 0.05) / (Math.min(ktLum(a), ktLum(b)) + 0.05);
+test('M26 Editor: Hinzufügen-Knopf, Warnhinweis und Fallback-Meldung halten 4,5:1 hell und dunkel', () => {
+  const css = blatt('EDITOR_STYLES');
+  for (const sel of ['.addbtn', '.note.warn', '.fallback']) {
+    const regel = blattRegel(css, sel) || (css.match(new RegExp('\\n' + sel.replace(/\./g, '\\.') + ' \\{[^}]*\\}')) || [''])[0];
+    const farbe = (regel.match(/\n?\s*color:\s*([^;]+);/) || [])[1];
+    assert.ok(farbe, sel + ' hat eine Textfarbe');
+    for (const [name, t] of Object.entries(KT_THEMEN)) {
+      const q = ktQuote(ktFarbe(farbe, t), ktRgb(t['card-background-color']));
+      assert.ok(q >= 4.5, `${sel} ${name}: ${q.toFixed(2)}:1`);
+    }
+  }
+});

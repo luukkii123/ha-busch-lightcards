@@ -5409,7 +5409,8 @@ summary {
     color: var(--secondary-text-color);
     overflow-wrap: anywhere;
 }
-.note.warn { color: var(--warning-color, #ffa600); }
+/* M26 (#1312): warning, primary and error colour as text mixed toward the text colour (>= 4.5:1 light and dark). */
+.note.warn { color: color-mix(in srgb, var(--warning-color, #ffa600) 50%, var(--primary-text-color, #212121)); }
 .scene-row {
     border: 1px solid var(--divider-color, #e0e0e0);
     border-radius: ${BuschUI.tokens.radiusInner};
@@ -5437,7 +5438,7 @@ summary {
 .addbtn {
     border: 1px dashed var(--divider-color, #bdbdbd);
     background: none;
-    color: var(--primary-color, #03a9f4);
+    color: color-mix(in srgb, var(--primary-color, #03a9f4) 50%, var(--primary-text-color, #212121));
     border-radius: ${BuschUI.tokens.radiusInner};
     padding: 10px;
     min-height: 44px;
@@ -5456,7 +5457,7 @@ summary {
     opacity: 0.7;
 }
 .fallback {
-    color: var(--error-color, #db4437);
+    color: color-mix(in srgb, var(--error-color, #db4437) 70%, var(--primary-text-color, #212121));
     font-size: ${BuschUI.tokens.fontSizeM};
     padding: 8px 0;
     overflow-wrap: anywhere;
