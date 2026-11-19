@@ -1560,7 +1560,9 @@ def main():
             "off_color", "default_color", "hue_borders", "show_switch",
             "slider", "allow_zero", "off_shadow", "tap_action", "hold_action",
             # #715
-            "live_update", "icon_size", "theme", "api_id", "is_visible"])
+            "live_update", "icon_size", "theme", "api_id", "is_visible",
+            # M29
+            "dialog_theme"])
         check("editor exposes every documented option",
               sorted(editor["fields"]) == expected_fields,
               f"missing={sorted(set(expected_fields) - set(editor['fields']))} "

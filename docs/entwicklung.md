@@ -56,6 +56,14 @@
   wird bei einer Änderung als Ebene darübergelegt und ausgeblendet (Verläufe
   lassen sich nicht überblenden); Regler über `scaleX`/`scaleY`.
   `prefers-reduced-motion` schaltet beides ab.
+- Dialogfarben (M29, Buschcheck W5, Nutzerentscheid E4 vom 18.11.2026): Das
+  Blatt folgt dem HA-Thema (`--card-background-color`, `--primary-text-color`,
+  Kacheln aus `--secondary-background-color`), hell wie dunkel. `dialog_theme:
+  dark` setzt `dialog-theme="dark"` am Dialog und stellt die Farben von 0.9.0
+  bis 0.13.3 wieder her (`#171717`, Kacheln `#363636`). Alle Regeln lesen die
+  aufgelöste Palette `--blc-d-*`; die Haken `--blc-dialog-*` gehen weiter vor.
+  Eine fehlende Szene ist eine Kachel ohne Deckkraft mit Nebentextfarbe
+  (vorher 0,4 Deckkraft, ca. 2,5:1); `visual_contract.py` misst ≥ 3:1.
 - Leistung wie 0.8.3+4f0ab11: gemalt wird nur nach eigener Zustandsänderung,
   und dann nur, was sich geändert hat; der Verlauf wird nur bei neuen Farben
   neu gesetzt (Test `tests/farbe.test.js`).

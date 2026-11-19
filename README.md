@@ -136,6 +136,7 @@ copied from the upstream card working; the editor folds it into snake_case.
 | `tap_action` | `dialog` / `toggle` / `more-info` / `none` | `dialog` | Short tap on the card. |
 | `hold_action` | `dialog` / `toggle` / `more-info` / `none` | `more-info` | Holding the card for half a second. |
 | `theme` | string | dashboard theme | A Home Assistant theme for this card and its dialog only. |
+| `dialog_theme` | `theme` / `dark` | `theme` | Colours of the dialog: `theme` follows the Home Assistant theme (light or dark), `dark` keeps the black Hue-style dialog of versions up to 0.13.3 in both themes. |
 | `api_id` | string (letters, digits, `_`, `-`) | - | Makes the dialog openable from elsewhere, see [API](#api). |
 | `is_visible` | boolean | `true` | `false` hides the card; its dialog still opens through `api_id`. |
 | `scenes` | list | `[]` | Scene tiles at the top of the dialog; see below. |
@@ -193,7 +194,7 @@ card-mod), not only on `:root`.
 | `--blc-background`, `--blc-text-color`, `--blc-shadow` | Card background (the light colours while on), text and shadow |
 | `--blc-toggle-off`, `--blc-toggle-on`, `--blc-knob-color` | Switch track and knob (also on the coloured card) |
 | `--blc-accent` | Accent of the card (default `--primary-color`) |
-| `--blc-dialog-bg`, `--blc-dialog-text`, `--blc-dialog-invert`, `--blc-dialog-tile`, `--blc-dialog-muted`, `--blc-dialog-dim`, `--blc-dialog-faint`, `--blc-dialog-line`, `--blc-dialog-dead-a`, `--blc-dialog-dead-b`, `--blc-scene-badge` | Dialog surface, text, tiles, lines, hatching of unreachable lights and the scene badge. The dialog is dark in both Home Assistant themes by default; its header and the lit tiles take the light colours. |
+| `--blc-dialog-bg`, `--blc-dialog-text`, `--blc-dialog-invert`, `--blc-dialog-tile`, `--blc-dialog-muted`, `--blc-dialog-dim`, `--blc-dialog-faint`, `--blc-dialog-line`, `--blc-dialog-dead-a`, `--blc-dialog-dead-b`, `--blc-scene-badge` | Dialog surface, text, tiles, lines, hatching of unreachable lights and the scene badge. By default the dialog follows the Home Assistant theme (tiles from `--secondary-background-color`); with `dialog_theme: dark` it is black in both themes. Its header and the lit tiles take the light colours either way. |
 
 ## Development
 

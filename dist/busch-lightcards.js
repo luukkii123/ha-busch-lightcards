@@ -351,6 +351,7 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             live_update: 'Live beim Ziehen',
             icon_size: 'Symbolgröße',
             theme: 'Thema der Karte',
+            dialog_theme: 'Aussehen des Dialogs',
             is_visible: 'Karte sichtbar',
             tap_action: 'Beim Tippen',
             hold_action: 'Beim Halten',
@@ -382,6 +383,7 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             live_update: 'An schalten die Lampen schon beim Ziehen mit, höchstens fünfmal je Sekunde und bei Gruppen einmal, immer erst nach der Bestätigung von Home Assistant; aus erst beim Loslassen. Vorgabe an.',
             icon_size: 'Größe des Kartensymbols: Original, Groß, Klein oder eine Zahl wie bei der Hue-Karte (1,42 ist Original, 2 ist Groß). Vorgabe: Original.',
             theme: 'Ein Home-Assistant-Thema nur für diese Karte und ihren Dialog. Leer heißt: das Thema des Dashboards. Vorgabe leer.',
+            dialog_theme: 'Wie das Thema übernimmt die hellen oder dunklen Farben von Home Assistant; Dunkel zeigt den Dialog immer schwarz wie in der Hue-App. Vorgabe: wie das Thema.',
             is_visible: 'Aus versteckt die Karte; über die API-Kennung lässt sich ihr Dialog trotzdem öffnen. Vorgabe an.',
             tap_action: 'Was ein kurzer Tipp auf die Karte auslöst. Vorgabe: Dialog öffnen.',
             hold_action: 'Was ein halbe Sekunde langes Halten auf der Karte auslöst. Vorgabe: Mehr Informationen.',
@@ -449,10 +451,13 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             iconOriginal: 'Original',
             iconBig: 'Groß',
             iconSmall: 'Klein',
+            dialogThemeTheme: 'Wie das Thema',
+            dialogThemeDark: 'Dunkel',
             vorlageFehlt: '‹{id} fehlt›',
             noForm: 'Die Formularelemente von Home Assistant sind nicht geladen. Bitte diese Karte in YAML einrichten.',
             fehlerSymbolgroesse: 'Unbekannte Symbolgröße „{wert}“. Erlaubt sind original, big, small oder eine Zahl.',
             fehlerRegler: 'Unbekannter Regler „{wert}“. Erlaubt sind default, mushroom und none.',
+            fehlerDialogThema: 'Unbekanntes Aussehen des Dialogs „{wert}“. Erlaubt sind theme und dark.',
             fehlerApiId: 'Die API-Kennung „{wert}“ ist nicht erlaubt. Sie beginnt mit einem Buchstaben oder einer Ziffer und enthält nur Buchstaben, Ziffern, _ und - (höchstens 64 Zeichen).',
             fehlerKeineEntitaet: 'Diese Karte braucht eine Lampe, einen Schalter oder eine Gruppe. Bitte im Editor unter „Lampe, Schalter oder Gruppe" eine Entität wählen.',
             fehlerSzeneOhneEntitaet: 'Ein Szeneneintrag hat keine Entität: {eintrag}. Jede Szenenkachel braucht eine Szene oder ein Skript.'
@@ -482,6 +487,7 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             live_update: 'Live while dragging',
             icon_size: 'Icon size',
             theme: 'Card theme',
+            dialog_theme: 'Dialog look',
             is_visible: 'Card visible',
             tap_action: 'On tap',
             hold_action: 'On hold',
@@ -513,6 +519,7 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             live_update: 'On, the lights follow while you drag, at most five times a second and once a second for groups, always after Home Assistant confirmed the last step; off, only on release. Default on.',
             icon_size: 'Size of the card icon: original, big, small or a number as in the Hue card (1.42 is original, 2 is big). Default: original.',
             theme: 'A Home Assistant theme for this card and its dialog only. Empty uses the dashboard theme. Default empty.',
+            dialog_theme: 'Follow the theme takes the light or dark colours of Home Assistant; Dark always shows the dialog black as in the Hue app. Default: follow the theme.',
             is_visible: 'Off hides the card; its dialog still opens through the API id. Default on.',
             tap_action: 'What a short tap on the card does. Default: open dialog.',
             hold_action: 'What holding the card for half a second does. Default: more info.',
@@ -580,10 +587,13 @@ const TEXTE_BUSCH_LIGHT_CARD = {
             iconOriginal: 'Original',
             iconBig: 'Big',
             iconSmall: 'Small',
+            dialogThemeTheme: 'Follow the theme',
+            dialogThemeDark: 'Dark',
             vorlageFehlt: '‹{id} missing›',
             noForm: 'The Home Assistant form elements did not load. Please configure this card in YAML.',
             fehlerSymbolgroesse: 'Unknown icon size “{wert}”. Allowed are original, big, small or a number.',
             fehlerRegler: 'Unknown slider “{wert}”. Allowed are default, mushroom and none.',
+            fehlerDialogThema: 'Unknown dialog look “{wert}”. Allowed are theme and dark.',
             fehlerApiId: 'The API id “{wert}” is not allowed. It starts with a letter or digit and holds only letters, digits, _ and - (at most 64 characters).',
             fehlerKeineEntitaet: 'This card needs a light, a switch or a group. Pick an entity under “Light, switch or group” in the editor.',
             fehlerSzeneOhneEntitaet: 'A scene entry has no entity: {eintrag}. Every scene tile needs a scene or a script.'
@@ -2282,6 +2292,13 @@ function parseSceneConfig(raw) {
     throw new ConfigError('fehlerSzeneOhneEntitaet', { eintrag: JSON.stringify(raw) });
 }
 
+/** dialog_theme (M29): the dialog follows the theme, or keeps the dark Hue look. */
+function dialogThemeOf(value) {
+    if (value === undefined || value === null || value === '' || value === 'theme') return 'theme';
+    if (value === 'dark') return 'dark';
+    throw new ConfigError('fehlerDialogThema', { wert: String(value) });
+}
+
 function normalizeConfig(raw) {
     const opts = {};
     const entityIds = [];
@@ -2327,6 +2344,7 @@ function normalizeConfig(raw) {
     opts.iconPx = iconSizePx(pick(raw, 'iconSize', null));
     const theme = pick(raw, 'theme', null);
     opts.theme = typeof theme === 'string' && theme && theme !== 'default' ? theme : null;
+    opts.dialogTheme = dialogThemeOf(pick(raw, 'dialogTheme', 'theme'));
     const apiId = pick(raw, 'apiId', null);
     if (apiId !== null && apiId !== undefined && apiId !== '') {
         if (typeof apiId !== 'string' || !API_ID.test(apiId)) throw new ConfigError('fehlerApiId', { wert: String(apiId) });
@@ -2363,14 +2381,15 @@ const CONFIG_DEFAULTS = {
     tap_action: 'dialog',
     hold_action: 'more-info',
     default_color: WARM_COLOR,
-    group_display: 'sections'
+    group_display: 'sections',
+    dialog_theme: 'theme'
 };
 
 /** Options the card also accepts in camelCase, for upstream compatibility. */
 const CAMEL_ALIASES = [
     'resolveGroups', 'maxDepth', 'showUnavailable', 'groupDisplay', 'offColor',
     'defaultColor', 'hueBorders', 'showSwitch', 'allowZero', 'offShadow',
-    'tapAction', 'holdAction', 'liveUpdate', 'iconSize', 'apiId', 'isVisible'
+    'tapAction', 'holdAction', 'liveUpdate', 'iconSize', 'apiId', 'isVisible', 'dialogTheme'
 ];
 
 /**
@@ -3515,10 +3534,11 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
 :host {
     /*
      * The dialog's own theme hooks. Same idea as the card's: the value
-     * initial is CSS's guaranteed-invalid one, so each use below falls back
-     * to the literal beside it. The sheet stays deliberately dark in both
-     * themes — that is the Hue look this card copies, and its text colour is
-     * chosen to match it — but every one of those colours can be overridden
+     * initial is CSS's guaranteed-invalid one, so each --blc-d-* below falls
+     * back to the colour beside it. Since M29 (Buschcheck W5, decision E4) the
+     * sheet follows the Home Assistant theme, light or dark, like every other
+     * dialog of the family; dialog_theme: dark brings back the black Hue look
+     * of 0.9.0 to 0.13.3 (block below). Every colour can still be overridden
      * by name from a theme.
      */
     --blc-dialog-bg: initial;
@@ -3533,6 +3553,31 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     --blc-dialog-dead-b: initial;
     --blc-scene-badge: initial;
     --blc-knob-color: initial;
+
+    /* The resolved palette every rule below reads (M29). Tiles take
+       --secondary-background-color, as Home Assistant's own tiles do. */
+    --blc-d-bg: var(--blc-dialog-bg, var(--card-background-color, #fff));
+    --blc-d-text: var(--blc-dialog-text, var(--primary-text-color, #212121));
+    --blc-d-invert: var(--blc-dialog-invert, var(--card-background-color, #fff));
+    --blc-d-tile: var(--blc-dialog-tile, var(--secondary-background-color, #e5e5e5));
+    --blc-d-muted: var(--blc-dialog-muted, var(--secondary-text-color, #727272));
+    --blc-d-dim: var(--blc-dialog-dim, var(--primary-text-color, #212121));
+    --blc-d-faint: var(--blc-dialog-faint, var(--secondary-text-color, #727272));
+    --blc-d-line: var(--blc-dialog-line, var(--divider-color, #e0e0e0));
+    --blc-d-dead-a: var(--blc-dialog-dead-a, var(--secondary-background-color, #e5e5e5));
+    --blc-d-dead-b: var(--blc-dialog-dead-b, color-mix(in srgb,
+        var(--secondary-background-color, #e5e5e5) 40%, var(--card-background-color, #fff)));
+    /* A scene that does not exist: a plain tile, no opacity. 0.4 opacity left
+       its label at about 2.5:1; secondary text on the tile keeps 3:1. */
+    --blc-d-scene-off: var(--blc-dialog-tile, var(--secondary-background-color, #e5e5e5));
+    --blc-d-badge-off: rgba(0, 0, 0, 0.06);
+    --blc-d-switch-off: color-mix(in srgb, var(--primary-text-color, #212121) 28%, transparent);
+    /* The slider fill as on the card: the accent, translucent, under text in
+       the theme's own colour. The dark look keeps its inverting label. */
+    --blc-d-fill: var(--primary-color, #03a9f4);
+    --blc-d-fill-opacity: 0.35;
+    --blc-d-label: var(--blc-dialog-text, var(--primary-text-color, #212121));
+    --blc-d-label-blend: normal;
 
     position: fixed;
     inset: 0;
@@ -3552,6 +3597,28 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     box-sizing: border-box;
     padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
         max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+}
+/* dialog_theme: dark (M29) — the dialog of 0.9.0 to 0.13.3, colour for
+   colour, in both Home Assistant themes. Only the missing scene tile reads
+   brighter (3:1 instead of 2.5:1). */
+:host([dialog-theme='dark']) {
+    --blc-d-bg: var(--blc-dialog-bg, #171717);
+    --blc-d-text: var(--blc-dialog-text, #fff);
+    --blc-d-invert: var(--blc-dialog-invert, #111);
+    --blc-d-tile: var(--blc-dialog-tile, #363636);
+    --blc-d-muted: var(--blc-dialog-muted, #aaa);
+    --blc-d-dim: var(--blc-dialog-dim, #ccc);
+    --blc-d-faint: var(--blc-dialog-faint, #888);
+    --blc-d-line: var(--blc-dialog-line, #333);
+    --blc-d-dead-a: var(--blc-dialog-dead-a, #2a2a2a);
+    --blc-d-dead-b: var(--blc-dialog-dead-b, #222);
+    --blc-d-scene-off: var(--blc-dialog-dead-b, #222);
+    --blc-d-badge-off: rgba(255, 255, 255, 0.12);
+    --blc-d-switch-off: rgba(255, 255, 255, 0.22);
+    --blc-d-fill: rgba(255, 255, 255, 0.75);
+    --blc-d-fill-opacity: 1;
+    --blc-d-label: var(--blc-dialog-text, #fff);
+    --blc-d-label-blend: difference;
 }
 /* Opening like the Hue card's dialog: 0.3 s ease-out, opacity and transform
    only (#715). Bottom sheet rises on a phone, the centred dialog grows in. */
@@ -3576,8 +3643,8 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
        element that overhangs must be clipped, not turned into a scrollbar. */
     overflow-y: auto;
     overflow-x: hidden;
-    background: var(--blc-dialog-bg, #171717);
-    color: var(--blc-dialog-text, #fff);
+    background: var(--blc-d-bg);
+    color: var(--blc-d-text);
     border-radius: 16px;
     padding: 16px;
     box-sizing: border-box;
@@ -3605,7 +3672,7 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     margin: -16px -16px 14px;
     padding: 16px;
     border-radius: 16px 16px 0 0;
-    background: var(--blc-dialog-bg, #171717);
+    background: var(--blc-d-bg);
 }
 .head .who { flex-grow: 1; min-width: 0; }
 /* Lit (#712): the header carries the light colours like the card, edge to
@@ -3629,7 +3696,7 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
 }
 .head .sub {
     font-size: 13px;
-    color: var(--blc-dialog-muted, #aaa);
+    color: var(--blc-d-muted);
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3641,8 +3708,8 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     height: 36px;
     border-radius: 50%;
     border: none;
-    background: var(--blc-dialog-tile, #363636);
-    color: var(--blc-dialog-text, #fff);
+    background: var(--blc-d-tile);
+    color: var(--blc-d-text);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -3653,7 +3720,7 @@ h3 {
     font-weight: var(--ha-font-weight-medium, 500);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: var(--blc-dialog-muted, #aaa);
+    color: var(--blc-d-muted);
     margin: 18px 0 8px;
     min-width: 0;
     overflow: hidden;
@@ -3672,8 +3739,8 @@ h3 {
     border-radius: 12px;
     border: none;
     cursor: pointer;
-    color: var(--blc-dialog-text, #fff);
-    background: var(--blc-dialog-tile, #363636);
+    color: var(--blc-d-text);
+    background: var(--blc-d-tile);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -3704,7 +3771,7 @@ h3 {
     background: var(--blc-scene-badge, rgba(0, 0, 0, 0.24));
 }
 .scene.fg-dark .badge { background: var(--blc-scene-badge, rgba(255, 255, 255, 0.45)); }
-.scene[disabled] .badge { background: var(--blc-scene-badge, rgba(255, 255, 255, 0.12)); }
+.scene[disabled] .badge { background: var(--blc-scene-badge, var(--blc-d-badge-off)); }
 .scene .badge ha-icon { --mdc-icon-size: 22px; }
 .scene span {
     overflow: hidden;
@@ -3714,7 +3781,11 @@ h3 {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
 }
-.scene[disabled] { opacity: 0.4; cursor: default; }
+.scene[disabled] {
+    background: var(--blc-d-scene-off);
+    color: var(--blc-d-faint);
+    cursor: default;
+}
 .tile {
     position: relative;
     height: 118px;
@@ -3723,8 +3794,8 @@ h3 {
     box-sizing: border-box;
     cursor: pointer;
     overflow: hidden;
-    background: var(--blc-dialog-tile, #363636);
-    color: var(--blc-dialog-text, #fff);
+    background: var(--blc-d-tile);
+    color: var(--blc-d-text);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -3783,11 +3854,11 @@ h3 {
 .tile .tsw { position: relative; }
 .tile.dead {
     background: repeating-linear-gradient(45deg,
-        var(--blc-dialog-dead-a, #2a2a2a),
-        var(--blc-dialog-dead-a, #2a2a2a) 6px,
-        var(--blc-dialog-dead-b, #222) 6px,
-        var(--blc-dialog-dead-b, #222) 12px);
-    color: var(--blc-dialog-faint, #888);
+        var(--blc-d-dead-a),
+        var(--blc-d-dead-a) 6px,
+        var(--blc-d-dead-b) 6px,
+        var(--blc-d-dead-b) 12px);
+    color: var(--blc-d-faint);
     cursor: default;
 }
 .detail { margin-top: 6px; }
@@ -3797,8 +3868,8 @@ h3 {
     border: none;
     border-radius: 9px;
     padding: 8px;
-    background: var(--blc-dialog-tile, #363636);
-    color: var(--blc-dialog-dim, #ccc);
+    background: var(--blc-d-tile);
+    color: var(--blc-d-dim);
     cursor: pointer;
     font-size: 13px;
     min-width: 0;
@@ -3807,8 +3878,8 @@ h3 {
     white-space: nowrap;
 }
 .picker-tabs button.active {
-    background: var(--blc-dialog-text, #fff);
-    color: var(--blc-dialog-invert, #111);
+    background: var(--blc-d-text);
+    color: var(--blc-d-invert);
 }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chips button {
@@ -3817,8 +3888,8 @@ h3 {
     border: none;
     border-radius: 22px;
     padding: 0 16px;
-    background: var(--blc-dialog-tile, #363636);
-    color: var(--blc-dialog-dim, #ccc);
+    background: var(--blc-d-tile);
+    color: var(--blc-d-dim);
     cursor: pointer;
     font-size: 14px;
     overflow: hidden;
@@ -3826,8 +3897,8 @@ h3 {
     white-space: nowrap;
 }
 .chips button.active {
-    background: var(--blc-dialog-text, #fff);
-    color: var(--blc-dialog-invert, #111);
+    background: var(--blc-d-text);
+    color: var(--blc-d-invert);
 }
 .pick {
     width: 100%;
@@ -3835,8 +3906,8 @@ h3 {
     border: none;
     border-radius: 9px;
     padding: 0 12px;
-    background: var(--blc-dialog-tile, #363636);
-    color: var(--blc-dialog-text, #fff);
+    background: var(--blc-d-tile);
+    color: var(--blc-d-text);
     font-size: 14px;
 }
 .chips button.active::before { content: '\\2713\\00a0'; }
@@ -3863,7 +3934,7 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     height: 26px;
     margin: -13px 0 0 -13px;
     border-radius: 50%;
-    border: 3px solid var(--blc-dialog-text, #fff);
+    border: 3px solid var(--blc-d-text);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
     pointer-events: none;
 }
@@ -3871,7 +3942,7 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     position: relative;
     height: 44px;
     border-radius: 22px;
-    background: var(--blc-dialog-tile, #363636);
+    background: var(--blc-d-tile);
     overflow: hidden;
     margin: 8px 0;
     /* Horizontal slider in a vertically scrolling sheet: the page keeps the
@@ -3886,14 +3957,16 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 .dslider .fill {
     position: absolute;
     inset: 0;
-    background: rgba(255,255,255,0.75);
+    background: var(--blc-d-fill);
+    opacity: var(--blc-d-fill-opacity);
     transform-origin: left center;
     transform: scaleX(0);
     transition: transform 0.3s ease-out;
 }
 .dslider.dragging .fill { transition: none; }
-/* White through mix-blend-mode difference inverts against whatever is behind
-   it, so the label stays readable on both the dark track and the light fill. */
+/* Dark look: white through mix-blend-mode difference inverts against whatever
+   is behind it, so the label reads on the dark track and the light fill. The
+   theme look needs no blending: its fill is translucent like the card's. */
 /* A block with a matching line-height, not a flex box: only on a block do
    overflow and text-overflow apply to the text. It sits in .dslider, which is
    overflow: hidden, so the absolute position cannot escape either. */
@@ -3906,22 +3979,22 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     padding: 0 14px;
     font-size: 13px;
     font-weight: var(--ha-font-weight-medium, 500);
-    color: var(--blc-dialog-text, #fff);
-    mix-blend-mode: difference;
+    color: var(--blc-d-label);
+    mix-blend-mode: var(--blc-d-label-blend);
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 .empty {
-    color: var(--blc-dialog-faint, #888);
+    color: var(--blc-d-faint);
     font-size: 13px;
     padding: 8px 0;
     overflow-wrap: anywhere;
 }
 .deadlist {
     font-size: var(--ha-font-size-xs, 12px);
-    color: var(--blc-dialog-faint, #888);
+    color: var(--blc-d-faint);
     margin-top: 10px;
     line-height: 1.5;
     overflow-wrap: anywhere;
@@ -3929,16 +4002,16 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 
 /* One block per resolved group, so thirty lamps behind one card stay readable. */
 .group + .group { margin-top: 14px; }
-.group.nested { border-left: 2px solid var(--blc-dialog-line, #333); padding-left: 12px; }
+.group.nested { border-left: 2px solid var(--blc-d-line); padding-left: 12px; }
 .group-head { display: flex; align-items: center; gap: 8px; padding: 4px 0 8px; }
-.group-head ha-icon { --mdc-icon-size: 18px; color: var(--blc-dialog-muted, #aaa); flex-shrink: 0; }
+.group-head ha-icon { --mdc-icon-size: 18px; color: var(--blc-d-muted); flex-shrink: 0; }
 .group-head .gname {
     flex: 1; min-width: 0; font-size: 13px; font-weight: var(--ha-font-weight-medium, 500);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .group-head .gcount {
     font-size: var(--ha-font-size-xs, 12px);
-    color: var(--blc-dialog-muted, #aaa);
+    color: var(--blc-d-muted);
     flex-shrink: 0;
     min-width: 0;
     overflow: hidden;
@@ -3948,7 +4021,7 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 .gtoggle {
     flex-shrink: 0; width: 34px; height: 20px; border-radius: 10px; border: none;
     padding: 0; position: relative; cursor: pointer;
-    background: rgba(255, 255, 255, 0.22); transition: background 0.2s ease-out;
+    background: var(--blc-d-switch-off); transition: background 0.2s ease-out;
 }
 .gtoggle .gknob {
     position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
@@ -4039,6 +4112,9 @@ class BuschLightDialog extends HTMLElement {
 
     set cardConfig(opts) {
         this._opts = opts;
+        // M29: the dark Hue look is opt-in; without it the sheet follows the theme.
+        if (opts && opts.dialogTheme === 'dark') this.setAttribute('dialog-theme', 'dark');
+        else this.removeAttribute('dialog-theme');
         this._seen = null;
         this._update();
     }
@@ -5352,6 +5428,18 @@ const SCHEMA_BUSCH_LIGHT_CARD = [
         ]
     },
     { name: 'theme', selector: { theme: {} } },
+    {
+        name: 'dialog_theme',
+        selector: {
+            select: {
+                mode: 'dropdown',
+                options: [
+                    { value: 'theme', labelKey: 'dialogThemeTheme' },
+                    { value: 'dark', labelKey: 'dialogThemeDark' }
+                ]
+            }
+        }
+    },
 
     {
         name: '',
@@ -5561,6 +5649,7 @@ class BuschLightCardEditor extends BuschUI.EditorBase {
             icon_size: c.icon_size === undefined || c.icon_size === null || c.icon_size === ''
                 ? CONFIG_DEFAULTS.icon_size : String(c.icon_size),
             theme: c.theme || '',
+            dialog_theme: c.dialog_theme === 'dark' || c.dialogTheme === 'dark' ? 'dark' : 'theme',
             is_visible: c.is_visible !== false,
             tap_action: c.tap_action || CONFIG_DEFAULTS.tap_action,
             hold_action: c.hold_action || CONFIG_DEFAULTS.hold_action,
@@ -5658,7 +5747,7 @@ class BuschLightCardEditor extends BuschUI.EditorBase {
         // --- appearance
         this._forms.look = this._makeForm(
             ['off_color', 'default_color', 'slider', 'icon_size', 'hue_borders', 'show_switch', 'allow_zero',
-                'off_shadow', 'live_update', 'is_visible', 'theme']
+                'off_shadow', 'live_update', 'is_visible', 'theme', 'dialog_theme']
         );
         const lookBox = document.createElement('div');
         lookBox.appendChild(this._forms.look);
@@ -6006,6 +6095,7 @@ BuschLightCard.__internals.SCHEMA_EXCEPTIONS = SCHEMA_EXCEPTIONS;
 BuschLightCard.__internals.sliceSchema = sliceSchema;
 BuschLightCard.__internals.fieldLabel = fieldLabel;
 BuschLightCard.__internals.fieldHelper = fieldHelper;
+BuschLightCard.__internals.DIALOG_STYLES = DIALOG_STYLES;
 
 window.customCards = window.customCards || [];
 if (!window.customCards.some((c) => c.type === CARD_TAG)) {

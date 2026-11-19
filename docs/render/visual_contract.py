@@ -144,6 +144,7 @@ def main():
                         '--primary-text-color': '#f3f5f7',
                         '--secondary-text-color': '#abbac7',
                         '--divider-color': '#425360',
+                        '--secondary-background-color': '#2b3844',
                         '--primary-color': '#75b8ee',
                         '--success-color': '#6fd1a8',
                         '--warning-color': '#f5bb67',
@@ -153,6 +154,7 @@ def main():
                         '--primary-text-color': '#17212b',
                         '--secondary-text-color': '#566574',
                         '--divider-color': '#dbe2e9',
+                        '--secondary-background-color': '#e9eef2',
                         '--primary-color': '#087bc1',
                         '--success-color': '#187b59',
                         '--warning-color': '#986200',
@@ -284,7 +286,9 @@ def main():
                     report["cases"].append({"width": width, "theme": theme, "state": name,
                                             "ok": bool(valid), "metrics": metrics, "screenshot": shot})
                 # The dialog in the same matrix; 320 px is the phone (bottom sheet).
-                for dialog_case in ("success", "warm"):
+                # M29: the sheet follows the theme; dialog_theme: dark ("darklook")
+                # must give back the black sheet of 0.13.3 in both themes.
+                for dialog_case, look in (("success", None), ("warm", None), ("warm", "dark")):
                     page.set_viewport_size({"width": width, "height": 900})
                     dialog_metrics = page.evaluate("""(payload) => {
                         window.freshStep();
@@ -293,6 +297,7 @@ def main():
                         stack.replaceChildren();
                         const card = document.createElement('busch-light-card');
                         card.setConfig({ type: 'custom:busch-light-card', entity: payload.root,
+                            ...(payload.look ? { dialog_theme: payload.look } : {}),
                             scenes: [{ entity: 'scene.demo_day', title: 'Tageslicht', color: '#ffe0a3',
                                        icon: 'mdi:white-balance-sunny' },
                                      { entity: 'scene.demo_night', title: 'Nachtlicht', color: '#2d3c8c',
@@ -326,22 +331,59 @@ def main():
                             if (t.classList.contains('tile')) ratios.push(I.contrastRatio(fg,
                                 { r: bg.r * I.TILE_SHADE, g: bg.g * I.TILE_SHADE, b: bg.b * I.TILE_SHADE, a: 1 }));
                         });
-                        return { headLit: head.classList.contains('lit'), headStops: headStops.length,
+                        // M29: sheet colour and the missing scene's contrast, measured.
+                        const sheetEl = sr.querySelector('.sheet');
+                        const gone = sr.querySelector('.scene[disabled]');
+                        const goneBg = rgbOf(getComputedStyle(gone).backgroundColor);
+                        const goneFg = rgbOf(getComputedStyle(gone).color);
+                        const offTile = sr.querySelector('.tile:not(.lit):not(.dead)');
+                        const probe = document.createElement('div');
+                        probe.style.background = 'var(--card-background-color)';
+                        document.body.appendChild(probe);
+                        const themeBg = getComputedStyle(probe).backgroundColor;
+                        probe.remove();
+                        const sheetBg = getComputedStyle(sheetEl).backgroundColor;
+                        const look = {
+                            sheetBg, themeBg,
+                            sheetLuminance: I.contrastRatio(rgbOf(sheetBg), { r: 0, g: 0, b: 0, a: 1 }),
+                            text: getComputedStyle(sheetEl).color,
+                            offTileBg: offTile ? getComputedStyle(offTile).backgroundColor : null,
+                            goneOpacity: getComputedStyle(gone).opacity,
+                            goneContrast: Math.round(I.contrastRatio(goneFg, goneBg) * 100) / 100,
+                            attribute: document.querySelector('busch-light-dialog').getAttribute('dialog-theme')
+                        };
+                        return { look, headLit: head.classList.contains('lit'), headStops: headStops.length,
                                  minRatio: Math.min(...ratios), checked: ratios.length,
                                  sheetWidth: sheet.width, viewport: innerWidth,
                                  scrollWidth: sr.querySelector('.sheet').scrollWidth,
                                  clientWidth: sr.querySelector('.sheet').clientWidth };
-                    }""", {"root": root, "states": scenarios[dialog_case]["states"]})
+                    }""", {"root": root, "states": scenarios[dialog_case]["states"], "look": look})
                     page.wait_for_timeout(300)
-                    shot = f"dialog-{dialog_case}-{width}-{theme}.png"
+                    shot = (f"dialog-{dialog_case}-{width}-{theme}.png" if not look
+                            else f"dialog-{dialog_case}-darklook-{width}-{theme}.png")
                     page.screenshot(path=str(result / shot))
                     ok = (dialog_metrics["headLit"] and dialog_metrics["minRatio"] >= 4.5
                           and dialog_metrics["checked"] >= 4
                           and dialog_metrics["scrollWidth"] <= dialog_metrics["clientWidth"] + 1)
                     if width < 450:
                         ok = ok and abs(dialog_metrics["sheetWidth"] - dialog_metrics["viewport"]) <= 1
+                    measured = dialog_metrics["look"]
+                    # The missing scene keeps 3:1 and is not dimmed by opacity (M29).
+                    ok = ok and measured["goneContrast"] >= 3 and measured["goneOpacity"] == "1"
+                    if look == "dark":
+                        # The 0.13.3 picture: #171717 sheet, white text, #363636 tiles.
+                        ok = ok and measured["attribute"] == "dark"
+                        ok = ok and measured["sheetBg"] == "rgb(23, 23, 23)"
+                        ok = ok and measured["text"] == "rgb(255, 255, 255)"
+                        ok = ok and measured["offTileBg"] in (None, "rgb(54, 54, 54)")
+                    else:
+                        # Light theme light, dark theme dark: the theme's own card colour.
+                        ok = ok and measured["attribute"] is None
+                        ok = ok and measured["sheetBg"] == measured["themeBg"]
+                        ok = ok and ((measured["sheetLuminance"] > 10) if theme == "light"
+                                     else (measured["sheetLuminance"] < 3))
                     report["cases"].append({"width": width, "theme": theme,
-                        "state": f"dialog-{dialog_case}", "ok": bool(ok),
+                        "state": f"dialog-{dialog_case}" + (f"-{look}look" if look else ""), "ok": bool(ok),
                         "metrics": dialog_metrics, "screenshot": shot})
                     page.evaluate("""() => document.querySelectorAll('busch-light-dialog')
                         .forEach(d => d.close ? d.close() : d.remove())""")
