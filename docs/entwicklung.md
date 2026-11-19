@@ -239,6 +239,8 @@ und ein Test auf doppelte Top-Level-Namen im Bundle.
 
 ## Geprüft
 
+**19.11.2026 · 0.15.0, Buschcheck Etappe H (#1313, Tag `v0.15.0`)** — Shared UI 0.5.0: `.busch-btn`/`.busch-chip` (M62), Typografie auf Tokens, Prozentlabel 12 px (M63), Kopf Stufe 1 (M61), Steuerdialog über dialogHistory/focusTrap mit X links (M28), Zustandsbaustein (M27), `BuschUI.register` (M42), Kontrast/Touch (M26). 148 Node-Tests. Abschlusslauf `karten-20261119-195834-aaec84` grün (55/55, 2590 Node-Tests, Block `statisch` grün, Kontrast/Touch gemessen), `--beleg-pruefen` gleich; Bilder zweimal am Bild geprüft (Sonnet), Befunde behoben.
+
 **19.11.2026 · 0.14.0, Buschcheck Etappe G (#1310, Tag `v0.14.0`)** — Dialog folgt dem HA-Thema, `dialog_theme: dark` für den bisherigen Look (M29, E4); eine Szenendarstellung, feste Abschnittsreihenfolge (M65); Kartentitel neben dem Button, Kopf 2 Tab-Stopps, aria-valuetext (M57). 118 Node-Tests. Abschlusslauf `karten-20261119-141846-b2547c` grün (43/43, 948 Node-Tests, Block `statisch` grün), `--beleg-pruefen` gleich; Bilder zweimal am Bild geprüft (Sonnet), Mängel bei 320 px behoben, sonst Rauschen.
 
 **19.11.2026 · 0.13.3, Buschcheck Etappe F (#1301, Tag `v0.13.3`)** — Farb-/Kelvin-Vorschau endet erst bei erreichtem Wert (rgb ±8, Kelvin ±50, passender `color_mode`) oder nach 4 s; fremder `context` zählt wie keiner (Nutzerentscheid 19.11.) (M37). 104 Node-Tests. Abschlusslauf `karten-20261119-114355-b75c2d` grün (52/52, 1492 Node-Tests, Block `statisch` grün), `--beleg-pruefen` gleich; Bilder gegen den Vorlauf am Bild geprüft (Sonnet), `dialog-white` zeigt gewollt die gehaltene Weißvorschau.
