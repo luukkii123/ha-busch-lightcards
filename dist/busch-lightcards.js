@@ -2787,12 +2787,12 @@ ha-card.fg-dark {
     -webkit-tap-highlight-color: transparent;
 }
 .tap:focus-visible, .desc:focus-visible, .toggle:focus-visible, .slider:focus-visible {
-    outline: 2px solid var(--primary-color);
+    outline: 2px solid ${BuschUI.tokens.focusColor};
     outline-offset: 2px;
 }
 .lit .tap:focus-visible, .lit .desc:focus-visible, .lit .toggle:focus-visible, .lit .slider:focus-visible,
 .tinted .tap:focus-visible, .tinted .desc:focus-visible, .tinted .toggle:focus-visible {
-    outline-color: var(--blc-text-color, var(--primary-color));
+    outline-color: var(--blc-text-color, ${BuschUI.tokens.focusColor});
 }
 .media {
     flex: 0 0 var(--blc-media);
