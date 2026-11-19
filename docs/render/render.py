@@ -659,6 +659,63 @@ def main():
         page.locator("busch-light-card").screenshot(path=str(shot))
         report["screenshots"].append(shot.name)
 
+        # M68 (Buschcheck P22): getCardSize forces no layout. Every layout read
+        # is counted while it runs, on a fresh card before the ResizeObserver
+        # answered (estimate) and after it (cached height); the units must
+        # match the real height, so the Masonry balance stays as it was.
+        card_size = page.evaluate(
+            """async (payload) => {
+                const frame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+                const results = [];
+                for (const extra of [{}, { slider: 'none' }, { description: false }]) {
+                    window.freshStep();
+                    const stack = document.getElementById('stack');
+                    stack.innerHTML = '';
+                    const card = document.createElement('busch-light-card');
+                    card.setConfig(Object.assign({ type: 'custom:busch-light-card', entity: payload.root }, extra));
+                    stack.appendChild(card);
+                    card.hass = window.makeHass(payload.states);
+                    let reads = 0;
+                    const undo = [];
+                    for (const [proto, names] of [[Element.prototype, ['getBoundingClientRect', 'getClientRects']]]) {
+                        for (const n of names) { const f = proto[n]; proto[n] = function (...a) { reads++; return f.apply(this, a); }; undo.push(() => { proto[n] = f; }); }
+                    }
+                    for (const [proto, names] of [[HTMLElement.prototype, ['offsetHeight', 'offsetWidth', 'offsetTop', 'offsetLeft']],
+                                                  [Element.prototype, ['scrollHeight', 'scrollWidth', 'clientHeight', 'clientWidth']]]) {
+                        for (const n of names) {
+                            const d = Object.getOwnPropertyDescriptor(proto, n);
+                            Object.defineProperty(proto, n, { configurable: true, get() { reads++; return d.get.call(this); } });
+                            undo.push(() => Object.defineProperty(proto, n, d));
+                        }
+                    }
+                    const gcs = window.getComputedStyle;
+                    window.getComputedStyle = function (...a) { reads++; return gcs.apply(this, a); };
+                    undo.push(() => { window.getComputedStyle = gcs; });
+                    const estimate = card.getCardSize();
+                    const readsEstimate = reads;
+                    undo.forEach(f => f()); undo.length = 0;
+                    await frame();
+                    reads = 0;
+                    const f2 = Element.prototype.getBoundingClientRect;
+                    Element.prototype.getBoundingClientRect = function (...a) { reads++; return f2.apply(this, a); };
+                    const measured = card.getCardSize();
+                    Element.prototype.getBoundingClientRect = f2;
+                    const height = card.getBoundingClientRect().height;
+                    results.push({ config: extra, estimate, readsEstimate, measured, readsMeasured: reads,
+                                   height, units: Math.ceil(height / 50) });
+                }
+                return results;
+            }""",
+            {"root": fixture["root"], "states": lit_states},
+        )
+        report["cardSize"] = card_size
+        check("M68 getCardSize reads no layout, before and after the ResizeObserver",
+              all(x["readsEstimate"] == 0 and x["readsMeasured"] == 0 for x in card_size),
+              json.dumps(card_size))
+        check("M68 getCardSize keeps the Masonry units of the real height (estimate and cached)",
+              all(x["estimate"] == x["units"] and x["measured"] == x["units"] for x in card_size),
+              json.dumps(card_size))
+
         # ------------------------------------------------------------------
         # 7. The dialog
         # ------------------------------------------------------------------

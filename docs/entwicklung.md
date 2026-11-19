@@ -42,6 +42,12 @@
   einem Halten nicht vom späten Zurück geschlossen wird.
 - Sections-Layout: `getGridOptions()` gibt nur Spalten zurück, keine Zeilen;
   die Höhe misst Home Assistant am Inhalt.
+- Masonry: `getCardSize()` liest kein Layout (M68, Buschcheck P22). Es nimmt
+  die Höhe, die ein `ResizeObserver` an der Karte zuletzt gemeldet hat, und
+  schätzt vorher aus dem, was der letzte Render zeigt (Innenabstand, Symbol,
+  Statuszeile, Zustandsblock, Regler; `CARD_SIZE_PX`). Test
+  `tests/kartengroesse.test.js` zählt Layout-Lesungen, `render.py` prüft im
+  Browser, dass die Einheiten der echten Höhe entsprechen.
 
 ## Gestaltung: Hue-Optik (seit 0.9.0)
 

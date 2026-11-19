@@ -362,6 +362,12 @@ const BuschUI = (() => {
  */
 
 const CARD_VERSION = '0.15.0';
+/**
+ * M68: getCardSize's estimate in px, read off the card CSS (.main padding
+ * 2 x 16, row gap 4 + one status line, the M27 state block with icon, title
+ * and a one-line hint, the 44 px slider with its 16 px margin).
+ */
+const CARD_SIZE_PX = Object.freeze({ padding: 32, status: 24, state: 88, slider: 60 });
 /** #1011: default entity of getStubConfig per entity registry, see there. */
 const STUB_PICKS = new WeakMap();
 
@@ -3092,17 +3098,42 @@ class BuschLightCard extends HTMLElement {
         this._apiId = null;
         this._themeKeys = [];
         this._themeSeen = null;
+        this._sizeHint = null; // what the last render showed, for getCardSize (M68)
+        this._measuredHeight = 0; // the last height a ResizeObserver delivered
+        this._sizeObserver = null;
     }
 
     connectedCallback() {
         OPTIMISTIC_VIEWS.add(this);
         this._syncApi();
+        this._observeSize();
     }
 
     disconnectedCallback() {
         OPTIMISTIC_VIEWS.delete(this);
         if (this._apiId) unregisterApi(this._apiId, this);
         this._apiId = null;
+        if (this._sizeObserver) this._sizeObserver.disconnect();
+    }
+
+    /**
+     * M68 (Buschcheck P22): the height for getCardSize comes from a
+     * ResizeObserver, which delivers it after layout, instead of a
+     * getBoundingClientRect() that Masonry would call between its own DOM
+     * writes. (Re)observing also asks for a first notification.
+     */
+    _observeSize() {
+        if (typeof ResizeObserver !== 'function' || !this.isConnected) return;
+        if (!this._sizeObserver) {
+            this._sizeObserver = new ResizeObserver((entries) => {
+                const entry = entries[entries.length - 1];
+                const box = entry && entry.borderBoxSize && entry.borderBoxSize[0];
+                const height = box ? box.blockSize : entry ? entry.contentRect.height : 0;
+                this._measuredHeight = height > 0 ? height : 0;
+            });
+        }
+        this._sizeObserver.unobserve(this);
+        this._sizeObserver.observe(this);
     }
 
     /** `api_id`: (un)registers this card for the JS and URL API. */
@@ -3182,6 +3213,9 @@ class BuschLightCard extends HTMLElement {
         }
         this._built = false;
         this._seen = null;
+        this._sizeHint = null;
+        this._measuredHeight = 0;
+        this._observeSize();
         this.shadowRoot.innerHTML = '';
         const opts = this._opts;
         this.style.setProperty('--blc-icon-size', (opts ? opts.iconPx : ICON_BASE_PX) + 'px');
@@ -3215,8 +3249,24 @@ class BuschLightCard extends HTMLElement {
     getCardSize() {
         if (this._opts && !this._opts.isVisible) return 0;
         // Masonry uses 50px units to balance columns, not to set a height.
-        const height = this._card ? this._card.getBoundingClientRect().height : 0;
+        // Never a layout read here (M68): the observed height, else an
+        // estimate from what the last render showed.
+        const height = this._measuredHeight || this._estimateHeight();
         return height ? Math.ceil(height / 50) : 4;
+    }
+
+    /**
+     * The card's height from its CSS, without asking the layout: padding,
+     * icon tile, status line, state block and slider. Matches the browser
+     * render of 0.10.0 (lit 158 px = 4 units, no status line 136 px = 3).
+     */
+    _estimateHeight() {
+        const hint = this._sizeHint;
+        if (!hint || !this._opts) return 0;
+        return CARD_SIZE_PX.padding + Math.max(44, this._opts.iconPx + 12)
+            + (hint.status ? CARD_SIZE_PX.status : 0)
+            + (hint.state ? CARD_SIZE_PX.state : 0)
+            + (hint.slider ? CARD_SIZE_PX.slider : 0);
     }
 
     /**
@@ -3514,6 +3564,7 @@ class BuschLightCard extends HTMLElement {
             this._warn.style.display = 'none';
             this._toggle.setAttribute('disabled', '');
             this._slider.style.display = 'none';
+            this._sizeHint = { status: true, state: false, slider: false };
             return;
         }
 
@@ -3571,6 +3622,7 @@ class BuschLightCard extends HTMLElement {
         // slider
         const sliderOn = this._opts.slider !== 'none' && model.supportsBrightness;
         this._slider.style.display = sliderOn ? '' : 'none';
+        this._sizeHint = { status: !(hideText && !showWarn), state: !!stateKind, slider: sliderOn };
         this._slider.classList.toggle('mushroom', this._opts.slider === 'mushroom');
         const sliderDisabled = this._opts.allowZero ? model.isAllUnavailable : !model.isOn;
         if (sliderDisabled) this._slider.setAttribute('disabled', '');
