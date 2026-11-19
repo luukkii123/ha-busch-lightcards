@@ -2838,19 +2838,12 @@ ha-card.fg-dark {
     white-space: nowrap;
 }
 .warn {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    padding: 0 6px;
-    border-radius: 9px;
+    /* M62: .busch-chip[data-tone=warning]; compact enough for the status line. */
+    min-height: 18px;
     font-size: var(--ha-font-size-xs, 12px);
     line-height: 18px;
-    background: var(--secondary-background-color, var(--card-background-color));
-    color: var(--warning-color, var(--primary-text-color));
     /* The count stays visible while the neighboring long description yields. */
     flex-shrink: 0;
-    min-width: 0;
-    overflow: hidden;
 }
 .warn span {
     min-width: 0;
@@ -2861,7 +2854,9 @@ ha-card.fg-dark {
 .warn ha-icon {
     --mdc-icon-size: 13px;
     flex-shrink: 0;
+    color: var(--warning-color, var(--primary-text-color));
 }
+.lit .warn ha-icon, .tinted .warn ha-icon { color: inherit; }
 .toggle {
     grid-area: action;
     flex-shrink: 0;
@@ -3285,8 +3280,10 @@ class BuschLightCard extends HTMLElement {
         this._desc.tabIndex = -1;
         this._descText = document.createElement('span');
         this._descText.className = 'dtext';
+        // M62: the shared chip, toned as a warning (its colour stays on the icon).
         this._warn = document.createElement('span');
-        this._warn.className = 'warn';
+        this._warn.className = 'busch-chip warn';
+        this._warn.setAttribute('data-tone', 'warning');
         this._warnIcon = document.createElement('ha-icon');
         this._warnIcon.setAttribute('icon', 'mdi:alert-circle-outline');
         this._warnText = document.createElement('span');
@@ -3848,18 +3845,15 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+/* M62: .busch-btn[data-variant=text] (44 px target, focus ring); the round
+   tile behind the icon stays the dialog's own. */
 .iconbtn {
     flex-shrink: 0;
-    width: 36px;
-    height: 36px;
+    padding: 0;
     border-radius: 50%;
     border: none;
     background: var(--blc-d-tile);
     color: var(--blc-d-text);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 h3 {
     font-size: 13px;
@@ -4011,40 +4005,35 @@ h3 {
 }
 .detail { margin-top: 6px; }
 .picker-tabs { display: flex; gap: 8px; margin: 14px 0 10px; }
-.picker-tabs button {
+/* M62: .busch-btn[data-variant=secondary]; a block box so the ellipsis applies. */
+.picker-tabs .busch-btn {
+    display: block;
     flex: 1;
     border: none;
     border-radius: 9px;
-    padding: 8px;
     background: var(--blc-d-tile);
     color: var(--blc-d-dim);
-    cursor: pointer;
     font-size: 13px;
+    font-weight: inherit;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.picker-tabs button.active {
+.picker-tabs .busch-btn.active {
     background: var(--blc-d-text);
     color: var(--blc-d-invert);
 }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chips button {
-    min-height: 44px;
-    max-width: 100%;
-    border: none;
-    border-radius: 22px;
+/* M62: button.busch-chip (44 px as a button); inline-block keeps the ellipsis. */
+.chips .busch-chip {
+    display: inline-block;
     padding: 0 16px;
     background: var(--blc-d-tile);
     color: var(--blc-d-dim);
-    cursor: pointer;
     font-size: 14px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
-.chips button.active {
+.chips .busch-chip.active {
     background: var(--blc-d-text);
     color: var(--blc-d-invert);
 }
@@ -4058,7 +4047,7 @@ h3 {
     color: var(--blc-d-text);
     font-size: 14px;
 }
-.chips button.active::before { content: '\\2713\\00a0'; }
+.chips .busch-chip.active::before { content: '\\2713\\00a0'; }
 .wheelwrap { display: flex; justify-content: center; padding: 6px 0 2px; }
 canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-width: 100%; }
 .tempbar {
@@ -4770,6 +4759,7 @@ class BuschLightDialog extends HTMLElement {
         row.className = 'chips ' + className;
         items.forEach((item) => {
             const button = document.createElement('button');
+            button.className = 'busch-chip';
             button.textContent = item.label;
             button.setAttribute('aria-pressed', item.active ? 'true' : 'false');
             if (item.active) button.classList.add('active');
@@ -4801,7 +4791,8 @@ class BuschLightDialog extends HTMLElement {
 
     _makeIconButton(icon, onClick) {
         const button = document.createElement('button');
-        button.className = 'iconbtn';
+        button.className = 'busch-btn iconbtn';
+        button.setAttribute('data-variant', 'text');
         button.setAttribute('aria-label', translate(this._hass, icon === 'mdi:close' ? 'close' : 'back'));
         const haIcon = document.createElement('ha-icon');
         haIcon.setAttribute('icon', icon);
@@ -5119,29 +5110,27 @@ class BuschLightDialog extends HTMLElement {
         const buttons = [];
         const activate = (name) => {
             this._tab = name;
-            buttons.forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+            buttons.forEach((b) => {
+                b.classList.toggle('active', b.dataset.tab === name);
+                b.setAttribute('aria-pressed', b.dataset.tab === name ? 'true' : 'false');
+            });
             if (name === 'colour') showColour();
             else showWhite();
         };
 
-        if (options.supportsColor) {
+        // M62: the shared button, secondary; the chosen one says so beyond colour.
+        [['colour', options.supportsColor], ['white', options.supportsTemp]].forEach(([name, supported]) => {
+            if (!supported) return;
             const b = document.createElement('button');
-            b.textContent = translate(hass, 'colour');
-            b.dataset.tab = 'colour';
-            b.dataset.focusKey = 'picker-tab:colour';
-            b.addEventListener('click', () => activate('colour'));
+            b.className = 'busch-btn';
+            b.setAttribute('data-variant', 'secondary');
+            b.textContent = translate(hass, name);
+            b.dataset.tab = name;
+            b.dataset.focusKey = 'picker-tab:' + name;
+            b.addEventListener('click', () => activate(name));
             tabs.appendChild(b);
             buttons.push(b);
-        }
-        if (options.supportsTemp) {
-            const b = document.createElement('button');
-            b.textContent = translate(hass, 'white');
-            b.dataset.tab = 'white';
-            b.dataset.focusKey = 'picker-tab:white';
-            b.addEventListener('click', () => activate('white'));
-            tabs.appendChild(b);
-            buttons.push(b);
-        }
+        });
 
         if (buttons.length > 1) sheet.appendChild(tabs);
         sheet.appendChild(body);
