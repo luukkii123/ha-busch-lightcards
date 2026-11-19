@@ -2761,7 +2761,8 @@ ha-card.fg-dark {
     --blc-chip: rgba(255, 255, 255, 0.45);
     --blc-slider-rest: rgba(255, 255, 255, 0.5);
     --blc-slider-line: rgba(0, 0, 0, 0.28);
-    --blc-mushroom-fill: rgba(0, 0, 0, 0.42);
+    /* #1320: 0.6, so the handle in the light colour keeps 3:1 on the fill (0.42: 2.2 to 2.6:1). */
+    --blc-mushroom-fill: rgba(0, 0, 0, 0.6);
 }
 .main {
     display: grid;
@@ -2933,7 +2934,11 @@ ha-card.fg-dark {
     width: 42px;
     height: 24px;
     border-radius: var(--ha-border-radius-pill, 9999px);
-    background: var(--blc-toggle-off, var(--divider-color));
+    /* #1320 (WCAG 1.4.11): the tracks reach 3:1 on the card and against the
+       knob in the card colour: off secondary text (4.81/6.13:1, the divider
+       was 1.32/1.83), on the accent 60 % with the text colour (5.30/8.24:1,
+       pure #03a9f4 2.63:1 against a white knob). */
+    background: var(--blc-toggle-off, var(--secondary-text-color));
     transition: background 0.2s ease-out;
 }
 .toggle[disabled] {
@@ -2952,7 +2957,7 @@ ha-card.fg-dark {
     transition: transform 0.2s ease-out;
 }
 .toggle.on::before {
-    background: var(--blc-toggle-on, var(--primary-color));
+    background: var(--blc-toggle-on, color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color)));
 }
 .toggle.on .knob {
     transform: translateX(18px);
@@ -2989,7 +2994,24 @@ ha-card.fg-dark {
     transform: scaleX(0);
     transition: transform 0.3s ease-out;
 }
-.slider.dragging .fill, .slider.dragging::before, .slider.dragging .mfill {
+/* #1320 (WCAG 1.4.11): the value edge carries a 3 px handle in the text
+   colour; the translucent fill alone was about 1.3:1 against the rest. On a
+   lit card the text colour is the one chosen for 4.5:1 on the light colour,
+   and the rest veil only moves further away from it. Moved by transform
+   (share of its own full width), like the fill. */
+.slider::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: 0;
+    right: 0;
+    border-right: 3px solid var(--blc-text-color, var(--primary-text-color));
+    transform: translateX(calc(var(--blc-rest, 1) * -100%));
+    transition: transform 0.3s ease-out;
+    pointer-events: none;
+}
+.slider.dragging .fill, .slider.dragging::before, .slider.dragging::after, .slider.dragging .mfill {
     transition: none;
 }
 /* slider: mushroom (#715) — a flat 28 px track in the Mushroom style inside
@@ -3001,6 +3023,7 @@ ha-card.fg-dark {
 }
 .slider.mushroom::before, .lit .slider.mushroom::before,
 .slider.mushroom .fill, .slider.mushroom .label { display: none; }
+.slider.mushroom::after { display: none; }
 .slider.mushroom .track {
     display: block;
     position: absolute;
@@ -3019,7 +3042,9 @@ ha-card.fg-dark {
 .slider.mushroom .mfill {
     position: absolute;
     inset: 0;
-    background: var(--primary-color);
+    /* #1320: the accent 60 % with the text colour, 3:1 on the track and
+       under the handle (pure #03a9f4 2.07:1 on the track). */
+    background: color-mix(in srgb, var(--primary-color) 60%, var(--primary-text-color));
     transform: translateX(-100%);
     transition: transform 0.3s ease-out;
 }
@@ -3826,6 +3851,7 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     --blc-dialog-dead-b: initial;
     --blc-scene-badge: initial;
     --blc-knob-color: initial;
+    --blc-marker-ring: initial;
 
     /* The resolved palette every rule below reads (M29). Tiles take
        --secondary-background-color, as Home Assistant's own tiles do. */
@@ -3844,7 +3870,15 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
        its label at about 2.5:1; secondary text on the tile keeps 3:1. */
     --blc-d-scene-off: var(--blc-dialog-tile, var(--secondary-background-color, #e5e5e5));
     --blc-d-badge-off: rgba(0, 0, 0, 0.06);
-    --blc-d-switch-off: color-mix(in srgb, var(--primary-text-color, #212121) 28%, transparent);
+    /* #1320 (WCAG 1.4.11): switch tracks reach 3:1 on the sheet and the tile
+       and against the knob in the sheet colour: off the muted text colour
+       (light 4.81:1, was 1.80:1 at 28 % text), on the accent 60 % with the
+       sheet text (5.30/8.24:1, white knob on #03a9f4 was 2.63:1). The
+       brightness slider's handle is the sheet text on the translucent fill. */
+    --blc-d-switch-off: var(--blc-d-muted);
+    --blc-d-switch-on: color-mix(in srgb, var(--primary-color, #03a9f4) 60%, var(--blc-d-text));
+    --blc-d-knob: var(--blc-d-bg);
+    --blc-d-handle: var(--blc-d-text);
     /* The slider fill as on the card: the accent, translucent, under text in
        the theme's own colour. The dark look keeps its inverting label. */
     --blc-d-fill: var(--primary-color, #03a9f4);
@@ -3887,7 +3921,12 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     --blc-d-dead-b: var(--blc-dialog-dead-b, #222);
     --blc-d-scene-off: var(--blc-dialog-dead-b, #222);
     --blc-d-badge-off: rgba(255, 255, 255, 0.12);
-    --blc-d-switch-off: rgba(255, 255, 255, 0.22);
+    /* #1320: the switch follows the theme rule (muted track, accent mixed with
+       white, knob in the sheet colour): white on #03a9f4 was 2.63:1, the
+       0.22 white track 2.0:1 against a dark knob. The fill already reads
+       against the track (about 9:1), the handle is the dark invert. */
+    --blc-d-switch-off: var(--blc-d-muted);
+    --blc-d-handle: var(--blc-d-invert);
     --blc-d-fill: rgba(255, 255, 255, 0.75);
     --blc-d-fill-opacity: 1;
     --blc-d-label: var(--blc-dialog-text, #fff);
@@ -4098,6 +4137,8 @@ h3 {
 .tile.lit .tsw { background-color: rgba(0, 0, 0, 0.25); }
 .tile.lit .tsw.on { background-color: rgba(0, 0, 0, 0.45); }
 .tile.lit.fg-dark .tsw.on { background-color: rgba(0, 0, 0, 0.62); }
+/* #1320: on a lit tile the knob stays white on the darkened track, like the card's and the header's switch. */
+.tile.lit .tsw .gknob { background: var(--blc-knob-color, rgb(255, 255, 255)); }
 .tile .thead { position: relative; width: 100%; display: flex; justify-content: flex-end; min-height: 14px; }
 .tile .tmid { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .tile .ticon { --mdc-icon-size: 26px; }
@@ -4200,8 +4241,11 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     height: 26px;
     margin: -13px 0 0 -13px;
     border-radius: 50%;
-    border: 3px solid var(--blc-d-text);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    /* #1320 (WCAG 1.4.11): it sits on any colour of the wheel or the bar, so
+       a white ring with a dark outline: one of them keeps 3:1 on every
+       colour (the text-colour ring alone fell to about 1:1 on its own tone). */
+    border: 3px solid var(--blc-marker-ring, #fff);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.75), 0 1px 4px rgba(0, 0, 0, 0.6);
     pointer-events: none;
 }
 .dslider {
@@ -4229,7 +4273,22 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     transform: scaleX(0);
     transition: transform 0.3s ease-out;
 }
-.dslider.dragging .fill { transition: none; }
+/* #1320 (WCAG 1.4.11): a 3 px handle at the value edge (sheet text, dark
+   invert in the dark look); the translucent theme fill alone was about
+   1.3:1 against the track. Moved by transform like the fill. */
+.dslider::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: 0;
+    right: 0;
+    border-right: 3px solid var(--blc-d-handle);
+    transform: translateX(calc(var(--blc-d-rest, 1) * -100%));
+    transition: transform 0.3s ease-out;
+    pointer-events: none;
+}
+.dslider.dragging .fill, .dslider.dragging::after { transition: none; }
 /* Dark look: white through mix-blend-mode difference inverts against whatever
    is behind it, so the label reads on the dark track and the light fill. The
    theme look needs no blending: its fill is translucent like the card's. */
@@ -4310,11 +4369,11 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 }
 .gtoggle .gknob {
     position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
-    border-radius: 50%; background: var(--blc-knob-color, #fff);
+    border-radius: 50%; background: var(--blc-knob-color, var(--blc-d-knob));
     transition: transform 0.2s ease-out;
 }
 /* background-color only: the shorthand would reset background-clip (M26). */
-.gtoggle.on { background-color: var(--primary-color, #03a9f4); }
+.gtoggle.on { background-color: var(--blc-d-switch-on); }
 .gtoggle.on .gknob { transform: translateX(14px); }
 .gtoggle[disabled] { opacity: 0.4; cursor: default; }
 /* The master switch, in the header where it is always reachable — the card's
@@ -5199,6 +5258,7 @@ class BuschLightDialog extends HTMLElement {
         const fill = document.createElement('div');
         fill.className = 'fill';
         fill.style.transform = 'scaleX(' + clamp(shown, 0, 100) / 100 + ')';
+        slider.style.setProperty('--blc-d-rest', String(1 - clamp(shown, 0, 100) / 100));
         const label = document.createElement('div');
         label.className = 'label';
         label.textContent = enabled || held !== null ? shown + ' %' : translate(this._hass, 'allOff');
@@ -5210,6 +5270,7 @@ class BuschLightDialog extends HTMLElement {
             this._setDragging(!done);
             slider.classList.toggle('dragging', !done);
             fill.style.transform = 'scaleX(' + pct / 100 + ')';
+            slider.style.setProperty('--blc-d-rest', String(1 - pct / 100));
             label.textContent = pct + ' %';
             // 0 only on release (it switches off), never while sliding.
             this._liveStep(session, pct, done, (v, live) => (live && v <= 0 ? undefined : send(v, live)));
@@ -5544,7 +5605,9 @@ summary {
     background: repeating-linear-gradient(45deg,
         rgba(219, 68, 55, 0.14), rgba(219, 68, 55, 0.14) 5px,
         transparent 5px, transparent 10px);
-    color: var(--error-color, #db4437);
+    /* #1320: red 70 % with the text colour like the other error texts, 4.5:1 on
+       the editor card and the stripe (pure red 4.29:1 on white). */
+    color: color-mix(in srgb, var(--error-color, #db4437) 70%, var(--primary-text-color, #212121));
 }
 .note {
     margin-top: 8px;

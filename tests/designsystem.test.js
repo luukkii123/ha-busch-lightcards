@@ -419,3 +419,113 @@ test('M79 Tonpunkte der Statuszeile und Warnsymbol im Abzeichen halten 3:1 hell 
   }
   assert.equal(faelle.length, 12);
 });
+
+// ── #1320 (Etappe I, Kontrast-Rest, user decision: no exception for graphics) ──
+// Operated controls (WCAG 1.4.11): the part that shows the state (knob, handle, marker) reaches 3:1 against what it sits on
+// and next to, the track reaches 3:1 against the surface where that surface is a theme value. On a lit card (any lamp colour)
+// the handle is the chosen text colour and the switch knob white on a darkened track, both computed for sample lamp colours.
+// The editor's missing-entity chip is text (1.4.3, 4.5:1). Same formula as hacs/scripts/kontrast_touch.py.
+const G_THEMEN = {
+  hell: { ...KT_THEMEN.hell, 'secondary-text-color': '#727272', 'secondary-background-color': '#e5e5e5', 'divider-color': '#e0e0e0' },
+  dunkel: { ...KT_THEMEN.dunkel, 'secondary-text-color': '#9b9b9b', 'secondary-background-color': '#202020', 'divider-color': '#474747' },
+};
+const gMisch = (a, b, p) => a.map((v, i) => v * p + b[i] * (1 - p));
+const gWert = (regel, prop) => { const m = regel.match(new RegExp('(?:[{;]|\\n)\\s*' + prop + ':\\s*([^;]+);')); assert.ok(m, prop + ' in ' + regel.slice(0, 60)); return m[1].trim(); };
+const gRegel = (css, sel) => { const r = blattRegel(css, sel); assert.ok(r, 'Regel ' + sel); return r; };
+/** Splits `a, b` at the top level (not inside parentheses). */
+const gTeile = (s) => { const out = []; let tiefe = 0, von = 0; for (let i = 0; i < s.length; i++) { if (s[i] === '(') tiefe++; else if (s[i] === ')') tiefe--; else if (s[i] === ',' && !tiefe) { out.push(s.slice(von, i).trim()); von = i + 1; } } out.push(s.slice(von).trim()); return out; };
+/** A CSS colour as [r, g, b, a]: #hex, rgb(a), transparent, var(--x, fallback) via `t` (theme values, then own variables) and color-mix in srgb. */
+function gFarbe(wert, t) {
+  wert = wert.trim(); let m;
+  if (wert === 'transparent') return [0, 0, 0, 0];
+  if ((m = wert.match(/^#([0-9a-f]{3})$/i))) return [...m[1]].map((c) => parseInt(c + c, 16)).concat(1);
+  if (/^#[0-9a-f]{6}$/i.test(wert)) return ktRgb(wert).concat(1);
+  if ((m = wert.match(/^rgba?\((.*)\)$/))) { const z = gTeile(m[1]).map(Number); return [z[0], z[1], z[2], z.length > 3 ? z[3] : 1]; }
+  if ((m = wert.match(/^var\((--[\w-]+)(?:,\s*(.*))?\)$/s))) {
+    const name = m[1].slice(2);
+    if (Object.hasOwn(t, name)) return gFarbe(t[name], t);
+    assert.ok(m[2] !== undefined, 'unbekannte Variable ' + m[1]); return gFarbe(m[2], t);
+  }
+  if ((m = wert.match(/^color-mix\(in srgb,\s*(.*)\)$/s))) {
+    const [a, b] = gTeile(m[1]), pa = a.match(/^(.*)\s+(\d+)%$/s), fa = gFarbe(pa[1], t), fb = gFarbe(b, t), p = Number(pa[2]) / 100;
+    const alpha = fa[3] * p + fb[3] * (1 - p);
+    return [0, 1, 2].map((i) => (fa[i] * fa[3] * p + fb[i] * fb[3] * (1 - p)) / (alpha || 1)).concat(alpha);
+  }
+  throw new Error('Farbe nicht verstanden: ' + wert);
+}
+/** Paints a colour with alpha over an opaque surface. */
+const gUeber = (f, bg) => gMisch(f.slice(0, 3), bg, f[3]);
+const LAMPEN = ['#ffda95', '#f5f5ff', '#ff0000', '#0000ff', '#00ff00', '#8000ff', '#ff8000', '#800000', '#008080', '#ffff00', '#ff00ff'];
+const lampen = () => LAMPEN.map((h) => { const s = I().readableSurface([hex(h)]); const c = s.colors[0]; return { h, fg: s.fg, x: [c.r, c.g, c.b], text: [s.text.r, s.text.g, s.text.b] }; });
+const gPruefer = (faelle) => (name, a, b, min = 3) => { const q = ktQuote(a.slice(0, 3), b.slice(0, 3)); faelle.push(`${name}: ${q.toFixed(2)}:1`); assert.ok(q >= min, faelle.at(-1)); };
+
+test('#1320 Kartenschalter und Kartenregler: Zustand ≥ 3:1 im Thema (hell/dunkel) und auf Lampenfarben', () => {
+  const css = blatt('CARD_STYLES'), faelle = [], pruefe = gPruefer(faelle);
+  for (const [name, t] of Object.entries(G_THEMEN)) {
+    const karte = ktRgb(t['card-background-color']), f = (sel, prop) => gFarbe(gWert(gRegel(css, sel), prop), t);
+    const knopf = f('.toggle .knob', 'background'), aus = f('.toggle::before', 'background'), an = f('.toggle.on::before', 'background');
+    pruefe('Schalter aus/Karte ' + name, aus, karte); pruefe('Knopf/aus ' + name, knopf, aus);
+    pruefe('Schalter an/Karte ' + name, an, karte); pruefe('Knopf/an ' + name, knopf, an);
+    // Default slider: the handle (text colour) against the rest and the translucent fill.
+    const rest = f('.slider', 'background'), griff = gFarbe(gWert(gRegel(css, '.slider::after'), 'border-right').replace(/^3px solid /, ''), t);
+    const fuellung = gMisch(f('.slider .fill', 'background').slice(0, 3), rest, Number(gWert(gRegel(css, '.slider .fill'), 'opacity')));
+    pruefe('Griff/Rest ' + name, griff, rest); pruefe('Griff/Füllung ' + name, griff, fuellung);
+    // Mushroom slider: fill against its track, the handle (with its opacity) against the fill.
+    const spur = f('.slider.mushroom .track', 'background'), mfill = f('.slider.mushroom .mfill', 'background');
+    const mgriff = gMisch(f('.slider.mushroom .mfill::after', 'background').slice(0, 3), mfill, Number(gWert(gRegel(css, '.slider.mushroom .mfill::after'), 'opacity')));
+    pruefe('Mushroom Füllung/Spur ' + name, mfill, spur); pruefe('Mushroom Griff/Füllung ' + name, mgriff, mfill);
+  }
+  assert.match(css, /\n\.slider\.mushroom::after \{[^}]*display: none/, 'Mushroom zeigt seinen eigenen Griff');
+  // Lit card: rest veil and mushroom fill per text side, the handle is the text colour, the knob white on the darkened track.
+  const ueber = (fg, name) => gFarbe(gWert(gRegel(css, 'ha-card.fg-' + fg), name), {});
+  for (const l of lampen()) {
+    const rest = gUeber(ueber(l.fg, '--blc-slider-rest'), l.x);
+    pruefe(`Griff/Lampe ${l.h}`, l.text, l.x); pruefe(`Griff/Rest ${l.h}`, l.text, rest);
+    const mfill = gUeber(ueber(l.fg, '--blc-mushroom-fill'), l.x);
+    pruefe(`Mushroom Griff/Füllung ${l.h}`, gMisch(l.x, mfill, 0.85), mfill);
+    const bahn = gUeber(gFarbe(gWert(gRegel(css, l.fg === 'dark' ? '.lit.fg-dark .toggle.on::before' : '.lit .toggle.on::before'), 'background').replace(/^var\(--blc-toggle-on, (.*)\)$/, '$1'), {}), l.x);
+    pruefe(`Schalterknopf/Bahn ${l.h}`, [255, 255, 255], bahn);
+  }
+  assert.match(gRegel(css, '.lit .slider.mushroom .mfill::after'), /background: var\(--blc-background, var\(--card-background-color\)\)/);
+});
+
+test('#1320 Dialog: Schalter, Helligkeitsregler und Farbmarke ≥ 3:1 (Thema hell/dunkel und dialog_theme: dark)', () => {
+  const css = blatt('DIALOG_STYLES'), faelle = [], pruefe = gPruefer(faelle);
+  const eigene = (regel) => Object.fromEntries([...regel.matchAll(/\n\s*--(blc-d-[\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].replace(/\s+/g, ' ')]));
+  const thema = eigene(gRegel(css, ':host')), dunkel = eigene(gRegel(css, ":host([dialog-theme='dark'])"));
+  const blicke = { 'thema-hell': { ...G_THEMEN.hell, ...thema }, 'thema-dunkel': { ...G_THEMEN.dunkel, ...thema }, 'dark-look': { ...G_THEMEN.dunkel, ...thema, ...dunkel } };
+  for (const [name, t] of Object.entries(blicke)) {
+    const f = (w) => gFarbe(w, t), flaeche = f('var(--blc-d-bg)'), kachel = f('var(--blc-d-tile)');
+    const knopf = f(gWert(gRegel(css, '.gtoggle .gknob'), 'background')), aus = f(gWert(gRegel(css, '.gtoggle'), 'background-color')), an = f(gWert(gRegel(css, '.gtoggle.on'), 'background-color'));
+    for (const [fl, bg] of [['Blatt', flaeche], ['Kachel', kachel]]) { pruefe(`Schalter aus/${fl} ${name}`, gUeber(aus, bg), bg); pruefe(`Schalter an/${fl} ${name}`, gUeber(an, bg), bg); }
+    pruefe('Knopf/aus ' + name, knopf, gUeber(aus, flaeche)); pruefe('Knopf/an ' + name, knopf, gUeber(an, flaeche));
+    const fill = gMisch(gUeber(f('var(--blc-d-fill)'), kachel), kachel, Number(t['blc-d-fill-opacity']));
+    const griff = f('var(--blc-d-handle)');
+    pruefe('Reglergriff/Füllung ' + name, griff, fill); pruefe('Reglergriff oder Füllung/Rest ' + name, ktQuote(griff.slice(0, 3), kachel) >= 3 ? griff : fill, kachel);
+  }
+  assert.match(gRegel(css, '.dslider::after'), /border-right: 3px solid var\(--blc-d-handle\)/);
+  // A lit tile and the lit header keep the white knob on the darkened track for every lamp colour.
+  assert.match(gRegel(css, '.tile.lit .tsw .gknob'), /background: var\(--blc-knob-color, rgb\(255, 255, 255\)\)/);
+  assert.match(gRegel(css, '.head.lit .headsw .gknob'), /background: var\(--blc-knob-color, rgb\(255, 255, 255\)\)/);
+  for (const l of lampen()) for (const sel of ['.tile.lit .tsw.on', '.tile.lit.fg-dark .tsw.on', '.head.lit .headsw.on', '.head.lit.fg-dark .headsw.on']) {
+    if (sel.includes('fg-dark') !== (l.fg === 'dark') && sel.includes('fg-dark')) continue;
+    if (!sel.includes('fg-dark') && l.fg === 'dark') continue;
+    pruefe(`Knopf/${sel} ${l.h}`, [255, 255, 255], gUeber(gFarbe(gWert(gRegel(css, sel), 'background-color'), {}), l.x));
+  }
+  // The colour marker sits on any colour of the wheel or the temperature bar: a white ring plus a dark outline.
+  const marke = gRegel(css, '.marker');
+  assert.match(marke, /border: 3px solid var\(--blc-marker-ring, #fff\)/);
+  const aussen = marke.match(/box-shadow: 0 0 0 1px rgba\(0, 0, 0, ([\d.]+)\)/); assert.ok(aussen, 'dunkler Außenring');
+  for (const h of [...LAMPEN, '#ffffff', '#000000', '#ffb46b', '#cfdaff', '#808080']) {
+    const b = ktRgb(h), q = Math.max(ktQuote([255, 255, 255], b), ktQuote(gMisch([0, 0, 0], b, Number(aussen[1])), b));
+    faelle.push(`Farbmarke ${h}: ${q.toFixed(2)}:1`); assert.ok(q >= 3, faelle.at(-1));
+  }
+});
+
+test('#1320 Editor: fehlende Entität im Chip (Rot) hält 4,5:1 auf Karte und Streifen, hell und dunkel', () => {
+  const regel = gRegel(blatt('EDITOR_STYLES'), '.chip.dead'), farbe = gWert(regel, 'color'), faelle = [], pruefe = gPruefer(faelle);
+  for (const [name, t] of Object.entries(KT_THEMEN)) {
+    const karte = ktRgb(t['card-background-color']), streifen = gMisch([219, 68, 55], karte, 0.14);
+    for (const [f, bg] of [['Karte', karte], ['Streifen', streifen]]) pruefe(`.chip.dead ${f} ${name}`, gFarbe(farbe, t), bg, 4.5);
+  }
+});
