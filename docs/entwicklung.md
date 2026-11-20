@@ -267,6 +267,8 @@ und ein Test auf doppelte Top-Level-Namen im Bundle.
 
 ## Geprüft
 
+**20.11.2026 · 0.16.1, Repo-CI (#1323, Tag `v0.16.1`)** — render.py mit ausdrücklichem CI-Modus ohne regeln.py; Vertragsjob `contracts` grün. Karte unverändert. Abschlusslauf `karten-20261120-003418-9d0f74` grün (57/57, Volllauf), `--beleg-pruefen` gleich; Bildabweichungen gegen den Vorlauf nur am Gerätekopf (gewollt) und Rauschen.
+
 **20.11.2026 · 0.16.0, Buschcheck Etappe I (#1323, Tag `v0.16.0`)** — getCardSize ohne erzwungenes Layout (M68, Browserprüfung 0 Layout-Abfragen), Hold per Tastatur (M74), Lampenraster ohne Einrückung (M78), Kopfkommentar (M73), Editor/Dialoge bei 360/390 (M76), Schalter/Regler/Fokus ≥ 3:1, Shared UI 0.5.3, CI aus der Vorlage (M45). 169 Node-Tests. Abschlusslauf `karten-20261119-234243-239269` grün (57/57, Volllauf, 2700 Node-Tests, Block `statisch` grün inkl. CI-Vorlage und Zeilenlänge), `--beleg-pruefen` gleich; Bilder am Bild geprüft (Sonnet).
 
 **19.11.2026 · 0.15.0, Buschcheck Etappe H (#1313, Tag `v0.15.0`)** — Shared UI 0.5.0: `.busch-btn`/`.busch-chip` (M62), Typografie auf Tokens, Prozentlabel 12 px (M63), Kopf Stufe 1 (M61), Steuerdialog über dialogHistory/focusTrap mit X links (M28), Zustandsbaustein (M27), `BuschUI.register` (M42), Kontrast/Touch (M26). 148 Node-Tests. Abschlusslauf `karten-20261119-195834-aaec84` grün (55/55, 2590 Node-Tests, Block `statisch` grün, Kontrast/Touch gemessen), `--beleg-pruefen` gleich; Bilder zweimal am Bild geprüft (Sonnet), Befunde behoben.
