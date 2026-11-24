@@ -42,7 +42,8 @@ for _kandidat in ("/work", str(HERE)):
         sys.path.insert(0, _kandidat)
 try:
     from regeln import (messe_text, messe_popup, lauf_breiten, selbsttest,
-                        bewerte, zaehle, messe_kontrast_touch, messe_kontrast_touch_hier)
+                        bewerte, zaehle, messe_kontrast_touch, messe_kontrast_touch_hier,
+                        ha_icon_attrappe, ha_icon_fehlend)
     REGELN_DA = True
 except ImportError:
     REGELN_DA = False
@@ -52,6 +53,33 @@ except ImportError:
 # the run; every card, dialog and editor check still counts. With /work present
 # (local runner) a missing regeln.py stays a failure.
 CI_MODUS = not REGELN_DA and not Path("/work").exists()
+
+
+def ha_icon_einbinden(browser):
+    """M79: draw ha-icon with the shared stand-in of regeln.py (real MDI glyphs, hacs/docs/render/mdi-pfade.json).
+
+    Every page of `browser` gets it; the harness page's own `customElements.define('ha-icon', HaIconStub)`
+    is then ignored. Without regeln.py (CI mode) the stub stays. Returns True when the shared one is in.
+    """
+    if REGELN_DA:
+        ha_icon_attrappe(browser)
+    return REGELN_DA
+
+
+# Glyphs the shared stand-in drew on the page (svg[data-busch-icon], through every shadow root),
+# real paths and squares for names without one.
+GLYPHEN_JS = """() => {
+    let echt = 0, ersatz = 0;
+    const walk = (root) => root.querySelectorAll('*').forEach(el => {
+        if (el.shadowRoot) {
+            el.shadowRoot.querySelectorAll('svg[data-busch-icon]').forEach(s =>
+                s.getAttribute('data-busch-icon').startsWith('fehlt:') ? ersatz++ : echt++);
+            walk(el.shadowRoot);
+        }
+    });
+    walk(document);
+    return { echt, ersatz };
+}"""
 
 
 
@@ -95,7 +123,10 @@ PAGE = """<!doctype html>
 </head><body>
 <div class="stack" id="stack"></div>
 <script>
-  // --- stubs for the two Home Assistant elements the card uses -------------
+  // --- stubs for the Home Assistant elements the card uses -----------------
+  // ha-icon: with regeln.py the shared stand-in (real MDI glyphs, M79) is
+  // installed before this script runs and HaIconStub below is ignored; the
+  // stub only draws in CI mode (no regeln.py).
   window.__iconsAsked = [];
 
   class HaCardStub extends HTMLElement {
@@ -336,6 +367,7 @@ def main():
 
     with sync_playwright() as p:
         browser = p.chromium.launch(args=["--force-color-profile=srgb"])
+        ha_icon_einbinden(browser)  # M79: real MDI glyphs instead of the square stub
         page = browser.new_page(viewport={"width": width + 48, "height": 900},
                                 device_scale_factor=2, locale="de-DE")
 
@@ -2903,7 +2935,28 @@ def main():
             report["uiRegeln"]["zaehlung"] = zaehle(report["uiRegeln"])
             report["uiRegelnVerstoesse"] = bewerte(report["uiRegeln"])
 
-        report["iconsAsked"] = page.evaluate("() => window.__iconsAsked")
+        if REGELN_DA:
+            # M79: the shared stand-in drew real glyphs, none of them a square for a missing path,
+            # and the contrast runs judged them (non-text contrast, 3:1, scripts/kontrast_touch.py).
+            report["haIcon"] = {**ha_icon_fehlend(page), "glyphen": page.evaluate(GLYPHEN_JS)}
+            check("M79 shared ha-icon draws real MDI glyphs, no name without a path",
+                  report["haIcon"]["aktiv"] and report["haIcon"]["glyphen"]["echt"] > 0
+                  and not report["haIcon"]["fehlend"] and report["haIcon"]["glyphen"]["ersatz"] == 0,
+                  json.dumps(report["haIcon"], ensure_ascii=False))
+
+            def symbole(bereich):
+                if isinstance(bereich, dict) and "laeufe" in bereich:
+                    return sum(l.get("symbole_geprueft", 0) for l in bereich["laeufe"])
+                if isinstance(bereich, dict):
+                    return sum(symbole(v) for v in bereich.values())
+                return 0
+            gemessen = {"karte": symbole(report["uiRegeln"].get("kontrast_touch_karte", {})),
+                        "dialog": symbole(report["uiRegeln"].get("kontrast_touch_dialog", {}))}
+            check("M79 contrast runs measured icon glyphs at 3:1 (card and dialog)",
+                  gemessen["karte"] > 0 and gemessen["dialog"] > 0, json.dumps(gemessen))
+        else:
+            # CI mode: the page's own stub draws and records the names it was asked for.
+            report["iconsAsked"] = page.evaluate("() => window.__iconsAsked")
         browser.close()
 
     httpd.shutdown()

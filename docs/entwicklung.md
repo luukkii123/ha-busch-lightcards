@@ -222,6 +222,15 @@ Das Ergebnisverzeichnis liegt unter `docs/render/ergebnis*/` und ist per
 UI-Regel-Messmodul (`regeln.py`) ein, das unter `/work` gemountet sein muss;
 fehlt es, meldet er die UI-Regelmessung als nicht gemessen.
 
+Symbole (M79): Mit `regeln.py` zeichnen `render.py` und `visual_contract.py`
+`ha-icon` über die gemeinsame Attrappe `regeln.ha_icon_attrappe` (echte
+MDI-Pfade aus `hacs/docs/render/mdi-pfade.json`); die Kontrastmessung prüft
+deren Glyphen mit ≥ 3:1. `report.json` enthält `haIcon` (aktiv, fehlende Namen,
+gezählte Glyphen); ein Name ohne Pfad ist ein Fehler. Ohne `regeln.py`
+(CI-Modus) bleibt die eigene Kastenattrappe der Seite. Die Pixel-Baselines
+unter `docs/render/baseline/` zeigen noch die Kästen und werden beim nächsten
+bewussten Erneuern neu aufgenommen.
+
 Der Browserlauf deckt unter anderem ab: Auflösung (Duplikate, Zyklen,
 Selbstreferenz, gelöschte Mitglieder, Fremddomänen, Tiefenlimit), das
 Gedächtnis für nicht verfügbare Gruppen, Aggregation und Service-Routing,

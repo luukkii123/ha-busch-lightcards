@@ -11,7 +11,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from render import PAGE, serve
+from render import PAGE, serve, ha_icon_einbinden
 
 
 def synthetic_states(lit):
@@ -198,6 +198,7 @@ def main():
     report = {"contract": "Busch HA UI 0.1.0", "cases": [], "errors": []}
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(args=["--force-color-profile=srgb"])
+        ha_icon_einbinden(browser)  # M79: real MDI glyphs (regeln.py); CI mode keeps the page's stub
         page = browser.new_page(viewport={"width": 320, "height": 1000},
                                 device_scale_factor=2, locale="de-DE")
         page.on("pageerror", lambda error: report["errors"].append(str(error)))
