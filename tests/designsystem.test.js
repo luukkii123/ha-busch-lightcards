@@ -139,6 +139,55 @@ test('M63 Radien nur aus Token: Kreis, Pille, Dialog- oder Innenradius', () => {
   }
 });
 
+// #1346 M63 (W13 step 1): spacing (padding, margin, gap) only from the --ha-space-* scale, a px value only as the
+// fallback inside var(). Geometry that is not spacing stays: the negative margins that give back the transparent
+// border of a 44 px touch target (M26) and the centring of the 26 px colour marker.
+const ABSTAND_AUSNAHMEN = {
+  '.gtoggle': 'margin', // M26: -12px -5px returns the 12/5 px touch border to the layout
+  '.head .headsw': 'margin', // M26: -10px -1px, same for the header switch
+  '.marker': 'margin', // -13px: half of the 26 px marker, centres it on its point
+};
+/** Every spacing declaration of a source stylesheet as [selector, property, value]. */
+function abstaende(css) {
+  const flach = css.replace(/\$\{[^}]*\}/g, 'TOKEN');
+  const out = [];
+  for (const m of flach.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const sel = m[1].trim().split('\n').pop().trim();
+    for (const d of m[2].matchAll(/(?:^|[;\s])((?:padding|margin|gap|row-gap|column-gap)(?:-[a-z-]+)?)\s*:\s*([^;]+)/g)) {
+      out.push([sel, d[1], d[2].trim()]);
+    }
+  }
+  return out;
+}
+/** A value without its var() parts (the fallbacks inside them are allowed). */
+const ohneVar = (v) => { let alt; do { alt = v; v = v.replace(/var\([^()]*\)/g, 'V').replace(/calc\(([^()]*)\)/g, '$1'); } while (v !== alt); return v; };
+
+test('M63 keine festen px-Abstände außer in var()-Rückfällen (padding, margin, gap)', () => {
+  let gezaehlt = 0;
+  for (const name of BLAETTER) {
+    const fest = abstaende(blatt(name))
+      .filter(([sel, prop, wert]) => /(^|[\s,(-])\d+(?:\.\d+)?px/.test(ohneVar(wert)) && ABSTAND_AUSNAHMEN[sel] !== prop)
+      .map(([sel, prop, wert]) => sel + ' { ' + prop + ': ' + wert + ' }');
+    assert.deepEqual(fest, [], name + ': feste Abstände');
+    gezaehlt += abstaende(blatt(name)).length;
+  }
+  assert.ok(gezaehlt > 40, 'die Suche sieht die Abstände (' + gezaehlt + ')');
+  const familie = QUELLE.slice(QUELLE.indexOf('/* END BUSCH SHARED UI */'));
+  const inline = [...familie.matchAll(/\.style\.(?:margin|padding|gap)\w*\s*=\s*'([^']*)'/g)].map((m) => m[1]);
+  assert.ok(inline.length >= 1, 'der Inline-Abstand des Import-Knopfs wird gesehen');
+  assert.deepEqual(inline.filter((v) => /\d+px/.test(ohneVar(v))), [], 'auch kein fester Abstand im Inline-Stil');
+});
+
+test('M63 Abstände: der Dialogkopf hängt an der Blattpolsterung (gleiches Token), die Sicherheitsränder haben den Token-Rückfall', () => {
+  const d = blatt('DIALOG_STYLES');
+  assert.match(blattRegel(d, '.sheet'), /padding: var\(--ha-space-4, 16px\)/);
+  const kopf = blattRegel(d, '.head');
+  assert.match(kopf, /top: calc\(-1 \* var\(--ha-space-4, 16px\)\)/, 'sticky top = - Blattpolsterung');
+  assert.match(kopf, /margin: calc\(-1 \* var\(--ha-space-4, 16px\)\) calc\(-1 \* var\(--ha-space-4, 16px\)\)/);
+  assert.match(kopf, /padding: var\(--ha-space-4, 16px\)/);
+  assert.match(blattRegel(d, ':host'), /max\(var\(--ha-space-3, 12px\), env\(safe-area-inset-top\)\)/);
+});
+
 // ── M61: card title on the family step 1, one level-2 section heading ─────────
 
 test('M61 Kartentitel über BuschUI.header({level:1}): Stufe 1, beschriftete Gruppe mit dem Titel', () => {

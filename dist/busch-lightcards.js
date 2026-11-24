@@ -3092,7 +3092,7 @@ ha-card.fg-dark {
     display: block;
     box-sizing: border-box;
     line-height: 44px;
-    padding: 0 12px;
+    padding: 0 var(--ha-space-3, 12px);
     font-size: ${BuschUI.tokens.fontSizeS};
     font-weight: var(--ha-font-weight-medium, 500);
     color: var(--primary-text-color);
@@ -3908,8 +3908,8 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     /* #877: the sheet's height comes from this fixed box, which follows the
        visible viewport; 92vh did not and slid under Android's system bars. */
     box-sizing: border-box;
-    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
-        max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    padding: max(var(--ha-space-3, 12px), env(safe-area-inset-top)) max(var(--ha-space-3, 12px), env(safe-area-inset-right))
+        max(var(--ha-space-3, 12px), env(safe-area-inset-bottom)) max(var(--ha-space-3, 12px), env(safe-area-inset-left));
 }
 /* dialog_theme: dark (M29) — the dialog of 0.9.0 to 0.13.3, colour for
    colour, in both Home Assistant themes. Only the missing scene tile reads
@@ -3964,7 +3964,7 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
     background: var(--blc-d-bg);
     color: var(--blc-d-text);
     border-radius: var(--ha-dialog-border-radius, var(--ha-card-border-radius, 12px));
-    padding: 16px;
+    padding: var(--ha-space-4, 16px);
     box-sizing: border-box;
     animation: grow 0.3s ease-out;
     font-family: var(--paper-font-body1_-_font-family, Roboto, sans-serif);
@@ -3981,14 +3981,14 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
 .head {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--ha-space-2, 8px);
     /* #877: stays on top while the sheet scrolls, edge to edge so nothing
        shows through the sheet's padding above it. */
     position: sticky;
-    top: -16px; /* sticky counts from inside the sheet's padding */
+    top: calc(-1 * var(--ha-space-4, 16px)); /* sticky counts from inside the sheet's padding */
     z-index: 2;
-    margin: -16px -16px 14px;
-    padding: 16px;
+    margin: calc(-1 * var(--ha-space-4, 16px)) calc(-1 * var(--ha-space-4, 16px)) var(--ha-space-3, 12px);
+    padding: var(--ha-space-4, 16px);
     border-radius: var(--ha-dialog-border-radius, var(--ha-card-border-radius, 12px)) var(--ha-dialog-border-radius, var(--ha-card-border-radius, 12px)) 0 0;
     background: var(--blc-d-bg);
 }
@@ -4034,7 +4034,7 @@ const DIALOG_STYLES = BuschUI.cardStyles + `
    medium, sentence case); colour and spacing stay the sheet's. */
 h3 {
     color: var(--blc-d-text);
-    margin: 18px 0 8px;
+    margin: var(--ha-space-4, 16px) 0 var(--ha-space-2, 8px);
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -4045,7 +4045,7 @@ h3 {
 .scenes, .tiles {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
-    gap: 8px;
+    gap: var(--ha-space-2, 8px);
 }
 .scene {
     height: 106px;
@@ -4058,7 +4058,7 @@ h3 {
     flex-direction: column;
     justify-content: space-between;
     align-items: flex-start;
-    padding: 10px;
+    padding: var(--ha-space-2, 8px);
     box-sizing: border-box;
     text-align: left;
     font-size: ${BuschUI.tokens.fontSizeS};
@@ -4105,7 +4105,7 @@ h3 {
     position: relative;
     height: 118px;
     border-radius: ${BuschUI.tokens.radiusInner};
-    padding: 8px;
+    padding: var(--ha-space-2, 8px);
     box-sizing: border-box;
     cursor: pointer;
     overflow: hidden;
@@ -4146,7 +4146,7 @@ h3 {
 /* #1320: on a lit tile the knob stays white on the darkened track, like the card's and the header's switch. */
 .tile.lit .tsw .gknob { background: var(--blc-knob-color, rgb(255, 255, 255)); }
 .tile .thead { position: relative; width: 100%; display: flex; justify-content: flex-end; min-height: 14px; }
-.tile .tmid { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.tile .tmid { position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--ha-space-1, 4px); }
 .tile .ticon { --mdc-icon-size: 26px; }
 .tile .tname {
     font-size: ${BuschUI.tokens.fontSizeS};
@@ -4179,8 +4179,8 @@ h3 {
     color: var(--blc-d-faint);
     cursor: default;
 }
-.detail { margin-top: 6px; }
-.picker-tabs { display: flex; gap: 8px; margin: 14px 0 10px; }
+.detail { margin-top: var(--ha-space-1, 4px); }
+.picker-tabs { display: flex; gap: var(--ha-space-2, 8px); margin: var(--ha-space-3, 12px) 0 var(--ha-space-2, 8px); }
 /* M62: .busch-btn[data-variant=secondary]; a block box so the ellipsis applies. */
 .picker-tabs .busch-btn {
     display: block;
@@ -4200,11 +4200,11 @@ h3 {
     background: var(--blc-d-text);
     color: var(--blc-d-invert);
 }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: var(--ha-space-2, 8px); }
 /* M62: button.busch-chip (44 px as a button); inline-block keeps the ellipsis. */
 .chips .busch-chip {
     display: inline-block;
-    padding: 0 16px;
+    padding: 0 var(--ha-space-4, 16px);
     background: var(--blc-d-tile);
     color: var(--blc-d-dim);
     font-size: ${BuschUI.tokens.fontSizeM};
@@ -4218,19 +4218,19 @@ h3 {
     min-height: 44px;
     border: none;
     border-radius: ${BuschUI.tokens.radiusInner};
-    padding: 0 12px;
+    padding: 0 var(--ha-space-3, 12px);
     background: var(--blc-d-tile);
     color: var(--blc-d-text);
     font-size: ${BuschUI.tokens.fontSizeM};
 }
 .chips .busch-chip.active::before { content: '\\2713\\00a0'; }
-.wheelwrap { display: flex; justify-content: center; padding: 6px 0 2px; }
+.wheelwrap { display: flex; justify-content: center; padding: var(--ha-space-1, 4px) 0; }
 canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-width: 100%; }
 .tempbar {
     position: relative;
     height: 44px;
     border-radius: var(--ha-border-radius-pill, 9999px);
-    margin: 10px 0 4px;
+    margin: var(--ha-space-2, 8px) 0 var(--ha-space-1, 4px);
     touch-action: pan-y;
     -webkit-user-select: none;
     user-select: none;
@@ -4260,7 +4260,7 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     border-radius: var(--ha-border-radius-pill, 9999px);
     background: var(--blc-d-tile);
     overflow: hidden;
-    margin: 8px 0;
+    margin: var(--ha-space-2, 8px) 0;
     /* Horizontal slider in a vertically scrolling sheet: the page keeps the
        vertical swipe (#715). */
     touch-action: pan-y;
@@ -4307,7 +4307,7 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     display: block;
     box-sizing: border-box;
     line-height: 44px;
-    padding: 0 14px;
+    padding: 0 var(--ha-space-3, 12px);
     font-size: ${BuschUI.tokens.fontSizeM};
     font-weight: var(--ha-font-weight-medium, 500);
     color: var(--blc-d-label);
@@ -4328,13 +4328,13 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
 .deadlist {
     font-size: ${BuschUI.tokens.fontSizeS};
     color: var(--blc-d-faint);
-    margin-top: 10px;
+    margin-top: var(--ha-space-2, 8px);
     line-height: 1.5;
     overflow-wrap: anywhere;
 }
 
 /* One block per resolved group, so thirty lamps behind one card stay readable. */
-.group + .group { margin-top: 14px; }
+.group + .group { margin-top: var(--ha-space-3, 12px); }
 /* M78 (Buschcheck W22): a nested group is not indented. Its tiles stand on
    the same auto-fill columns as the root's; a 2 px line in the sheet's 16 px
    gutter marks it, and its header is one 44 px row (the switch's target). */
@@ -4348,7 +4348,7 @@ canvas.wheel { border-radius: 50%; touch-action: none; cursor: crosshair; max-wi
     width: 2px;
     background: var(--blc-d-line);
 }
-.group-head { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0; margin-bottom: 4px; }
+.group-head { display: flex; align-items: center; gap: var(--ha-space-2, 8px); min-height: 44px; padding: 0; margin-bottom: var(--ha-space-1, 4px); }
 .group-head ha-icon { --mdc-icon-size: 18px; color: var(--blc-d-muted); flex-shrink: 0; }
 .group-head .gname {
     flex: 1; min-width: 0; font-size: ${BuschUI.tokens.fontSizeM}; font-weight: var(--ha-font-weight-medium, 500);
@@ -5552,16 +5552,16 @@ class BuschLightDialog extends HTMLElement {
 // Busch HA UI 0.1.0 editor actions: responsive scene rows and 44 px targets.
 const EDITOR_STYLES = BuschUI.editorStyles + `
 :host { display: block; }
-.ed { display: flex; flex-direction: column; gap: 12px; }
+.ed { display: flex; flex-direction: column; gap: var(--ha-space-3, 12px); }
 details {
     border: 1px solid var(--divider-color, #e0e0e0);
     border-radius: ${BuschUI.tokens.radiusInner};
-    padding: 0 12px;
+    padding: 0 var(--ha-space-3, 12px);
 }
-details[open] { padding-bottom: 12px; }
+details[open] { padding-bottom: var(--ha-space-3, 12px); }
 summary {
     cursor: pointer;
-    padding: 12px 0;
+    padding: var(--ha-space-3, 12px) 0;
     font-weight: var(--ha-font-weight-medium, 500);
     color: var(--primary-text-color);
     list-style-position: inside;
@@ -5573,7 +5573,7 @@ summary {
 .preview {
     border: 1px solid var(--divider-color, #e0e0e0);
     border-radius: ${BuschUI.tokens.radiusInner};
-    padding: 10px 12px;
+    padding: var(--ha-space-2, 8px) var(--ha-space-3, 12px);
     font-size: ${BuschUI.tokens.fontSizeM};
     color: var(--primary-text-color);
     overflow-wrap: anywhere;
@@ -5582,7 +5582,7 @@ summary {
     font-weight: var(--ha-font-weight-medium, 500);
     display: flex;
     align-items: baseline;
-    gap: 8px;
+    gap: var(--ha-space-2, 8px);
     flex-wrap: wrap;
 }
 .preview .count {
@@ -5591,11 +5591,11 @@ summary {
     min-width: 0;
     overflow-wrap: anywhere;
 }
-.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: var(--ha-space-1, 4px); margin-top: var(--ha-space-2, 8px); }
 .chip {
     font-size: ${BuschUI.tokens.fontSizeS};
     line-height: 20px;
-    padding: 0 8px;
+    padding: 0 var(--ha-space-2, 8px);
     border-radius: var(--ha-border-radius-pill, 9999px);
     background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
     color: var(--primary-text-color);
@@ -5616,7 +5616,7 @@ summary {
     color: color-mix(in srgb, var(--error-color, #db4437) 70%, var(--primary-text-color, #212121));
 }
 .note {
-    margin-top: 8px;
+    margin-top: var(--ha-space-2, 8px);
     font-size: ${BuschUI.tokens.fontSizeS};
     color: var(--secondary-text-color);
     overflow-wrap: anywhere;
@@ -5626,10 +5626,10 @@ summary {
 .scene-row {
     border: 1px solid var(--divider-color, #e0e0e0);
     border-radius: ${BuschUI.tokens.radiusInner};
-    padding: 8px 10px;
-    margin-bottom: 8px;
+    padding: var(--ha-space-2, 8px);
+    margin-bottom: var(--ha-space-2, 8px);
 }
-.scene-bar { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+.scene-bar { display: flex; align-items: center; gap: var(--ha-space-1, 4px); margin-top: var(--ha-space-1, 4px); }
 .scene-bar .spacer { flex: 1; }
 .iconbtn {
     border: none;
@@ -5639,7 +5639,7 @@ summary {
     width: 44px;
     height: 44px;
     box-sizing: border-box;
-    padding: 8px;
+    padding: var(--ha-space-2, 8px);
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
@@ -5652,7 +5652,7 @@ summary {
     background: none;
     color: color-mix(in srgb, var(--primary-color, #03a9f4) 50%, var(--primary-text-color, #212121));
     border-radius: ${BuschUI.tokens.radiusInner};
-    padding: 10px;
+    padding: var(--ha-space-2, 8px);
     min-height: 44px;
     box-sizing: border-box;
     width: 100%;
@@ -5671,7 +5671,7 @@ summary {
 .fallback {
     color: color-mix(in srgb, var(--error-color, #db4437) 70%, var(--primary-text-color, #212121));
     font-size: ${BuschUI.tokens.fontSizeM};
-    padding: 8px 0;
+    padding: var(--ha-space-2, 8px) 0;
     overflow-wrap: anywhere;
 }
 `;
@@ -6166,7 +6166,7 @@ class BuschLightCardEditor extends BuschUI.EditorBase {
         // an import must not be a one-way door.
         this._importBtn = document.createElement('button');
         this._importBtn.className = 'addbtn';
-        this._importBtn.style.marginTop = '6px';
+        this._importBtn.style.marginTop = 'var(--ha-space-1, 4px)';
         this._importBtn.addEventListener('click', () => this._importScenes());
         sceneBox.appendChild(this._importBtn);
         wrap.appendChild(this._section('sectionScenes', sceneBox, true));
