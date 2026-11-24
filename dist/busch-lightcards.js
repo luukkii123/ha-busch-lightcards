@@ -4176,7 +4176,11 @@ h3 {
         var(--blc-d-dead-a) 6px,
         var(--blc-d-dead-b) 6px,
         var(--blc-d-dead-b) 12px);
-    color: var(--blc-d-faint);
+    /* M26 (E6, tests/kontrast.test.js): the faint colour alone missed 4.5:1 on
+       the stripes (HA light 3.82:1, dialog_theme: dark 4.05:1). Mixed with the
+       sheet text it stays dimmer than a live tile and reads on both stripes;
+       stripes, symbol and the offline list say "offline", not the colour. */
+    color: color-mix(in srgb, var(--blc-d-faint) 60%, var(--blc-d-text));
     cursor: default;
 }
 .detail { margin-top: var(--ha-space-1, 4px); }
