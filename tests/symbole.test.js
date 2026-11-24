@@ -43,7 +43,10 @@ test('M79 the page keeps its own stub as the CI fallback', () => {
 });
 
 test('M79 render.py checks real glyphs, no missing names and measured symbols', () => {
-  assert.match(render, /report\["haIcon"\]\s*=\s*\{\*\*ha_icon_fehlend\(page\)/);
+  assert.match(render, /report\["haIcon"\]\s*=\s*ha_icon_urteil\(ha_icon_fehlend\(page\), page\.evaluate\(GLYPHEN_JS\)\)/);
+  // J (#1329): only names of another icon set (hue:…) leave `fehlend`; every missing mdi: name still fails.
+  assert.match(render, /"fehlend": \[n for n in alle if n\.startswith\("mdi:"\)\]/);
+  assert.match(render, /else if \(name\.startsWith\('fehlt:mdi:'\)\) ersatz\+\+/);
   assert.match(render, /check\("M79 shared ha-icon draws real MDI glyphs/);
   assert.match(render, /check\("M79 contrast runs measured icon glyphs at 3:1/);
 });

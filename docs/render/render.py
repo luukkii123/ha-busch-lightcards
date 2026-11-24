@@ -67,19 +67,35 @@ def ha_icon_einbinden(browser):
 
 
 # Glyphs the shared stand-in drew on the page (svg[data-busch-icon], through every shadow root),
-# real paths and squares for names without one.
+# real paths and squares for names without one. `fremd` = squares for names of another icon set
+# (see FREMDE_SETS below); they are no missing MDI path.
 GLYPHEN_JS = """() => {
-    let echt = 0, ersatz = 0;
+    let echt = 0, ersatz = 0, fremd = 0;
     const walk = (root) => root.querySelectorAll('*').forEach(el => {
         if (el.shadowRoot) {
-            el.shadowRoot.querySelectorAll('svg[data-busch-icon]').forEach(s =>
-                s.getAttribute('data-busch-icon').startsWith('fehlt:') ? ersatz++ : echt++);
+            el.shadowRoot.querySelectorAll('svg[data-busch-icon]').forEach(s => {
+                const name = s.getAttribute('data-busch-icon');
+                if (!name.startsWith('fehlt:')) echt++;
+                else if (name.startsWith('fehlt:mdi:')) ersatz++;
+                else fremd++;
+            });
             walk(el.shadowRoot);
         }
     });
     walk(document);
-    return { echt, ersatz };
+    return { echt, ersatz, fremd };
 }"""
+
+# M79 (J, #1329): mdi-pfade.json holds Material Design Icons only (hacs/scripts/mdi-pfade-erzeugen.py reads
+# @mdi/js). The fixture keeps the live attribute `icon: hue:bulb-group-recessed-ceiling` of a Hue light
+# (custom icon set hass-hue-icons, registered in HA via window.customIcons, not part of MDI). No MDI path
+# exists for it, so it is not a missing MDI name: the judgement lists such names under `fremdeSets`
+# and fails only on `mdi:` names without a path (and on squares drawn for them).
+def ha_icon_urteil(status, glyphen):
+    """report['haIcon'] from ha_icon_fehlend() and GLYPHEN_JS; `fehlend` keeps only `mdi:` names."""
+    alle = status.get("fehlend") or []
+    return {**status, "fehlend": [n for n in alle if n.startswith("mdi:")],
+            "fremdeSets": [n for n in alle if not n.startswith("mdi:")], "glyphen": glyphen}
 
 
 
@@ -2938,7 +2954,7 @@ def main():
         if REGELN_DA:
             # M79: the shared stand-in drew real glyphs, none of them a square for a missing path,
             # and the contrast runs judged them (non-text contrast, 3:1, scripts/kontrast_touch.py).
-            report["haIcon"] = {**ha_icon_fehlend(page), "glyphen": page.evaluate(GLYPHEN_JS)}
+            report["haIcon"] = ha_icon_urteil(ha_icon_fehlend(page), page.evaluate(GLYPHEN_JS))
             check("M79 shared ha-icon draws real MDI glyphs, no name without a path",
                   report["haIcon"]["aktiv"] and report["haIcon"]["glyphen"]["echt"] > 0
                   and not report["haIcon"]["fehlend"] and report["haIcon"]["glyphen"]["ersatz"] == 0,
