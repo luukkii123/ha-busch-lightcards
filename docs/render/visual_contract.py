@@ -14,7 +14,12 @@ from playwright.sync_api import sync_playwright
 from render import PAGE, serve, ha_icon_einbinden, HANDY_BREITEN, REGELN_DA, CI_MODUS
 
 if REGELN_DA:  # hacs/docs/render/regeln.py, imported by render.py from /work
-    from regeln import messe_text, messe_popup, bewerte, zaehle
+    from regeln import messe_text, messe_popup, bewerte, zaehle, messe_kontrast_touch_hier
+
+# M26: contrast and touch targets (hacs/scripts/kontrast_touch.py via regeln.messe_kontrast_touch_hier) of every
+# card and dialog state, at every width and in both themes. Exceptions only with a reason (R24), and only for
+# stand-ins or Home Assistant elements (tests/render-kontrast.test.js).
+AUSNAHMEN = Path(__file__).resolve().with_name("kontrast-ausnahmen.json")
 
 # M76 (Buschcheck F14): every state also at the phone widths 360 and 390 px.
 BREITEN = (320, *HANDY_BREITEN, 480, 960)
@@ -247,6 +252,13 @@ def main():
     report = {"contract": "Busch HA UI 0.1.0", "cases": [], "errors": []}
     # M76: rules 1 and 2 at 360/390 px, one entry per state, width and theme.
     rules = []
+    # M26: one run per state (and dialog view), width and theme, in the form of regeln.messe_kontrast_touch.
+    if REGELN_DA:
+        kontrast_touch = {bereich: {"ausnahmen_datei": None, "laeufe": []} for bereich in ("kontrast", "touch")}
+    else:
+        kontrast_touch = {bereich: {"kein_urteil": "regeln.py nicht gefunden"
+                                    + (" (CI-Modus)" if CI_MODUS else " — /work ist da, Fehler")}
+                          for bereich in ("kontrast", "touch")}
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(args=["--force-color-profile=srgb"])
         ha_icon_einbinden(browser)  # M79: real MDI glyphs (regeln.py); CI mode keeps the page's stub
@@ -256,6 +268,31 @@ def main():
 
         def open_dialog():
             open_dialog_by_tap(page)
+
+        def measure_kt(selector, width, theme, state, view=None):
+            """M26: contrast and touch of `selector` as it is drawn now (animations finished first)."""
+            if not REGELN_DA:
+                return
+            page.evaluate("""() => [document, ...Array.from(document.querySelectorAll(
+                    'busch-light-card, busch-light-dialog'), h => h.shadowRoot).filter(Boolean)]
+                .forEach(root => root.getAnimations().forEach(a => { try { a.finish(); } catch (e) {} }))""")
+            measured = messe_kontrast_touch_hier(page, selector, ausnahmen=AUSNAHMEN)
+            contrast = measured["kontrast"]
+            # A lit card is a colour gradient: the browser measurement cannot judge text on it (kein_urteil,
+            # counted, not passed). Only then its "no text judged" is no violation; tests/kontrast.test.js
+            # computes those colours instead. Anything else stays a violation.
+            gradient = [v for v in contrast["kontrast_verstoesse"]
+                        if str(v.get("fehler", "")).startswith("kein Text beurteilt")]
+            if (gradient and contrast.get("kein_urteil") and all(
+                    str(k.get("grund", "")).startswith("Hintergrundbild/Verlauf")
+                    for k in contrast.get("kein_urteil_liste", []))):
+                contrast["kontrast_verstoesse"] = [v for v in contrast["kontrast_verstoesse"]
+                                                   if v not in gradient]
+                contrast["verlauf"] = "Fläche ist ein Verlauf: kein_urteil, gerechnet in tests/kontrast.test.js"
+            for bereich, wert in measured.items():
+                kontrast_touch[bereich]["ausnahmen_datei"] = wert.pop("ausnahmen_datei", None)
+                kontrast_touch[bereich]["laeufe"].append({"breite": width, "thema": theme, "zustand": state,
+                                                          **({"ansicht": view} if view else {}), **wert})
         harness = result / "harness.html"
         harness.write_text(PAGE.replace("__SRC__", f"/dist/{card_file.name}")
                            .replace("__WIDTH__", "960"), encoding="utf-8")
@@ -365,6 +402,7 @@ def main():
                     }""")
                     metrics["state"] = page.evaluate("(scope) => (" + STATE_JS + ")(document"
                         ".querySelector('busch-light-card').shadowRoot)", None)
+                    measure_kt("busch-light-card", width, theme, name)
                     valid = (metrics["width"] == width
                              and metrics["scrollWidth"] <= width + 1
                              and metrics["pageScroll"] <= width + 1
@@ -510,8 +548,11 @@ def main():
                     shot = (f"dialog-{dialog_case}-{width}-{theme}.png" if not look
                             else f"dialog-{dialog_case}-darklook-{width}-{theme}.png")
                     page.screenshot(path=str(result / shot))
+                    rule_name = f"dialog-{dialog_case}" + (f"-{look}look" if look else "")
+                    measure_kt(".sheet", width, theme, rule_name, "group")
                     rule1_group = rule1_sheet(page, width) if phone else None
                     x_detail = page.evaluate(CLOSE_X_JS, "detail")
+                    measure_kt(".sheet", width, theme, rule_name, "detail")
                     rule1_detail = rule1_sheet(page, width) if phone else None
                     dialog_metrics["closeX"] = [x_group, x_detail]
                     ok = (dialog_metrics["headLit"] and dialog_metrics["minRatio"] >= 4.5
@@ -544,8 +585,7 @@ def main():
                     page.wait_for_timeout(120)
                     page.evaluate("() => document.querySelectorAll('busch-light-dialog').forEach(d => d.remove())")
                     if phone:
-                        rule_state = f"dialog-{dialog_case}" + (f"-{look}look" if look else "")
-                        rules.append({"width": width, "theme": theme, "state": rule_state,
+                        rules.append({"width": width, "theme": theme, "state": rule_name,
                                       "regel1": {"gruppe": rule1_group, "detail": rule1_detail},
                                       "regel2": messe_popup(page, open_dialog, ".sheet", ".head .iconbtn",
                                                             dialog_typ="bearbeitung")})
@@ -570,8 +610,10 @@ def main():
                 off_x_group = page.evaluate(CLOSE_X_JS, "group")
                 shot = f"dialog-offline-{width}-{theme}.png"
                 page.screenshot(path=str(result / shot))
+                measure_kt(".sheet", width, theme, "dialog-offline", "group")
                 off_rule1_group = rule1_sheet(page, width) if phone else None
                 off_x_detail = page.evaluate(CLOSE_X_JS, "detail")
+                measure_kt(".sheet", width, theme, "dialog-offline", "detail")
                 off_rule1_detail = rule1_sheet(page, width) if phone else None
                 off_detail = page.evaluate("() => (" + STATE_JS + ")(document"
                                            ".querySelector('busch-light-dialog').shadowRoot)")
@@ -782,6 +824,20 @@ def main():
         report["uiRegeln"] = {"kein_urteil": "regeln.py nicht gefunden"
                               + (" (CI-Modus)" if CI_MODUS else " — /work ist da, Fehler")}
         rules_ok = CI_MODUS
+    # M26: contrast and touch in the report; a violation, or nothing measured, fails the run.
+    if REGELN_DA:
+        kontrast_touch["touch"]["mindest_px"] = 44
+        liste = json.loads(AUSNAHMEN.read_text(encoding="utf-8")) if AUSNAHMEN.is_file() else {}
+        for bereich in ("kontrast", "touch"):
+            used = {a.get("selektor") for run in kontrast_touch[bereich]["laeufe"] for a in run.get("ausnahmen", [])}
+            kontrast_touch[bereich]["ungenutzte_ausnahmen"] = [a["selektor"] for a in liste.get(bereich, [])
+                                                               if a["selektor"] not in used]
+        kt_ok = bool(kontrast_touch["kontrast"]["laeufe"]) and bewerte(kontrast_touch) == 0
+        kt_count = zaehle(kontrast_touch)
+    else:
+        kt_ok = CI_MODUS
+    report["kontrast"] = kontrast_touch["kontrast"]
+    report["touch"] = kontrast_touch["touch"]
     (result / "visual-report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False),
                                                 encoding="utf-8")
     for case in report["cases"]:
@@ -798,8 +854,14 @@ def main():
               f"verletzt={z['verletzt']} geprueft={z['geprueft']} kein_urteil={z['kein_urteil']})")
     else:
         print("M76 rules 1/2: " + report["uiRegeln"]["kein_urteil"])
+    if REGELN_DA:
+        print(f"M26 contrast/touch: {'ok' if kt_ok else 'FAIL'} ({len(kontrast_touch['kontrast']['laeufe'])} runs, "
+              f"kontrast_verstoesse={kt_count['kontrast_verstoesse']} touch_verstoesse={kt_count['touch_verstoesse']} "
+              f"geprueft={kt_count['geprueft']} kein_urteil={kt_count['kein_urteil']})")
+    else:
+        print("M26 contrast/touch: " + kontrast_touch["kontrast"]["kein_urteil"])
     return 0 if (not report["failed"] and not report["errors"] and report["keyboard"]["ok"]
-                 and handy_ok and rules_ok) else 1
+                 and handy_ok and rules_ok and kt_ok) else 1
 
 
 if __name__ == "__main__":
