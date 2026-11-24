@@ -282,6 +282,8 @@ und ein Test auf doppelte Top-Level-Namen im Bundle.
 
 ## Geprüft
 
+**24.11.2026 · 0.17.1, Abschlusstor (#1346, Tag `v0.17.1`)** — Kontrast/Touch in visual_contract.py (M26, 1120/1220 Prüfungen, 0 Verstöße), Offline-Kachelschrift ≥ 6,2:1. Abschlusslauf `karten-20261124-152742-0efd16` 58/58 grün, Beleg gleich.
+
 **24.11.2026 · 0.17.0, Nachholetappe J2 (#1346, Tag `v0.17.0`)** — Abstände auf --ha-space-* (M63, 2–4 px), Zustände bei 360/390 (M76). Abschlusslauf `karten-20261124-124054-53d328` 58/58 grün, Bildprüfung ok, Beleg gleich.
 
 **20.11.2026 · 0.16.1, Repo-CI (#1323, Tag `v0.16.1`)** — render.py mit ausdrücklichem CI-Modus ohne regeln.py; Vertragsjob `contracts` grün. Karte unverändert. Abschlusslauf `karten-20261120-003418-9d0f74` grün (57/57, Volllauf), `--beleg-pruefen` gleich; Bildabweichungen gegen den Vorlauf nur am Gerätekopf (gewollt) und Rauschen.
