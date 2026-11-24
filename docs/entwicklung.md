@@ -282,6 +282,8 @@ und ein Test auf doppelte Top-Level-Namen im Bundle.
 
 ## Geprüft
 
+**24.11.2026 · 0.17.0, Nachholetappe J2 (#1346, Tag `v0.17.0`)** — Abstände auf --ha-space-* (M63, 2–4 px), Zustände bei 360/390 (M76). Abschlusslauf `karten-20261124-124054-53d328` 58/58 grün, Bildprüfung ok, Beleg gleich.
+
 **20.11.2026 · 0.16.1, Repo-CI (#1323, Tag `v0.16.1`)** — render.py mit ausdrücklichem CI-Modus ohne regeln.py; Vertragsjob `contracts` grün. Karte unverändert. Abschlusslauf `karten-20261120-003418-9d0f74` grün (57/57, Volllauf), `--beleg-pruefen` gleich; Bildabweichungen gegen den Vorlauf nur am Gerätekopf (gewollt) und Rauschen.
 
 **20.11.2026 · 0.16.0, Buschcheck Etappe I (#1323, Tag `v0.16.0`)** — getCardSize ohne erzwungenes Layout (M68, Browserprüfung 0 Layout-Abfragen), Hold per Tastatur (M74), Lampenraster ohne Einrückung (M78), Kopfkommentar (M73), Editor/Dialoge bei 360/390 (M76), Schalter/Regler/Fokus ≥ 3:1, Shared UI 0.5.3, CI aus der Vorlage (M45). 169 Node-Tests. Abschlusslauf `karten-20261119-234243-239269` grün (57/57, Volllauf, 2700 Node-Tests, Block `statisch` grün inkl. CI-Vorlage und Zeilenlänge), `--beleg-pruefen` gleich; Bilder am Bild geprüft (Sonnet).
