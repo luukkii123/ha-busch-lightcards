@@ -11,7 +11,13 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from render import PAGE, serve, ha_icon_einbinden
+from render import PAGE, serve, ha_icon_einbinden, HANDY_BREITEN, REGELN_DA, CI_MODUS
+
+if REGELN_DA:  # hacs/docs/render/regeln.py, imported by render.py from /work
+    from regeln import messe_text, messe_popup, bewerte, zaehle
+
+# M76 (Buschcheck F14): every state also at the phone widths 360 and 390 px.
+BREITEN = (320, *HANDY_BREITEN, 480, 960)
 
 
 def synthetic_states(lit):
@@ -131,6 +137,49 @@ def close_x_ok(measured):
     return bool(ok)
 
 
+# M76: rule 1 of an open dialog on the whole sheet, as render.py m76_regel1 does it. At a phone
+# width the full-screen sheet scrolls (rule 2); a tile below the fold would report a rectangle
+# under the visible sheet without any text having left its box. So the window grows to the
+# sheet's scrollHeight first (width unchanged: sideways overhang and real overflow still count),
+# and goes back afterwards. If the sheet still scrolls, wholeSheet is false and the run fails.
+SHEET_JS = """() => {
+    const d = document.querySelector('busch-light-dialog');
+    const s = d && d.shadowRoot.querySelector('.sheet');
+    return s ? { scrollHeight: s.scrollHeight, clientHeight: s.clientHeight } : null;
+}"""
+
+
+def rule1_sheet(page, width):
+    """Rule 1 (regeln.messe_text) on the open dialog's `.sheet`, nothing scrolled out of sight."""
+    before = page.viewport_size["height"]
+    sheet = page.evaluate(SHEET_JS)
+    height = before
+    for _ in range(3):  # the sheet may grow with the window once
+        if not sheet or sheet["scrollHeight"] <= sheet["clientHeight"] + 1:
+            break
+        height = max(height + 1, height + sheet["scrollHeight"] - sheet["clientHeight"])
+        page.set_viewport_size({"width": width, "height": int(height)})
+        page.wait_for_timeout(300)
+        sheet = page.evaluate(SHEET_JS)
+    text = messe_text(page, ".sheet")
+    frame = {"windowHeight": int(height), "sheet": sheet,
+             "wholeSheet": bool(sheet) and sheet["scrollHeight"] <= sheet["clientHeight"] + 1}
+    if height != before:
+        page.set_viewport_size({"width": width, "height": int(before)})
+        page.wait_for_timeout(300)
+    return {"text": text, "frame": frame}
+
+
+def open_dialog_by_tap(page):
+    """Rule 2 opener: a click on the card's title button, like render.py oeffne_dialog."""
+    page.evaluate("""() => {
+        window.freshStep();
+        document.querySelectorAll('busch-light-dialog').forEach(d => d.remove());
+        document.querySelector('busch-light-card').shadowRoot.querySelector('.tap')
+            .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    }""")
+
+
 def main():
     card_file = Path(sys.argv[1]).resolve()
     result = Path(sys.argv[2]).resolve()
@@ -196,18 +245,24 @@ def main():
     port_holder = []
     server = serve(repo, port_holder)
     report = {"contract": "Busch HA UI 0.1.0", "cases": [], "errors": []}
+    # M76: rules 1 and 2 at 360/390 px, one entry per state, width and theme.
+    rules = []
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(args=["--force-color-profile=srgb"])
         ha_icon_einbinden(browser)  # M79: real MDI glyphs (regeln.py); CI mode keeps the page's stub
         page = browser.new_page(viewport={"width": 320, "height": 1000},
                                 device_scale_factor=2, locale="de-DE")
         page.on("pageerror", lambda error: report["errors"].append(str(error)))
+
+        def open_dialog():
+            open_dialog_by_tap(page)
         harness = result / "harness.html"
         harness.write_text(PAGE.replace("__SRC__", f"/dist/{card_file.name}")
                            .replace("__WIDTH__", "960"), encoding="utf-8")
         page.goto(f"http://127.0.0.1:{port_holder[0]}/{harness.relative_to(repo)}")
         page.wait_for_function("() => !!customElements.get('busch-light-card')")
-        for width in (320, 480, 960):
+        for width in BREITEN:
+            phone = REGELN_DA and width in HANDY_BREITEN
             for theme in ("light", "dark"):
                 page.set_viewport_size({"width": width, "height": 1000})
                 page.evaluate("""(dark) => {
@@ -374,6 +429,9 @@ def main():
                         valid = valid and bool(metrics["error"])
                     report["cases"].append({"width": width, "theme": theme, "state": name,
                                             "ok": bool(valid), "metrics": metrics, "screenshot": shot})
+                    if phone:
+                        rules.append({"width": width, "theme": theme, "state": name,
+                                      "regel1": messe_text(page, "busch-light-card")})
                 # The dialog in the same matrix; 320 px is the phone (bottom sheet).
                 # M29: the sheet follows the theme; dialog_theme: dark ("darklook")
                 # must give back the black sheet of 0.13.3 in both themes.
@@ -452,7 +510,9 @@ def main():
                     shot = (f"dialog-{dialog_case}-{width}-{theme}.png" if not look
                             else f"dialog-{dialog_case}-darklook-{width}-{theme}.png")
                     page.screenshot(path=str(result / shot))
+                    rule1_group = rule1_sheet(page, width) if phone else None
                     x_detail = page.evaluate(CLOSE_X_JS, "detail")
+                    rule1_detail = rule1_sheet(page, width) if phone else None
                     dialog_metrics["closeX"] = [x_group, x_detail]
                     ok = (dialog_metrics["headLit"] and dialog_metrics["minRatio"] >= 4.5
                           and dialog_metrics["checked"] >= 4
@@ -483,6 +543,13 @@ def main():
                         .forEach(d => d.close ? d.close() : d.remove())""")
                     page.wait_for_timeout(120)
                     page.evaluate("() => document.querySelectorAll('busch-light-dialog').forEach(d => d.remove())")
+                    if phone:
+                        rule_state = f"dialog-{dialog_case}" + (f"-{look}look" if look else "")
+                        rules.append({"width": width, "theme": theme, "state": rule_state,
+                                      "regel1": {"gruppe": rule1_group, "detail": rule1_detail},
+                                      "regel2": messe_popup(page, open_dialog, ".sheet", ".head .iconbtn",
+                                                            dialog_typ="bearbeitung")})
+                        page.evaluate("() => document.querySelectorAll('busch-light-dialog').forEach(d => d.remove())")
                 # M27: no member reachable - the dialog shows the offline state
                 # block where the controls were, the detail view of an
                 # unreachable light likewise; the X is measured in both (M28).
@@ -503,7 +570,9 @@ def main():
                 off_x_group = page.evaluate(CLOSE_X_JS, "group")
                 shot = f"dialog-offline-{width}-{theme}.png"
                 page.screenshot(path=str(result / shot))
+                off_rule1_group = rule1_sheet(page, width) if phone else None
                 off_x_detail = page.evaluate(CLOSE_X_JS, "detail")
+                off_rule1_detail = rule1_sheet(page, width) if phone else None
                 off_detail = page.evaluate("() => (" + STATE_JS + ")(document"
                                            ".querySelector('busch-light-dialog').shadowRoot)")
                 off_ok = (state_ok(off_group, "offline") and state_ok(off_detail, "offline")
@@ -517,6 +586,12 @@ def main():
                     .forEach(d => d.close ? d.close() : d.remove())""")
                 page.wait_for_timeout(120)
                 page.evaluate("() => document.querySelectorAll('busch-light-dialog').forEach(d => d.remove())")
+                if phone:
+                    rules.append({"width": width, "theme": theme, "state": "dialog-offline",
+                                  "regel1": {"gruppe": off_rule1_group, "detail": off_rule1_detail},
+                                  "regel2": messe_popup(page, open_dialog, ".sheet", ".head .iconbtn",
+                                                        dialog_typ="bearbeitung")})
+                    page.evaluate("() => document.querySelectorAll('busch-light-dialog').forEach(d => d.remove())")
                 page.set_viewport_size({"width": width, "height": 1000})
 
                 page.evaluate("""() => {
@@ -532,6 +607,9 @@ def main():
                 page.wait_for_timeout(40)
                 shot = f"editor-long-{width}-{theme}.png"
                 page.locator("busch-light-card-editor").screenshot(path=str(result / shot))
+                if phone:
+                    rules.append({"width": width, "theme": theme, "state": "editor-long",
+                                  "regel1": messe_text(page, "busch-light-card-editor")})
                 editor_metrics = page.evaluate("""() => {
                     const ed = document.querySelector('busch-light-card-editor');
                     return {width: ed.getBoundingClientRect().width, scrollWidth: ed.scrollWidth,
@@ -557,6 +635,9 @@ def main():
                 page.wait_for_timeout(40)
                 shot_options = f"editor-optionen-{width}-{theme}.png"
                 page.locator("busch-light-card-editor").screenshot(path=str(result / shot_options))
+                if phone:
+                    rules.append({"width": width, "theme": theme, "state": "editor-optionen",
+                                  "regel1": messe_text(page, "busch-light-card-editor")})
                 options_metrics = page.evaluate("""() => {
                     const ed = document.querySelector('busch-light-card-editor');
                     const forms = Array.from(ed.shadowRoot.querySelectorAll('ha-form'));
@@ -682,6 +763,25 @@ def main():
     server.shutdown()
     report["passed"] = sum(case["ok"] for case in report["cases"])
     report["failed"] = len(report["cases"]) - report["passed"]
+    # M76: every state at 360 and 390, and rules 1/2 there without a violation.
+    widths = {}
+    for case in report["cases"]:
+        widths.setdefault(case["state"], set()).add(case["width"])
+    report["handyBreiten"] = {state: sorted(found) for state, found in widths.items()}
+    handy_ok = all(set(HANDY_BREITEN) <= set(found) for found in report["handyBreiten"].values())
+    if REGELN_DA:
+        report["uiRegeln"] = {"faelle": rules}
+        frames = [part["frame"]["wholeSheet"] for entry in rules if isinstance(entry["regel1"], dict)
+                  and "gruppe" in entry["regel1"] for part in entry["regel1"].values()]
+        rules_ok = (bewerte(report["uiRegeln"]) == 0 and all(frames)
+                    and {e["state"] for e in rules} == set(report["handyBreiten"])
+                    and len(rules) == len(HANDY_BREITEN) * 2 * len(report["handyBreiten"]))
+        report["uiRegeln"]["zaehlung"] = zaehle({"faelle": rules})
+        report["uiRegeln"]["ok"] = rules_ok
+    else:
+        report["uiRegeln"] = {"kein_urteil": "regeln.py nicht gefunden"
+                              + (" (CI-Modus)" if CI_MODUS else " — /work ist da, Fehler")}
+        rules_ok = CI_MODUS
     (result / "visual-report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False),
                                                 encoding="utf-8")
     for case in report["cases"]:
@@ -690,7 +790,16 @@ def main():
     print(f"visual contract: {report['passed']}/{len(report['cases'])} passed, "
           f"page errors={len(report['errors'])}")
     print(f"keyboard: {'ok' if report['keyboard']['ok'] else 'FAIL'}")
-    return 0 if not report["failed"] and not report["errors"] and report["keyboard"]["ok"] else 1
+    print(f"M76 phone widths {list(HANDY_BREITEN)} for every state: {'ok' if handy_ok else 'FAIL'}")
+    if REGELN_DA:
+        z = report["uiRegeln"]["zaehlung"]
+        print(f"M76 rules 1/2 at 360/390: {'ok' if rules_ok else 'FAIL'} ({len(rules)} cases, "
+              f"ueberlauf={z['ueberlauf']} ausserhalb={z['ausserhalb']} ueberlappung={z['ueberlappung']} "
+              f"verletzt={z['verletzt']} geprueft={z['geprueft']} kein_urteil={z['kein_urteil']})")
+    else:
+        print("M76 rules 1/2: " + report["uiRegeln"]["kein_urteil"])
+    return 0 if (not report["failed"] and not report["errors"] and report["keyboard"]["ok"]
+                 and handy_ok and rules_ok) else 1
 
 
 if __name__ == "__main__":

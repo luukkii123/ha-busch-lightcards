@@ -253,11 +253,17 @@ belegt Verdrahtung, Schema und erzeugte Konfiguration, nicht die Darstellung
 der echten Home-Assistant-Selektoren.
 
 `docs/render/visual_contract.py` erzeugt die synthetische Darstellungsmatrix
-(320/480/960 px, hell/dunkel): Karte in allen Zuständen, an mit einer Farbe,
+(320/360/390/480/960 px, hell/dunkel): Karte in allen Zuständen, an mit einer Farbe,
 mehreren Farben, Weiß, Warmweiß und Gelb, aus, `off_color`, dazu der Dialog
-je Breite (320 px = Handy) und misst Kontrastquote und Textfarben. Die
+je Breite (unter 450 px = Handy, Vollbild) und misst Kontrastquote und Textfarben. Die
 gesichtete Auswahl liegt in `docs/render/baseline/hue-0.9.0/`; siehe deren
 README. Alle Namen darin sind erfunden.
+Bei 360 und 390 px (M76) misst es mit `regeln.py` zusätzlich Regel 1 für jeden
+Zustand (Karte, Editor; Dialog in Gruppe und Detail am ganzen Blatt, das Fenster
+wächst dafür auf dessen `scrollHeight`) und Regel 2 für jeden Dialogzustand
+(`uiRegeln.faelle` in `visual-report.json`); `handyBreiten` listet die Breiten
+je Zustand. Ein Verstoß, ein fehlender Zustand oder ein noch scrollendes Blatt
+macht den Lauf rot; ohne `regeln.py` im CI-Modus bleibt es `kein_urteil`.
 
 `node --test tests/*.test.js` prüft ohne Browser Reaktion, Neubau-Grenzen,
 die Farbrechnung (Kontrast, Verlauf, Aus-Zustand, `off_color`), seit 0.10.0

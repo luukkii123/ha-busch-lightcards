@@ -591,3 +591,19 @@ test('#1320 Editor: fehlende Entität im Chip (Rot) hält 4,5:1 auf Karte und St
     for (const [f, bg] of [['Karte', karte], ['Streifen', streifen]]) pruefe(`.chip.dead ${f} ${name}`, gFarbe(farbe, t), bg, 4.5);
   }
 });
+
+// #1346 M76 (F14): the state matrix of visual_contract.py also at the phone widths 360/390, with rule 1 (text in
+// its card/sheet, the sheet measured whole) and rule 2 (Escape, back, close button, scrim) at those widths.
+test('M76 Renderbeleg: visual_contract.py rendert alle Zustände auch bei 360/390 und misst dort Regel 1 und 2', () => {
+  const v = fs.readFileSync(path.join(__dirname, '..', 'docs', 'render', 'visual_contract.py'), 'utf8');
+  assert.match(v, /for width in BREITEN:/);
+  assert.match(v, /BREITEN = \(320, \*HANDY_BREITEN, 480, 960\)/);
+  assert.match(v, /from render import [^\n]*HANDY_BREITEN/);
+  assert.match(v, /messe_text\(page, "busch-light-card"\)/, 'Regel 1 je Kartenzustand');
+  assert.match(v, /messe_text\(page, "busch-light-card-editor"\)/, 'Regel 1 je Editorzustand');
+  assert.match(v, /messe_text\(page, "\.sheet"\)/, 'Regel 1 am Blatt');
+  assert.match(v, /"wholeSheet": [^\n]*scrollHeight"\] <= [^\n]*clientHeight"\] \+ 1/, 'Blatt ganz, nichts weggescrollt');
+  assert.match(v, /messe_popup\(page, open_dialog, "\.sheet", "\.head \.iconbtn",\s*dialog_typ="bearbeitung"\)/, 'Regel 2');
+  assert.match(v, /report\["handyBreiten"\]/);
+  assert.match(v, /bewerte\(report\["uiRegeln"\]\)/, 'Verstöße machen den Lauf rot');
+});
